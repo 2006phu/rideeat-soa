@@ -1,0 +1,49 @@
+# ==============================================================================
+# RideEat SOA - Security & Build Ignore Rules (.gitignore)
+# ==============================================================================
+
+# 1. Secret & Credential Files (NEVER COMMIT)
+.env
+.env.local
+.env.development
+.env.production
+!.env.example
+
+config/firebase/serviceAccountKey.json
+**/serviceAccountKey.json
+**/*firebase-adminsdk*.json
+!config/firebase/serviceAccountKey.example.json
+!**/serviceAccountKey.example.json
+
+*.pem
+*.key
+*.crt
+*.p12
+
+# 2. Python Bytecode, Virtualenvs & Local Databases
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+*.db
+*.sqlite
+*.sqlite3
+
+# 3. Node.js / React Frontend Build Artifacts
+node_modules/
+web-admin/node_modules/
+web-admin/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 4. IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,82 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+  external_labels:
+    monitor: 'rideeat-soa-monitor'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'auth-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['auth-service:8001']
+        labels:
+          service: 'auth-service'
+          domain: 'identity'
+
+  - job_name: 'user-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['user-service:8002']
+        labels:
+          service: 'user-service'
+          domain: 'profile'
+
+  - job_name: 'ride-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['ride-service:8003']
+        labels:
+          service: 'ride-service'
+          domain: 'mobility'
+
+  - job_name: 'food-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['food-service:8004']
+        labels:
+          service: 'food-service'
+          domain: 'commerce'
+
+  - job_name: 'map-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['map-service:8005']
+        labels:
+          service: 'map-service'
+          domain: 'geospatial'
+
+  - job_name: 'payment-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['payment-service:8006']
+        labels:
+          service: 'payment-service'
+          domain: 'fintech'
+
+  - job_name: 'rating-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['rating-service:8007']
+        labels:
+          service: 'rating-service'
+          domain: 'reputation'
+
+  - job_name: 'promo-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['promo-service:8008']
+        labels:
+          service: 'promo-service'
+          domain: 'marketing'
+
+  - job_name: 'notification-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['notification-service:8009']
+        labels:
+          service: 'notification-service'
+          domain: 'messaging'

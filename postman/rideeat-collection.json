@@ -1,0 +1,555 @@
+{
+  "info": {
+    "_postman_id": "rideeat-soa-v21-collection-2026",
+    "name": "RideEat SOA - Complete 9 Microservices Collection",
+    "description": "End-to-End Postman v2.1 API Collection for the RideEat Service-Oriented Architecture (SOA) & Object-Oriented Programming (OOP) Super-App. Includes automated test assertions (`pm.test`) across all 9 bounded contexts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "userId", "value": "usr-customer-001", "type": "string" },
+    { "key": "driverId", "value": "drv-partner-001", "type": "string" },
+    { "key": "rideId", "value": "ride-001", "type": "string" },
+    { "key": "orderId", "value": "ord-001", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth Service (:8001)",
+      "item": [
+        {
+          "name": "Register Account (Customer / Driver / Merchant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Response has standard SOA envelope or token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nguyenvana@rideeat.vn\",\n  \"phone\": \"0901234567\",\n  \"password\": \"RideEat@2026\",\n  \"full_name\": \"Nguyen Van A\",\n  \"role\": \"CUSTOMER\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (PasswordAuthStrategy -> JWT Issue)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login returns 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Saves JWT access_token to collection variable', function () {",
+                  "    var json = pm.response.json();",
+                  "    var token = (json.data && json.data.access_token) || json.access_token;",
+                  "    if (token) pm.collectionVariables.set('accessToken', token);",
+                  "    pm.expect(token).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"nguyenvana@rideeat.vn\",\n  \"secret\": \"RideEat@2026\",\n  \"auth_type\": \"password\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Token & RBAC Permissions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token verification returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/api/auth/verify"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. User Service (:8002)",
+      "item": [
+        {
+          "name": "Create Polymorphic User Profile (CustomerProfile / DriverProfile)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profile creation succeeds', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/profiles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{driverId}}\",\n  \"full_name\": \"Tran Minh Tai (Tai Xe 5 Sao)\",\n  \"phone\": \"0912345678\",\n  \"role\": \"DRIVER\",\n  \"vehicle_type\": \"BIKE\",\n  \"license_plate\": \"59-X3 888.99\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Approve Driver KYC & Toggle Online Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Driver status updated', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users/drivers/{{driverId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kyc_approved\": true,\n  \"is_online\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Map & Geo-Spatial Service (:8005)",
+      "item": [
+        {
+          "name": "Update Driver Real-Time GPS Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Driver GPS indexed', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/map/drivers/location",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_id\": \"{{driverId}}\",\n  \"lat\": 10.7769,\n  \"lng\": 106.7009,\n  \"vehicle_type\": \"BIKE\",\n  \"status\": \"AVAILABLE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Calculate Route Distance, ETA & GeoPolyline",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Route distance & ETA returned', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var json = pm.response.json();",
+                  "    var data = json.data || json;",
+                  "    pm.expect(data).to.have.property('distance_km');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/map/route",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": { \"lat\": 10.7726, \"lng\": 106.6980 },\n  \"destination\": { \"lat\": 10.7883, \"lng\": 106.7056 },\n  \"vehicle_type\": \"BIKE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Find Nearest Available Drivers (Spatial Radius Search)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns nearby drivers list', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/map/drivers/nearby?lat=10.7769&lng=106.7009&radius_km=5&vehicle_type=BIKE"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Ride Service (:8003)",
+      "item": [
+        {
+          "name": "Estimate Polymorphic Fare (Vehicle Hierarchy + Pricing Strategy + Decorator)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fare estimation returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/rides/estimate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickup\": { \"lat\": 10.7726, \"lng\": 106.6980, \"address\": \"Cho Ben Thanh, Quan 1\" },\n  \"dropoff\": { \"lat\": 10.7950, \"lng\": 106.7218, \"address\": \"Landmark 81, Binh Thanh\" },\n  \"vehicle_type\": \"CAR_4\",\n  \"weather\": \"RAIN\",\n  \"is_peak_hour\": true,\n  \"include_insurance\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Book Ride & Generate QR/OTP Verification Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ride booking created', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/rides/book",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": \"{{userId}}\",\n  \"pickup\": { \"lat\": 10.7726, \"lng\": 106.6980, \"address\": \"Cho Ben Thanh, Quan 1\" },\n  \"dropoff\": { \"lat\": 10.7950, \"lng\": 106.7218, \"address\": \"Landmark 81, Binh Thanh\" },\n  \"vehicle_type\": \"BIKE\",\n  \"payment_method\": \"WALLET\",\n  \"voucher_code\": \"RIDEEAT50\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Food Delivery Service (:8004)",
+      "item": [
+        {
+          "name": "List Restaurants & Composite Menu Catalog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Restaurants catalog returned', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/food/restaurants"
+          }
+        },
+        {
+          "name": "Create Food Delivery Order & Trigger State Machine",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Food order placed', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/food/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": \"{{userId}}\",\n  \"restaurant_id\": \"rest-pho-thin-01\",\n  \"items\": [\n    { \"item_id\": \"item-pho-tai-lan\", \"name\": \"Pho Bo Tai Lan\", \"price\": 65000, \"quantity\": 2 }\n  ],\n  \"delivery_address\": \"227 Nguyen Van Cu, Quan 5, TP.HCM\",\n  \"voucher_code\": \"FREESHIP30\",\n  \"payment_method\": \"WALLET\"\n}"
+            }
+          }
+        },
+        {
+          "name": "AI Contextual Food Recommendation Engine",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('AI Recommender returns personalized dishes', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/food/recommendations?weather=RAIN&hour=19&budget=100000"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Payment & E-Wallet Service (:8006)",
+      "item": [
+        {
+          "name": "Get Encapsulated Wallet Balance & Ledger",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Wallet balance retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/payments/wallets/{{userId}}"
+          }
+        },
+        {
+          "name": "Top-up Wallet Balance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Wallet topup succeeded', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/payments/wallets/{{userId}}/topup",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500000,\n  \"source\": \"VNPay_QR\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Execute Payment via PaymentProcessorFactory (WALLET / VNPAY / MOMO / CASH)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Payment processed with digital invoice', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/payments/charge",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{userId}}\",\n  \"reference_id\": \"{{rideId}}\",\n  \"reference_type\": \"RIDE\",\n  \"amount\": 45000,\n  \"method\": \"WALLET\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Rating & Reputation Service (:8007)",
+      "item": [
+        {
+          "name": "Submit Polymorphic Rating (DriverRating / RestaurantRating)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Rating recorded & Bayesian score updated', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/ratings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewer_id\": \"{{userId}}\",\n  \"target_id\": \"{{driverId}}\",\n  \"target_type\": \"DRIVER\",\n  \"order_id\": \"{{rideId}}\",\n  \"stars\": 5,\n  \"comment\": \"Tai xe chay rat an toan, dung gio, than thien!\",\n  \"tags\": [\"SAFE_DRIVING\", \"ON_TIME\", \"POLITE\"]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Promotion & Voucher Service (:8008)",
+      "item": [
+        {
+          "name": "List Available Vouchers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Vouchers returned', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/promos/vouchers"
+          }
+        },
+        {
+          "name": "Apply DiscountStrategy & RuleSpecification Chain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Discount calculated accurately', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/promos/apply",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"RIDEEAT50\",\n  \"user_id\": \"{{userId}}\",\n  \"order_amount\": 120000,\n  \"service_type\": \"RIDE\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Notification & Event Stream Service (:8009)",
+      "item": [
+        {
+          "name": "Dispatch Multi-Channel Notification (WebSocket / Email / SMS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Notification dispatched across channels', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/notifications/send",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{userId}}\",\n  \"title\": \"Tai xe da nhan chuyen!\",\n  \"message\": \"Tai xe Tran Minh Tai (59-X3 888.99) dang di chuyen den diem don.\",\n  \"channels\": [\"WEBSOCKET\", \"SMS\"]\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

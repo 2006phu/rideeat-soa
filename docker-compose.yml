@@ -1,0 +1,378 @@
+version: '3.9'
+
+services:
+  # ============================================================================
+  # INFRASTRUCTURE LAYER (PostgreSQL, Redis, Kafka KRaft)
+  # ============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: rideeat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rideeat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rideeat_secret_pwd}
+      POSTGRES_DB: ${POSTGRES_DB:-rideeat_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./monitoring/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rideeat} -d ${POSTGRES_DB:-rideeat_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rideeat-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: rideeat-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rideeat-net
+
+  kafka:
+    image: bitnami/kafka:3.6
+    container_name: rideeat-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks:
+      - rideeat-net
+
+  # ============================================================================
+  # CORE SOA MICROSERVICES (9 Bounded Contexts)
+  # ============================================================================
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
+    container_name: rideeat-auth-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_NAME=auth-service
+      - SERVICE_PORT=8001
+      - DATABASE_URL=postgresql://rideeat:rideeat_secret_pwd@postgres:5432/rideeat_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-rideeat-super-secret-jwt-key-2026-soa-enterprise}
+      - FIREBASE_CREDENTIALS_PATH=/app/config/firebase/serviceAccountKey.json
+    volumes:
+      - ./config/firebase:/app/config/firebase:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  user-service:
+    build:
+      context: .
+      dockerfile: ./services/user-service/Dockerfile
+    container_name: rideeat-user-service
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - SERVICE_NAME=user-service
+      - SERVICE_PORT=8002
+      - DATABASE_URL=postgresql://rideeat:rideeat_secret_pwd@postgres:5432/rideeat_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - AUTH_SERVICE_URL=http://auth-service:8001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  ride-service:
+    build:
+      context: .
+      dockerfile: ./services/ride-service/Dockerfile
+    container_name: rideeat-ride-service
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - SERVICE_NAME=ride-service
+      - SERVICE_PORT=8003
+      - DATABASE_URL=postgresql://rideeat:rideeat_secret_pwd@postgres:5432/rideeat_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - MAP_SERVICE_URL=http://map-service:8005
+      - PAYMENT_SERVICE_URL=http://payment-service:8006
+      - PROMO_SERVICE_URL=http://promo-service:8008
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  food-service:
+    build:
+      context: .
+      dockerfile: ./services/food-service/Dockerfile
+    container_name: rideeat-food-service
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      - SERVICE_NAME=food-service
+      - SERVICE_PORT=8004
+      - DATABASE_URL=postgresql://rideeat:rideeat_secret_pwd@postgres:5432/rideeat_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - MAP_SERVICE_URL=http://map-service:8005
+      - PAYMENT_SERVICE_URL=http://payment-service:8006
+      - PROMO_SERVICE_URL=http://promo-service:8008
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  map-service:
+    build:
+      context: .
+      dockerfile: ./services/map-service/Dockerfile
+    container_name: rideeat-map-service
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      - SERVICE_NAME=map-service
+      - SERVICE_PORT=8005
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./services/payment-service/Dockerfile
+    container_name: rideeat-payment-service
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      - SERVICE_NAME=payment-service
+      - SERVICE_PORT=8006
+      - DATABASE_URL=postgresql://rideeat:rideeat_secret_pwd@postgres:5432/rideeat_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  rating-service:
+    build:
+      context: .
+      dockerfile: ./services/rating-service/Dockerfile
+    container_name: rideeat-rating-service
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      - SERVICE_NAME=rating-service
+      - SERVICE_PORT=8007
+      - DATABASE_URL=postgresql://rideeat:rideeat_secret_pwd@postgres:5432/rideeat_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  promo-service:
+    build:
+      context: .
+      dockerfile: ./services/promo-service/Dockerfile
+    container_name: rideeat-promo-service
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      - SERVICE_NAME=promo-service
+      - SERVICE_PORT=8008
+      - DATABASE_URL=postgresql://rideeat:rideeat_secret_pwd@postgres:5432/rideeat_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./services/notification-service/Dockerfile
+    container_name: rideeat-notification-service
+    restart: unless-stopped
+    ports:
+      - "8009:8009"
+    environment:
+      - SERVICE_NAME=notification-service
+      - SERVICE_PORT=8009
+      - DATABASE_URL=postgresql://rideeat:rideeat_secret_pwd@postgres:5432/rideeat_db
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - FIREBASE_CREDENTIALS_PATH=/app/config/firebase/serviceAccountKey.json
+    volumes:
+      - ./config/firebase:/app/config/firebase:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - rideeat-net
+
+  # ============================================================================
+  # API GATEWAY & FRONTEND PORTAL
+  # ============================================================================
+  api-gateway:
+    image: nginx:1.25-alpine
+    container_name: rideeat-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - user-service
+      - ride-service
+      - food-service
+      - map-service
+      - payment-service
+      - rating-service
+      - promo-service
+      - notification-service
+    networks:
+      - rideeat-net
+
+  web-admin:
+    build:
+      context: ./web-admin
+      dockerfile: Dockerfile
+    container_name: rideeat-web-admin
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+      - VITE_WS_BASE_URL=ws://localhost:8080
+    depends_on:
+      - api-gateway
+    networks:
+      - rideeat-net
+
+  # ============================================================================
+  # OBSERVABILITY & MONITORING (Prometheus + Grafana)
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: rideeat-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - rideeat-net
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: rideeat-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-rideeat_admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - rideeat-net
+
+  # ============================================================================
+  # NGROK PUBLIC TUNNEL (Public HTTPS Gateway for Mobile / GitHub Pages / Webhook)
+  # ============================================================================
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: rideeat-ngrok
+    restart: unless-stopped
+    command:
+      - "http"
+      - "api-gateway:8080"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
+    ports:
+      - "4040:4040" # Ngrok Web Inspector UI (http://localhost:4040)
+    depends_on:
+      - api-gateway
+    networks:
+      - rideeat-net
+
+networks:
+  rideeat-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  kafka_data:
+  prometheus_data:
+  grafana_data:

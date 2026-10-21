@@ -1,0 +1,92 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": 1,
+  "links": [],
+  "panels": [
+    {
+      "title": "Microservice Availability (9 Bounded Contexts)",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "up{job=~\"auth-service|user-service|ride-service|food-service|map-service|payment-service|rating-service|promo-service|notification-service\"}",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "HEALTHY", "color": "green" } }, "type": "value" }
+          ]
+        }
+      }
+    },
+    {
+      "title": "HTTP Request Rate per Microservice (req/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[1m])) by (service)",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "title": "P95 Latency Across SOA Services (ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)) * 1000",
+          "legendFormat": "{{service}} p95"
+        }
+      ]
+    },
+    {
+      "title": "Active Ride & Food Orders by State",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "targets": [
+        {
+          "expr": "sum(rideeat_active_orders_total) by (domain, state)",
+          "legendFormat": "{{domain}} - {{state}}"
+        }
+      ]
+    },
+    {
+      "title": "Kafka Domain Events Published / Consumed",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "targets": [
+        {
+          "expr": "sum(rate(kafka_events_published_total[1m])) by (topic)",
+          "legendFormat": "Published: {{topic}}"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["rideeat", "soa", "microservices", "oop"],
+  "time": { "from": "now-30m", "to": "now" },
+  "title": "RideEat SOA - Enterprise Observability Dashboard",
+  "uid": "rideeat-soa-main",
+  "version": 1
+}
