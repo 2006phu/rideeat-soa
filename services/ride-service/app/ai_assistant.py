@@ -65,7 +65,7 @@ class RideAIAssistant:
     ) -> Optional[str]:
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"gemini-1.5-flash:generateContent?key={self._api_key}"
+            f"gemini-2.0-flash:generateContent?key={self._api_key}"
         )
         prompt = (
             "You are RideEat AI Assistant, a helpful Vietnamese/English ride-hailing support agent. "

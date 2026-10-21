@@ -72,6 +72,78 @@ export default function App() {
     }
   ]);
 
+  // Floating Gemini AI Assistant State
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiKey, setAiKey] = useState(() => localStorage.getItem('RIDEEAT_GEMINI_KEY') || '');
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMessages, setAiMessages] = useState([
+    {
+      role: 'bot',
+      text: 'Xin chào! Mình là Trợ lý AI RideEat (Gemini). Bạn cần tư vấn giá xe, gợi ý món ngon hay mã giảm giá hôm nay?'
+    }
+  ]);
+
+  const handleSendAiChat = async (customPrompt) => {
+    const question = (customPrompt ?? aiInput).trim();
+    if (!question || aiLoading) return;
+    setAiInput('');
+    setAiMessages((prev) => [...prev, { role: 'user', text: question }]);
+    setAiLoading(true);
+
+    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
+    const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
+    const contextPrompt = `Bạn là Trợ lý AI của siêu ứng dụng RideEat SOA (Đặt xe & Giao đồ ăn).
+Thông tin hiện tại của khách:
+- Số dư ví: ${walletBalance.toLocaleString('vi-VN')}đ
+- Lộ trình đang chọn: ${pickup.name} -> ${dropoff.name} (${routeInfo.distance_km}km, ~${routeInfo.duration_minutes} phút)
+- Giá xe máy: ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ, Ô tô 4 chỗ: ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ
+- Quán ăn nổi bật: Phở Thìn Bờ Hồ (65.000đ), Cơm Tấm Sài Gòn (55.000đ), Bún Bò Huế (60.000đ), Trà Sữa Gong Cha (45.000đ)
+- Voucher đang có: RIDEEAT50 (Giảm 50% tối đa 25k), FREESHIP15K (Giảm 15k)
+Câu hỏi của khách: "${question}"
+Hãy trả lời ngắn gọn (2-3 câu), thân thiện bằng tiếng Việt.`;
+
+    try {
+      if (aiKey.trim()) {
+        const resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(aiKey.trim())}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: contextPrompt }] }]
+            })
+          }
+        );
+        const data = await resp.json();
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply) {
+          setAiMessages((prev) => [...prev, { role: 'bot', text: reply }]);
+          setAiLoading(false);
+          return;
+        }
+      }
+
+      // Smart local fallback when API key isn't entered yet
+      const q = question.toLowerCase();
+      let replyText = `Với lộ trình ${pickup.name} → ${dropoff.name} (${routeInfo.distance_km} km), cước Xe máy chỉ ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ và Ô tô 4 chỗ là ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ. Bạn nhớ áp mã RIDEEAT50 để giảm thêm nhé!`;
+      if (q.includes('ăn') || q.includes('món') || q.includes('phở') || q.includes('cơm')) {
+        replyText = 'Hôm nay mình gợi ý món Phở Bò Tái Lăn Đặc Biệt (65.000đ) hoặc Cơm Tấm Sườn Bì Chả (55.000đ). Kết hợp mã FREESHIP15K sẽ được miễn phí giao hàng 15.000đ!';
+      } else if (q.includes('mã') || q.includes('voucher') || q.includes('khuyến mãi')) {
+        replyText = 'Bạn đang có mã RIDEEAT50 (giảm 50% tối đa 25.000đ) và FREESHIP15K (giảm 15.000đ phí ship). Chọn mã ngay ở mục Khuyến mãi khi đặt đơn nhé!';
+      }
+      setAiMessages((prev) => [...prev, { role: 'bot', text: replyText }]);
+    } catch {
+      setAiMessages((prev) => [
+        ...prev,
+        { role: 'bot', text: 'Không kết nối được Gemini API. Vui lòng kiểm tra lại khóa API của bạn.' }
+      ]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   useEffect(() => {
     const unsub = soaEventBus.subscribe('*', (evt) => {
       setEventLogs((prev) => [evt, ...prev.slice(0, 29)]);
@@ -872,6 +944,103 @@ export default function App() {
                 <div className="price-sub mono">DB: {svc.dbSchema}</div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING GEMINI AI CHAT WIDGET */}
+      <button className="ai-fab" onClick={() => setAiOpen(!aiOpen)}>
+        🤖 {aiOpen ? 'Đóng Trợ lý AI' : 'Chat AI Gemini'}
+      </button>
+
+      {aiOpen && (
+        <div className="ai-chat-panel">
+          <div className="ai-chat-header">
+            <span>🤖 Trợ lý AI RideEat (Google Gemini)</span>
+            <button
+              type="button"
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: '#fff',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                cursor: 'pointer'
+              }}
+              onClick={() => setShowKeyInput(!showKeyInput)}
+            >
+              🔑 {aiKey ? 'Đã gắn Key' : 'Gắn API Key'}
+            </button>
+          </div>
+
+          {showKeyInput && (
+            <div style={{ padding: '8px 12px', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Dán Gemini API Key (AIza...) từ Google AI Studio"
+                value={aiKey}
+                onChange={(e) => {
+                  setAiKey(e.target.value);
+                  localStorage.setItem('RIDEEAT_GEMINI_KEY', e.target.value);
+                }}
+              />
+              <div className="price-sub" style={{ marginTop: '4px' }}>
+                Key chỉ lưu cục bộ trên trình duyệt của bạn (Free Tier không mất phí).
+              </div>
+            </div>
+          )}
+
+          <div className="ai-chat-messages">
+            {aiMessages.map((m, idx) => (
+              <div key={idx} className={`ai-msg ${m.role}`}>
+                {m.text}
+              </div>
+            ))}
+            {aiLoading && <div className="ai-msg bot">Đang suy nghĩ...</div>}
+          </div>
+
+          <div className="ai-chat-footer">
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto' }}>
+              <button
+                type="button"
+                className="chip-toggle"
+                onClick={() => handleSendAiChat('Tư vấn giá xe cho lộ trình hiện tại')}
+              >
+                💰 Hỏi giá xe
+              </button>
+              <button
+                type="button"
+                className="chip-toggle"
+                onClick={() => handleSendAiChat('Hôm nay ăn món gì ngon và rẻ?')}
+              >
+                🍜 Gợi ý món ăn
+              </button>
+              <button
+                type="button"
+                className="chip-toggle"
+                onClick={() => handleSendAiChat('Có mã giảm giá nào đang dùng được?')}
+              >
+                🎟️ Hỏi mã giảm giá
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input
+                className="form-input"
+                placeholder="Nhập câu hỏi cho AI..."
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendAiChat()}
+              />
+              <button
+                className="btn-primary"
+                style={{ width: '76px' }}
+                onClick={() => handleSendAiChat()}
+              >
+                Gửi
+              </button>
+            </div>
           </div>
         </div>
       )}
