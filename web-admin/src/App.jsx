@@ -11,7 +11,22 @@ const HCMC_LOCATIONS = [
 ];
 
 const RIDE_STATES = ['REQUESTED', 'DRIVER_ASSIGNED', 'ARRIVING', 'IN_PROGRESS', 'COMPLETED'];
+const RIDE_STATE_LABELS = {
+  REQUESTED: 'Đang tìm xe',
+  DRIVER_ASSIGNED: 'Tài xế đã nhận',
+  ARRIVING: 'Đang đến đón',
+  IN_PROGRESS: 'Đang di chuyển',
+  COMPLETED: 'Đã đến nơi'
+};
+
 const FOOD_STATES = ['PENDING', 'CONFIRMED', 'PREPARING', 'DELIVERING', 'DELIVERED'];
+const FOOD_STATE_LABELS = {
+  PENDING: 'Chờ xác nhận',
+  CONFIRMED: 'Quán đã nhận',
+  PREPARING: 'Đang nấu món',
+  DELIVERING: 'Tài xế đang giao',
+  DELIVERED: 'Đã giao xong'
+};
 
 const DEMO_ACCOUNTS = {
   CUSTOMER: {
@@ -441,14 +456,55 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
     setTransactions((prev) => [{ ...payRes, type: 'DEBIT' }, ...prev]);
     setActiveRide({
       ...res,
+      state: 'REQUESTED',
       pickupName: pickup.name,
       dropoffName: dropoff.name,
       fare: currentVehicleEstimate.finalFare,
       vehicleName: currentVehicleEstimate.vehicleName
     });
     setOtpInput(res.otp_code);
-    setDriverStepIndex(2);
+    setDriverStepIndex(0);
   };
+
+  // Tự động chạy xe trên bản đồ & tự động chuyển trạng thái chuyến xe (Real-time Simulation)
+  useEffect(() => {
+    if (!activeRide || activeRide.state === 'COMPLETED') return;
+
+    const totalSteps = Math.max(12, routeInfo.polyline?.length || 16);
+    const timer = setInterval(() => {
+      setDriverStepIndex((prevStep) => {
+        const nextStep = Math.min(prevStep + 1, totalSteps - 1);
+        const progressRatio = nextStep / (totalSteps - 1);
+
+        let nextState = 'REQUESTED';
+        if (progressRatio >= 1) nextState = 'COMPLETED';
+        else if (progressRatio >= 0.45) nextState = 'IN_PROGRESS';
+        else if (progressRatio >= 0.22) nextState = 'ARRIVING';
+        else if (progressRatio >= 0.08) nextState = 'DRIVER_ASSIGNED';
+
+        setActiveRide((curr) => (curr && curr.state !== nextState ? { ...curr, state: nextState } : curr));
+        return nextStep;
+      });
+    }, 900);
+
+    return () => clearInterval(timer);
+  }, [activeRide?.ride_id, activeRide?.state, routeInfo.polyline]);
+
+  // Tự động chuyển trạng thái đơn đồ ăn (Real-time Order Progression)
+  useEffect(() => {
+    if (!activeFoodOrder || activeFoodOrder.state === 'DELIVERED') return;
+
+    const timer = setInterval(() => {
+      setActiveFoodOrder((curr) => {
+        if (!curr || curr.state === 'DELIVERED') return curr;
+        const idx = FOOD_STATES.indexOf(curr.state);
+        const next = FOOD_STATES[Math.min(idx + 1, FOOD_STATES.length - 1)];
+        return { ...curr, state: next };
+      });
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, [activeFoodOrder?.order_id, activeFoodOrder?.state]);
 
   const handleAdvanceRideState = () => {
     if (!activeRide) return;
@@ -830,15 +886,11 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
           <div className="card">
             <div className="card-header">
               <div className="card-title">Bản đồ lộ trình</div>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() =>
-                  setDriverStepIndex((prev) => (prev + 2) % Math.max(2, routeInfo.polyline?.length || 10))
-                }
-              >
-                Xem vị trí tài xế
-              </button>
+              {activeRide && (
+                <span className="badge-soa">
+                  {RIDE_STATE_LABELS[activeRide.state] || activeRide.state}
+                </span>
+              )}
             </div>
 
             <div ref={mapContainerRef} className="leaflet-map-box" />
@@ -852,9 +904,9 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                       Tài xế: {activeRide.driver.name} • Biển số: <strong>{activeRide.driver.license_plate}</strong>
                     </div>
                   </div>
-                  <button className="btn-secondary" onClick={handleAdvanceRideState}>
-                    Cập nhật trạng thái →
-                  </button>
+                  <span className="oop-tag">
+                    {activeRide.state === 'COMPLETED' ? '✅ Hoàn tất' : '🛵 Xe đang tự động di chuyển...'}
+                  </span>
                 </div>
 
                 <div className="state-stepper">
@@ -862,13 +914,15 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                     const currentIdx = RIDE_STATES.indexOf(activeRide.state);
                     const cls = idx < currentIdx ? 'done' : idx === currentIdx ? 'current' : '';
                     return (
-                      <div key={st} className={`step-pill ${cls}`}>{st}</div>
+                      <div key={st} className={`step-pill ${cls}`}>
+                        {RIDE_STATE_LABELS[st] || st}
+                      </div>
                     );
                   })}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                  <span className="price-sub">Mã OTP đưa cho tài xế khi lên xe:</span>
+                  <span className="price-sub">Mã OTP xác nhận lên xe:</span>
                   <strong className="mono" style={{ fontSize: '1.1rem', color: '#00b14f' }}>
                     {activeRide.otp_code}
                   </strong>
@@ -876,7 +930,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               </div>
             ) : (
               <div className="price-sub" style={{ textAlign: 'center', padding: '8px' }}>
-                Chọn điểm đón, điểm đến và bấm <strong>Đặt xe ngay</strong> để theo dõi lộ trình.
+                Chọn điểm đón, điểm đến và bấm <strong>Đặt xe ngay</strong> để theo dõi xe chạy trực tiếp trên bản đồ.
               </div>
             )}
           </div>
@@ -985,23 +1039,18 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                     <strong>Đơn hàng: {activeFoodOrder.order_id}</strong>
                     <div className="price-sub">Tài xế giao: {activeFoodOrder.shipper.name}</div>
                   </div>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => {
-                      const idx = FOOD_STATES.indexOf(activeFoodOrder.state);
-                      const next = FOOD_STATES[Math.min(idx + 1, FOOD_STATES.length - 1)];
-                      setActiveFoodOrder({ ...activeFoodOrder, state: next });
-                    }}
-                  >
-                    Cập nhật trạng thái →
-                  </button>
+                  <span className="oop-tag">
+                    {activeFoodOrder.state === 'DELIVERED' ? '✅ Hoàn tất' : '🛵 Tự động cập nhật...'}
+                  </span>
                 </div>
                 <div className="state-stepper">
                   {FOOD_STATES.map((st, idx) => {
                     const currentIdx = FOOD_STATES.indexOf(activeFoodOrder.state);
                     const cls = idx < currentIdx ? 'done' : idx === currentIdx ? 'current' : '';
                     return (
-                      <div key={st} className={`step-pill ${cls}`}>{st}</div>
+                      <div key={st} className={`step-pill ${cls}`}>
+                        {FOOD_STATE_LABELS[st] || st}
+                      </div>
                     );
                   })}
                 </div>
