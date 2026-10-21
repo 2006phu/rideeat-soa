@@ -13,8 +13,56 @@ const HCMC_LOCATIONS = [
 const RIDE_STATES = ['REQUESTED', 'DRIVER_ASSIGNED', 'ARRIVING', 'IN_PROGRESS', 'COMPLETED'];
 const FOOD_STATES = ['PENDING', 'CONFIRMED', 'PREPARING', 'DELIVERING', 'DELIVERED'];
 
+const DEMO_ACCOUNTS = {
+  CUSTOMER: {
+    id: 'usr-customer-001',
+    role: 'CUSTOMER',
+    roleLabel: 'Khách hàng',
+    icon: '👤',
+    name: 'Nguyễn Văn A',
+    email: 'customer@rideeat.vn',
+    defaultTab: 'RIDE',
+    allowedTabs: ['RIDE', 'FOOD', 'WALLET']
+  },
+  DRIVER: {
+    id: 'drv-partner-001',
+    role: 'DRIVER',
+    roleLabel: 'Tài xế đối tác',
+    icon: '🛵',
+    name: 'Trần Minh Tài',
+    email: 'driver@rideeat.vn',
+    defaultTab: 'PARTNER',
+    allowedTabs: ['PARTNER', 'RIDE', 'WALLET']
+  },
+  RESTAURANT: {
+    id: 'rst-partner-001',
+    role: 'RESTAURANT',
+    roleLabel: 'Chủ nhà hàng',
+    icon: '🏪',
+    name: 'Phở Thìn Bờ Hồ',
+    email: 'restaurant@rideeat.vn',
+    defaultTab: 'FOOD',
+    allowedTabs: ['FOOD', 'PARTNER', 'WALLET']
+  },
+  ADMIN: {
+    id: 'adm-system-001',
+    role: 'ADMIN',
+    roleLabel: 'Quản trị viên (Full quyền)',
+    icon: '🛡️',
+    name: 'Admin Hệ Thống SOA',
+    email: 'admin@rideeat.vn',
+    defaultTab: 'MONITOR',
+    allowedTabs: ['RIDE', 'FOOD', 'WALLET', 'PARTNER', 'MONITOR']
+  }
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('RIDE');
+  const [currentUser, setCurrentUser] = useState(DEMO_ACCOUNTS.CUSTOMER);
+  const [showAllTabs, setShowAllTabs] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('customer@rideeat.vn');
+  const [loginPassword, setLoginPassword] = useState('Password123!');
 
   // Shared User & Wallet State
   const [walletBalance, setWalletBalance] = useState(500000);
@@ -85,53 +133,119 @@ export default function App() {
     }
   ]);
 
+  const handleSwitchRole = async (roleKey) => {
+    const account = DEMO_ACCOUNTS[roleKey] || DEMO_ACCOUNTS.CUSTOMER;
+    await apiRegistry.auth.login(account.email, 'Password123!', account.role);
+    setCurrentUser(account);
+    setLoginEmail(account.email);
+    setActiveTab(account.defaultTab);
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    const emailLower = loginEmail.trim().toLowerCase();
+    let matchedRole = 'CUSTOMER';
+    if (emailLower.includes('driver')) matchedRole = 'DRIVER';
+    else if (emailLower.includes('restaurant')) matchedRole = 'RESTAURANT';
+    else if (emailLower.includes('admin')) matchedRole = 'ADMIN';
+
+    const preset = DEMO_ACCOUNTS[matchedRole];
+    const res = await apiRegistry.auth.login(loginEmail.trim(), loginPassword, matchedRole);
+    setCurrentUser({
+      ...preset,
+      email: loginEmail.trim(),
+      name: res?.user?.full_name || preset.name
+    });
+    setActiveTab(preset.defaultTab);
+    setShowLoginModal(false);
+  };
+
   const handleSendAiChat = async (customPrompt) => {
     const question = (customPrompt ?? aiInput).trim();
     if (!question || aiLoading) return;
     setAiInput('');
-    setAiMessages((prev) => [...prev, { role: 'user', text: question }]);
+    const updatedHistory = [...aiMessages, { role: 'user', text: question }];
+    setAiMessages(updatedHistory);
     setAiLoading(true);
 
     const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
     const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
-    const contextPrompt = `Bạn là Trợ lý AI của siêu ứng dụng RideEat SOA (Đặt xe & Giao đồ ăn).
-Thông tin hiện tại của khách:
+    const systemInstruction = `Bạn là Trợ lý AI thông minh của siêu ứng dụng RideEat SOA (Đặt xe & Giao đồ ăn).
+Thông tin hiện tại của người dùng:
+- Đang đăng nhập: ${currentUser.name} (${currentUser.roleLabel} - ${currentUser.email})
 - Số dư ví: ${walletBalance.toLocaleString('vi-VN')}đ
 - Lộ trình đang chọn: ${pickup.name} -> ${dropoff.name} (${routeInfo.distance_km}km, ~${routeInfo.duration_minutes} phút)
 - Giá xe máy: ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ, Ô tô 4 chỗ: ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ
-- Quán ăn nổi bật: Phở Thìn Bờ Hồ (65.000đ), Cơm Tấm Sài Gòn (55.000đ), Bún Bò Huế (60.000đ), Trà Sữa Gong Cha (45.000đ)
+- Thực đơn các quán trên hệ thống:
+  1. Phở Thìn Bờ Hồ: Phở Bò Tái Lăn (65.000đ), Phở Gà Ta (55.000đ)
+  2. Cơm Tấm Sài Gòn Xưa: Cơm Tấm Sườn Bì Chả (55.000đ), Cơm Gà Xối Mỡ (50.000đ)
+  3. Bún Bò Huế Sông Hương: Bún Bò Đặc Biệt (60.000đ), Chả Cua Huế (25.000đ)
+  4. Trà Sữa & Ăn Vặt Gong Cha: Trà Sữa Trân Châu Đen (45.000đ), Bánh Mì Nướng Bơ Tỏi (30.000đ)
 - Voucher đang có: RIDEEAT50 (Giảm 50% tối đa 25k), FREESHIP15K (Giảm 15k)
-Câu hỏi của khách: "${question}"
-Hãy trả lời ngắn gọn (2-3 câu), thân thiện bằng tiếng Việt.`;
+Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn ăn phở"), TUYỆT ĐỐI KHÔNG gợi ý lại món đó mà phải đổi sang các món khác (như Cơm Tấm, Bún Bò Huế, Gà Xối Mỡ hoặc Trà Sữa). Trả lời ngắn gọn (2-3 câu), tự nhiên bằng tiếng Việt.`;
 
     try {
       if (aiKey.trim()) {
-        const resp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(aiKey.trim())}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: contextPrompt }] }]
-            })
+        const geminiContents = updatedHistory.slice(-6).map((m, idx) => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [
+            {
+              text: idx === updatedHistory.slice(-6).length - 1 ? `${systemInstruction}\n\nKhách hỏi: "${m.text}"` : m.text
+            }
+          ]
+        }));
+
+        const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+        for (const modelName of modelsToTry) {
+          try {
+            const resp = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(aiKey.trim())}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: geminiContents })
+              }
+            );
+            if (resp.ok) {
+              const data = await resp.json();
+              const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (reply) {
+                setAiMessages((prev) => [...prev, { role: 'bot', text: reply }]);
+                setAiLoading(false);
+                return;
+              }
+            }
+          } catch {
+            // Try next Gemini model
           }
-        );
-        const data = await resp.json();
-        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (reply) {
-          setAiMessages((prev) => [...prev, { role: 'bot', text: reply }]);
-          setAiLoading(false);
-          return;
         }
       }
 
-      // Smart local fallback when API key isn't entered yet
+      // Context-aware conversational fallback (handles negations like "tôi không muốn ăn phở")
       const q = question.toLowerCase();
-      let replyText = `Với lộ trình ${pickup.name} → ${dropoff.name} (${routeInfo.distance_km} km), cước Xe máy chỉ ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ và Ô tô 4 chỗ là ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ. Bạn nhớ áp mã RIDEEAT50 để giảm thêm nhé!`;
-      if (q.includes('ăn') || q.includes('món') || q.includes('phở') || q.includes('cơm')) {
-        replyText = 'Hôm nay mình gợi ý món Phở Bò Tái Lăn Đặc Biệt (65.000đ) hoặc Cơm Tấm Sườn Bì Chả (55.000đ). Kết hợp mã FREESHIP15K sẽ được miễn phí giao hàng 15.000đ!';
-      } else if (q.includes('mã') || q.includes('voucher') || q.includes('khuyến mãi')) {
-        replyText = 'Bạn đang có mã RIDEEAT50 (giảm 50% tối đa 25.000đ) và FREESHIP15K (giảm 15.000đ phí ship). Chọn mã ngay ở mục Khuyến mãi khi đặt đơn nhé!';
+      const isNegation =
+        q.includes('không') || q.includes('đổi') || q.includes('khác') || q.includes('ngán') || q.includes('chán');
+
+      let replyText = '';
+      if (isNegation && q.includes('phở')) {
+        replyText =
+          'Nếu bạn không thích ăn Phở hôm nay, mình đổi sang Cơm Tấm Sườn Bì Chả (55.000đ), Bún Bò Huế Sông Hương (60.000đ) hoặc Gà Xối Mỡ giòn rụm kèm Trà Sữa Trân Châu (45.000đ) nhé! Áp mã FREESHIP15K để được giảm ngay 15.000đ phí giao hàng.';
+      } else if (isNegation && q.includes('cơm')) {
+        replyText =
+          'Nếu bạn ngán Cơm rồi thì thử ngay một tô Bún Bò Huế Sông Hương cay nhẹ (60.000đ) hoặc Bánh Mì Nướng + Trà Sữa Gong Cha (45.000đ) đổi vị nhé!';
+      } else if (isNegation && (q.includes('ăn') || q.includes('món'))) {
+        replyText =
+          'Vậy mình đổi sang món nước thanh mát nhé: Trà Sữa Trân Châu Hoàng Kim (45.000đ) hoặc Bún Bò Huế Đặc Biệt (60.000đ), đang có ưu đãi giảm 50% (mã RIDEEAT50)!';
+      } else if (q.includes('user') || q.includes('tài khoản') || q.includes('ai đang') || q.includes('vai trò')) {
+        replyText = `Bạn đang đăng nhập với tài khoản ${currentUser.name} (${currentUser.email}) — Vai trò: ${currentUser.roleLabel}. Bạn có thể chuyển nhanh sang Tài xế, Nhà hàng hoặc Admin ngay trên thanh công cụ phía trên cùng nhé!`;
+      } else if (q.includes('ăn') || q.includes('món') || q.includes('phở') || q.includes('cơm') || q.includes('đói')) {
+        replyText =
+          'Hôm nay mình gợi ý Phở Bò Tái Lăn (65.000đ), Cơm Tấm Sườn Bì Chả (55.000đ) hoặc Bún Bò Huế (60.000đ). Bạn thích món nước hay món khô để mình chọn giúp?';
+      } else if (q.includes('mã') || q.includes('voucher') || q.includes('khuyến mãi') || q.includes('giảm')) {
+        replyText =
+          'Bạn đang có mã RIDEEAT50 (giảm 50% tối đa 25.000đ) và FREESHIP15K (giảm 15.000đ phí ship). Chọn mã ngay ở mục Khuyến mãi khi đặt đơn nhé!';
+      } else {
+        replyText = `Chào ${currentUser.name}! Với lộ trình ${pickup.name} → ${dropoff.name} (${routeInfo.distance_km} km), cước Xe máy là ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ và Ô tô 4 chỗ là ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ. Bạn cần mình hỗ trợ đặt xe hay chọn món ăn?`;
       }
       setAiMessages((prev) => [...prev, { role: 'bot', text: replyText }]);
     } catch {
@@ -431,45 +545,152 @@ Hãy trả lời ngắn gọn (2-3 câu), thân thiện bằng tiếng Việt.`;
             <span>Ví của bạn:</span>
             <span className="wallet-amount">{walletBalance.toLocaleString('vi-VN')} đ</span>
           </div>
-          <div className="wallet-pill">
-            <span className="status-dot" />
-            <span>Hệ thống trực tuyến</span>
-          </div>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setShowLoginModal(true)}
+          >
+            🔐 Đổi tài khoản / Đăng nhập
+          </button>
         </div>
       </header>
 
+      {/* USER ACCOUNT & ROLE SWITCHER BAR (auth-service:8001) */}
+      <div className="user-role-bar">
+        <div className="user-current-info">
+          <div className="user-avatar">{currentUser.icon}</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Đang là: {currentUser.name}</span>
+              <span className="badge-soa">{currentUser.roleLabel}</span>
+            </div>
+            <div className="price-sub mono">{currentUser.email} • auth-service:8001 (RBAC)</div>
+          </div>
+        </div>
+
+        <div className="role-switcher-group">
+          <span className="price-sub" style={{ marginRight: '4px' }}>Chuyển nhanh vai trò:</span>
+          {Object.values(DEMO_ACCOUNTS).map((acc) => (
+            <button
+              key={acc.role}
+              type="button"
+              className={`role-btn ${currentUser.role === acc.role ? 'active' : ''}`}
+              onClick={() => handleSwitchRole(acc.role)}
+            >
+              {acc.icon} {acc.roleLabel.split(' ')[0]}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={`chip-toggle ${!showAllTabs ? 'active' : ''}`}
+            onClick={() => setShowAllTabs(!showAllTabs)}
+            title="Lọc menu theo đúng quyền RBAC của User hoặc hiện tất cả để dễ chấm bài Demo"
+          >
+            {showAllTabs ? '👁️ Hiện đủ 5 Tab (Demo)' : '🔒 Chỉ hiện Tab theo quyền'}
+          </button>
+        </div>
+      </div>
+
+      {/* LOGIN MODAL (auth-service:8001) */}
+      {showLoginModal && (
+        <div className="modal-backdrop" onClick={() => setShowLoginModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="card-header">
+              <div className="card-title">🔐 Đăng nhập hệ thống (auth-service:8001)</div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowLoginModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleLoginSubmit}>
+              <div className="form-group">
+                <label className="form-label">Chọn nhanh tài khoản mẫu (Seeded Accounts)</label>
+                <div className="toggle-row" style={{ marginTop: '4px' }}>
+                  {Object.values(DEMO_ACCOUNTS).map((acc) => (
+                    <button
+                      key={acc.role}
+                      type="button"
+                      className={`chip-toggle ${loginEmail === acc.email ? 'active' : ''}`}
+                      onClick={() => setLoginEmail(acc.email)}
+                    >
+                      {acc.icon} {acc.email}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email đăng nhập</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mật khẩu</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn-primary">
+                Đăng nhập với JWT / Firebase Auth
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* NAVIGATION TABS */}
       <nav className="nav-tabs">
-        <button
-          className={`nav-tab ${activeTab === 'RIDE' ? 'active' : ''}`}
-          onClick={() => setActiveTab('RIDE')}
-        >
-          🛵 Đặt xe
-        </button>
-        <button
-          className={`nav-tab ${activeTab === 'FOOD' ? 'active' : ''}`}
-          onClick={() => setActiveTab('FOOD')}
-        >
-          🍔 Đồ ăn
-        </button>
-        <button
-          className={`nav-tab ${activeTab === 'WALLET' ? 'active' : ''}`}
-          onClick={() => setActiveTab('WALLET')}
-        >
-          💳 Ví & Thanh toán
-        </button>
-        <button
-          className={`nav-tab ${activeTab === 'PARTNER' ? 'active' : ''}`}
-          onClick={() => setActiveTab('PARTNER')}
-        >
-          👨‍✈️ Tài xế
-        </button>
-        <button
-          className={`nav-tab ${activeTab === 'MONITOR' ? 'active' : ''}`}
-          onClick={() => setActiveTab('MONITOR')}
-        >
-          📊 Hệ thống SOA
-        </button>
+        {(showAllTabs || currentUser.allowedTabs.includes('RIDE')) && (
+          <button
+            className={`nav-tab ${activeTab === 'RIDE' ? 'active' : ''}`}
+            onClick={() => setActiveTab('RIDE')}
+          >
+            🛵 Đặt xe
+          </button>
+        )}
+        {(showAllTabs || currentUser.allowedTabs.includes('FOOD')) && (
+          <button
+            className={`nav-tab ${activeTab === 'FOOD' ? 'active' : ''}`}
+            onClick={() => setActiveTab('FOOD')}
+          >
+            🍔 Đồ ăn
+          </button>
+        )}
+        {(showAllTabs || currentUser.allowedTabs.includes('WALLET')) && (
+          <button
+            className={`nav-tab ${activeTab === 'WALLET' ? 'active' : ''}`}
+            onClick={() => setActiveTab('WALLET')}
+          >
+            💳 Ví & Thanh toán
+          </button>
+        )}
+        {(showAllTabs || currentUser.allowedTabs.includes('PARTNER')) && (
+          <button
+            className={`nav-tab ${activeTab === 'PARTNER' ? 'active' : ''}`}
+            onClick={() => setActiveTab('PARTNER')}
+          >
+            👨‍✈️ Tài xế & Đối tác
+          </button>
+        )}
+        {(showAllTabs || currentUser.allowedTabs.includes('MONITOR')) && (
+          <button
+            className={`nav-tab ${activeTab === 'MONITOR' ? 'active' : ''}`}
+            onClick={() => setActiveTab('MONITOR')}
+          >
+            📊 Hệ thống SOA
+          </button>
+        )}
       </nav>
 
       {/* TAB 1: ĐẶT XE */}
