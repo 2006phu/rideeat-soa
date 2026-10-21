@@ -114,16 +114,15 @@ export default function App() {
   // Admin Logs
   const [eventLogs, setEventLogs] = useState([]);
 
-  // Floating Gemini AI Assistant State
+  // Floating Gemini AI Assistant State (API Key read silently from env/storage, never shown on UI)
   const [aiOpen, setAiOpen] = useState(false);
-  const [aiKey, setAiKey] = useState(() => localStorage.getItem('RIDEEAT_GEMINI_KEY') || '');
-  const [showKeyInput, setShowKeyInput] = useState(false);
+  const aiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('RIDEEAT_GEMINI_KEY') || '';
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessages, setAiMessages] = useState([
     {
       role: 'bot',
-      text: 'Xin chào! Mình là Trợ lý AI RideEat (Gemini). Bạn cần tư vấn giá xe, gợi ý món ngon hay mã giảm giá hôm nay?'
+      text: 'Xin chào! Mình là Trợ lý AI RideEat. Bạn cần tư vấn giá xe, gợi ý món ngon hay mã giảm giá hôm nay?'
     }
   ]);
 
@@ -190,17 +189,27 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
 
     try {
       if (aiKey.trim()) {
-        const geminiContents = updatedHistory.slice(-6).map((m, idx) => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [
-            {
-              text:
-                idx === updatedHistory.slice(-6).length - 1
-                  ? `${systemInstruction}\n\nKhách hỏi: "${m.text}"`
-                  : m.text
-            }
-          ]
-        }));
+        // Gemini API strictly requires contents[0].role === 'user' and alternating user/model turns
+        const geminiContents = [];
+        for (const m of updatedHistory.slice(-8)) {
+          const geminiRole = m.role === 'user' ? 'user' : 'model';
+          if (geminiContents.length === 0 && geminiRole !== 'user') {
+            continue; // Skip initial bot greeting so first turn is always 'user'
+          }
+          if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === geminiRole) {
+            geminiContents[geminiContents.length - 1].parts[0].text += '\n' + m.text;
+          } else {
+            geminiContents.push({
+              role: geminiRole,
+              parts: [{ text: m.text }]
+            });
+          }
+        }
+
+        if (geminiContents.length > 0) {
+          geminiContents[geminiContents.length - 1].parts[0].text =
+            `${systemInstruction}\n\nKhách hỏi: "${question}"`;
+        }
 
         const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
         for (const modelName of modelsToTry) {
@@ -235,16 +244,28 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
       let replyText = '';
       if (isNegation && q.includes('phở')) {
         replyText =
-          'Nếu bạn không thích ăn Phở hôm nay, mình đổi sang Cơm Tấm Sườn Bì Chả (55.000đ), Bún Bò Huế Sông Hương (60.000đ) hoặc Gà Xối Mỡ giòn rụm kèm Trà Sữa Trân Châu (45.000đ) nhé! Áp mã FREESHIP15K để được giảm ngay 15.000đ phí giao hàng.';
+          'Nếu bạn không thích ăn Phở hôm nay, mình đổi sang Cơm Tấm Sườn Bì Chả (55.000đ), Bún Bò Huế Sông Hương (60.000đ) hoặc Gà Xối Mỡ giòn rụm kèm Trà Sữa Trân Châu (45.000đ) nhé!';
       } else if (isNegation && q.includes('cơm')) {
         replyText =
-          'Nếu bạn ngán Cơm rồi thì thử ngay một tô Bún Bò Huế Sông Hương cay nhẹ (60.000đ) hoặc Bánh Mì Nướng + Trà Sữa Gong Cha (45.000đ) đổi vị nhé!';
+          'Nếu bạn ngán Cơm rồi thì thử ngay một tô Bún Bò Huế Sông Hương cay nhẹ (60.000đ) hoặc Phở Bò Tái Lăn (65.000đ) kèm Trà Sữa Gong Cha đổi vị nhé!';
       } else if (isNegation && (q.includes('ăn') || q.includes('món'))) {
         replyText =
           'Vậy mình đổi sang món nước thanh mát nhé: Trà Sữa Trân Châu Hoàng Kim (45.000đ) hoặc Bún Bò Huế Đặc Biệt (60.000đ), đang có ưu đãi giảm 50% (mã RIDEEAT50)!';
-      } else if (q.includes('ăn') || q.includes('món') || q.includes('phở') || q.includes('cơm') || q.includes('đói')) {
+      } else if (q.includes('cơm') || q.includes('gà') || q.includes('sườn')) {
         replyText =
-          'Hôm nay mình gợi ý Phở Bò Tái Lăn (65.000đ), Cơm Tấm Sườn Bì Chả (55.000đ) hoặc Bún Bò Huế (60.000đ). Bạn thích món nước hay món khô để mình chọn giúp?';
+          'Bạn muốn ăn cơm thì quán "Cơm Tấm Sài Gòn Xưa" đang có 2 món bán chạy nhất: Cơm Tấm Sườn Bì Chả Trứng Ốp La (55.000đ) và Cơm Gà Xối Mỡ Giòn Rụm (50.000đ). Bạn qua mục Đặt đồ ăn thêm vào giỏ và áp mã FREESHIP15K nhé!';
+      } else if (q.includes('bún') || q.includes('huế') || q.includes('cay')) {
+        replyText =
+          'Nếu bạn thích ăn bún, quán "Bún Bò Huế Sông Hương" có tô Bún Bò Đặc Biệt Giò Heo (60.000đ) và Chả Cua Huế (25.000đ) cực kỳ đậm đà, giao nóng tận nơi trong 15 phút!';
+      } else if (q.includes('phở')) {
+        replyText =
+          'Món Phở ngon nhất hôm nay là Phở Bò Tái Lăn Đặc Biệt (65.000đ) và Phở Gà Ta (55.000đ) tại quán Phở Thìn Bờ Hồ (đánh giá 4.9★).';
+      } else if (q.includes('trà sữa') || q.includes('uống') || q.includes('nước') || q.includes('bánh mì')) {
+        replyText =
+          'Quán Gong Cha đang có Trà Sữa Trân Châu Đen (45.000đ) và Bánh Mì Nướng Bơ Tỏi (30.000đ). Đặt kèm đơn ăn trưa sẽ được giảm ngay 15.000đ phí ship!';
+      } else if (q.includes('ăn') || q.includes('món') || q.includes('đói') || q.includes('ngon')) {
+        replyText =
+          'Hôm nay thực đơn có 4 quán nổi bật: Cơm Tấm Sườn Bì Chả (55.000đ), Bún Bò Huế (60.000đ), Phở Thìn (65.000đ) và Trà Sữa Gong Cha (45.000đ). Bạn đang thèm món khô hay món nước?';
       } else if (q.includes('mã') || q.includes('voucher') || q.includes('khuyến mãi') || q.includes('giảm')) {
         replyText =
           'Bạn đang có mã RIDEEAT50 (giảm 50% tối đa 25.000đ) và FREESHIP15K (giảm 15.000đ phí ship). Chọn mã ngay ở mục Khuyến mãi khi đặt đơn nhé!';
@@ -1244,49 +1265,31 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
         </div>
       )}
 
-      {/* FLOATING GEMINI AI CHAT WIDGET */}
+      {/* FLOATING AI CHAT WIDGET */}
       <button className="ai-fab" onClick={() => setAiOpen(!aiOpen)}>
-        🤖 {aiOpen ? 'Đóng Trợ lý AI' : 'Chat AI Gemini'}
+        🤖 {aiOpen ? 'Đóng Trợ lý AI' : 'Trợ lý AI RideEat'}
       </button>
 
       {aiOpen && (
         <div className="ai-chat-panel">
           <div className="ai-chat-header">
-            <span>🤖 Trợ lý AI RideEat (Google Gemini)</span>
+            <span>🤖 Trợ lý AI RideEat</span>
             <button
               type="button"
               style={{
                 background: 'rgba(255,255,255,0.2)',
                 border: 'none',
                 color: '#fff',
-                padding: '3px 8px',
+                padding: '2px 8px',
                 borderRadius: '6px',
-                fontSize: '0.75rem',
+                fontSize: '0.8rem',
                 cursor: 'pointer'
               }}
-              onClick={() => setShowKeyInput(!showKeyInput)}
+              onClick={() => setAiOpen(false)}
             >
-              🔑 {aiKey ? 'Đã gắn Key' : 'Gắn API Key'}
+              ✕
             </button>
           </div>
-
-          {showKeyInput && (
-            <div style={{ padding: '8px 12px', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Dán Gemini API Key (AIza...) từ Google AI Studio"
-                value={aiKey}
-                onChange={(e) => {
-                  setAiKey(e.target.value);
-                  localStorage.setItem('RIDEEAT_GEMINI_KEY', e.target.value);
-                }}
-              />
-              <div className="price-sub" style={{ marginTop: '4px' }}>
-                Key chỉ lưu cục bộ trên trình duyệt của bạn (Free Tier không mất phí).
-              </div>
-            </div>
-          )}
 
           <div className="ai-chat-messages">
             {aiMessages.map((m, idx) => (
