@@ -79,6 +79,9 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState('customer@rideeat.vn');
   const [loginPassword, setLoginPassword] = useState('Password123!');
   const [registerName, setRegisterName] = useState('');
+  const [showFirebaseModal, setShowFirebaseModal] = useState(false);
+  const [firebaseEmail, setFirebaseEmail] = useState('phu2006@gmail.com');
+  const [firebaseName, setFirebaseName] = useState('Phú Nguyễn');
   const [activeTab, setActiveTab] = useState('RIDE');
 
   // Shared User & Wallet State
@@ -167,8 +170,32 @@ export default function App() {
     const userObj = {
       ...preset,
       email: loginEmail.trim(),
-      name: displayName
+      name: displayName,
+      authProvider: 'JWT'
     };
+    setCurrentUser(userObj);
+    setActiveTab(userObj.defaultTab);
+  };
+
+  const handleFirebaseLogin = async (customEmail, customName) => {
+    const email = (customEmail || firebaseEmail).trim().toLowerCase();
+    const fullName = (customName || firebaseName).trim() || email.split('@')[0];
+    const preset = DEMO_ACCOUNTS[selectedPresetRole] || DEMO_ACCOUNTS.CUSTOMER;
+
+    const res = await apiRegistry.auth.firebaseLogin({
+      email,
+      fullName,
+      role: selectedPresetRole
+    });
+
+    const userObj = {
+      ...preset,
+      id: res?.user?.id || `fb-${Date.now()}`,
+      email,
+      name: res?.user?.full_name || fullName,
+      authProvider: 'Firebase OAuth'
+    };
+    setShowFirebaseModal(false);
     setCurrentUser(userObj);
     setActiveTab(userObj.defaultTab);
   };
@@ -697,7 +724,71 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               {authMode === 'LOGIN' ? 'Đăng nhập vào RideEat' : 'Tạo tài khoản & Bắt đầu'}
             </button>
           </form>
+
+          <div className="auth-divider">hoặc xác thực qua Firebase</div>
+
+          <button
+            type="button"
+            className="btn-firebase"
+            onClick={() => setShowFirebaseModal(true)}
+          >
+            <span>🔥</span>
+            <span>Đăng nhập bằng Google (Firebase Auth)</span>
+          </button>
         </div>
+
+        {/* FIREBASE GOOGLE OAUTH POPUP (rideate-project) */}
+        {showFirebaseModal && (
+          <div className="modal-backdrop" onClick={() => setShowFirebaseModal(false)}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="card-header">
+                <div className="card-title">🔥 Đăng nhập với Google (Firebase)</div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowFirebaseModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="price-sub" style={{ marginBottom: '12px' }}>
+                Xác thực qua Firebase Project: <strong className="mono">rideate-project</strong> (Vai trò:{' '}
+                <strong>{DEMO_ACCOUNTS[selectedPresetRole]?.roleLabel}</strong>)
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Họ tên tài khoản Google</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={firebaseName}
+                  onChange={(e) => setFirebaseName(e.target.value)}
+                  placeholder="Nhập tên hiển thị..."
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label">Email Google (@gmail.com)</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={firebaseEmail}
+                  onChange={(e) => setFirebaseEmail(e.target.value)}
+                  placeholder="yourname@gmail.com"
+                />
+              </div>
+
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => handleFirebaseLogin()}
+              >
+                🔥 Xác nhận đăng nhập Firebase
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

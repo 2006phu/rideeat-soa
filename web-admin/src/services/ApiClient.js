@@ -233,6 +233,53 @@ export class AuthApiService extends BaseApiClient {
       }
     );
   }
+
+  async firebaseLogin({ email, fullName, role = 'CUSTOMER', idToken = null, firebaseUid = null }) {
+    const resolvedUid = firebaseUid || `fb-${btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 10)}`;
+    return this.request(
+      '/firebase-login',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          id_token: idToken,
+          firebase_uid: resolvedUid,
+          email,
+          full_name: fullName,
+          role: role.toLowerCase()
+        })
+      },
+      () => {
+        const token = `eyJhbGciOiJSUzI1NiIsImtpZCI6ImZpcmViYXNlLXJpZGVhdGUifQ.${btoa(
+          JSON.stringify({
+            iss: 'https://securetoken.google.com/rideate-project',
+            aud: 'rideate-project',
+            sub: resolvedUid,
+            email,
+            role,
+            iat: Date.now()
+          })
+        )}.firebase_sig`;
+        this.setAuthToken(token);
+        soaEventBus.publish('KAFKA_EVENT', {
+          topic: 'user.registered',
+          service: 'auth-service:8001',
+          eventName: 'FirebaseOAuthLogin (rideate-project)',
+          payload: { email, firebase_uid: resolvedUid, role, provider: 'google.com' }
+        });
+        return {
+          access_token: token,
+          user: {
+            id: resolvedUid,
+            firebase_uid: resolvedUid,
+            full_name: fullName,
+            email,
+            role,
+            provider: 'firebase'
+          }
+        };
+      }
+    );
+  }
 }
 
 /**
