@@ -27,42 +27,44 @@ const DEMO_ACCOUNTS = {
   DRIVER: {
     id: 'drv-partner-001',
     role: 'DRIVER',
-    roleLabel: 'Tài xế đối tác',
+    roleLabel: 'Tài xế',
     icon: '🛵',
     name: 'Trần Minh Tài',
     email: 'driver@rideeat.vn',
     defaultTab: 'PARTNER',
-    allowedTabs: ['PARTNER', 'RIDE', 'WALLET']
+    allowedTabs: ['PARTNER', 'WALLET']
   },
   RESTAURANT: {
     id: 'rst-partner-001',
     role: 'RESTAURANT',
-    roleLabel: 'Chủ nhà hàng',
+    roleLabel: 'Chủ quán ăn',
     icon: '🏪',
     name: 'Phở Thìn Bờ Hồ',
     email: 'restaurant@rideeat.vn',
-    defaultTab: 'FOOD',
-    allowedTabs: ['FOOD', 'PARTNER', 'WALLET']
+    defaultTab: 'MERCHANT',
+    allowedTabs: ['MERCHANT', 'WALLET']
   },
   ADMIN: {
     id: 'adm-system-001',
     role: 'ADMIN',
-    roleLabel: 'Quản trị viên (Full quyền)',
+    roleLabel: 'Quản trị viên',
     icon: '🛡️',
-    name: 'Admin Hệ Thống SOA',
+    name: 'Quản trị viên RideEat',
     email: 'admin@rideeat.vn',
-    defaultTab: 'MONITOR',
-    allowedTabs: ['RIDE', 'FOOD', 'WALLET', 'PARTNER', 'MONITOR']
+    defaultTab: 'ADMIN',
+    allowedTabs: ['ADMIN', 'RIDE', 'FOOD', 'WALLET']
   }
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('RIDE');
-  const [currentUser, setCurrentUser] = useState(DEMO_ACCOUNTS.CUSTOMER);
-  const [showAllTabs, setShowAllTabs] = useState(true);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  // Start at Login screen (currentUser === null)
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authMode, setAuthMode] = useState('LOGIN'); // LOGIN | REGISTER
+  const [selectedPresetRole, setSelectedPresetRole] = useState('CUSTOMER');
   const [loginEmail, setLoginEmail] = useState('customer@rideeat.vn');
   const [loginPassword, setLoginPassword] = useState('Password123!');
+  const [registerName, setRegisterName] = useState('');
+  const [activeTab, setActiveTab] = useState('RIDE');
 
   // Shared User & Wallet State
   const [walletBalance, setWalletBalance] = useState(500000);
@@ -81,7 +83,7 @@ export default function App() {
     }
   ]);
 
-  // Tab 1: Ride State
+  // Ride State
   const [pickupId, setPickupId] = useState('ben-thanh');
   const [dropoffId, setDropoffId] = useState('landmark-81');
   const [weather, setWeather] = useState('CLEAR');
@@ -96,7 +98,7 @@ export default function App() {
   const leafletMapRef = useRef(null);
   const leafletLayerGroupRef = useRef(null);
 
-  // Tab 2: Food State
+  // Food State
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [cart, setCart] = useState([
@@ -104,21 +106,13 @@ export default function App() {
   ]);
   const [activeFoodOrder, setActiveFoodOrder] = useState(null);
 
-  // Tab 4: Driver State
+  // Driver State
   const [driverOnline, setDriverOnline] = useState(true);
   const [otpInput, setOtpInput] = useState('');
   const [otpVerifyMessage, setOtpVerifyMessage] = useState('');
 
-  // Tab 5: SOA Logs
-  const [eventLogs, setEventLogs] = useState([
-    {
-      id: 'evt-init-1',
-      type: 'KAFKA_EVENT',
-      service: 'api-gateway:8080',
-      eventName: 'Hệ thống 9 Microservices sẵn sàng',
-      payload: { broker: 'kafka:9092', cache: 'redis:6379' }
-    }
-  ]);
+  // Admin Logs
+  const [eventLogs, setEventLogs] = useState([]);
 
   // Floating Gemini AI Assistant State
   const [aiOpen, setAiOpen] = useState(false);
@@ -133,31 +127,41 @@ export default function App() {
     }
   ]);
 
-  const handleSwitchRole = async (roleKey) => {
-    const account = DEMO_ACCOUNTS[roleKey] || DEMO_ACCOUNTS.CUSTOMER;
-    await apiRegistry.auth.login(account.email, 'Password123!', account.role);
-    setCurrentUser(account);
-    setLoginEmail(account.email);
-    setActiveTab(account.defaultTab);
+  const handleSelectRolePreset = (roleKey) => {
+    const preset = DEMO_ACCOUNTS[roleKey];
+    setSelectedPresetRole(roleKey);
+    setLoginEmail(preset.email);
+    setLoginPassword('Password123!');
   };
 
-  const handleLoginSubmit = async (e) => {
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
     const emailLower = loginEmail.trim().toLowerCase();
-    let matchedRole = 'CUSTOMER';
+    let matchedRole = selectedPresetRole;
     if (emailLower.includes('driver')) matchedRole = 'DRIVER';
     else if (emailLower.includes('restaurant')) matchedRole = 'RESTAURANT';
     else if (emailLower.includes('admin')) matchedRole = 'ADMIN';
+    else if (emailLower.includes('customer')) matchedRole = 'CUSTOMER';
 
-    const preset = DEMO_ACCOUNTS[matchedRole];
+    const preset = DEMO_ACCOUNTS[matchedRole] || DEMO_ACCOUNTS.CUSTOMER;
     const res = await apiRegistry.auth.login(loginEmail.trim(), loginPassword, matchedRole);
-    setCurrentUser({
+    const displayName =
+      authMode === 'REGISTER' && registerName.trim()
+        ? registerName.trim()
+        : res?.user?.full_name || preset.name;
+
+    const userObj = {
       ...preset,
       email: loginEmail.trim(),
-      name: res?.user?.full_name || preset.name
-    });
-    setActiveTab(preset.defaultTab);
-    setShowLoginModal(false);
+      name: displayName
+    };
+    setCurrentUser(userObj);
+    setActiveTab(userObj.defaultTab);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setAiOpen(false);
   };
 
   const handleSendAiChat = async (customPrompt) => {
@@ -170,9 +174,9 @@ export default function App() {
 
     const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
     const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
-    const systemInstruction = `Bạn là Trợ lý AI thông minh của siêu ứng dụng RideEat SOA (Đặt xe & Giao đồ ăn).
-Thông tin hiện tại của người dùng:
-- Đang đăng nhập: ${currentUser.name} (${currentUser.roleLabel} - ${currentUser.email})
+    const systemInstruction = `Bạn là Trợ lý AI thông minh của ứng dụng RideEat (Đặt xe & Giao đồ ăn).
+Thông tin hiện tại của khách:
+- Khách hàng: ${currentUser?.name || 'Khách'}
 - Số dư ví: ${walletBalance.toLocaleString('vi-VN')}đ
 - Lộ trình đang chọn: ${pickup.name} -> ${dropoff.name} (${routeInfo.distance_km}km, ~${routeInfo.duration_minutes} phút)
 - Giá xe máy: ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ, Ô tô 4 chỗ: ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ
@@ -182,7 +186,7 @@ Thông tin hiện tại của người dùng:
   3. Bún Bò Huế Sông Hương: Bún Bò Đặc Biệt (60.000đ), Chả Cua Huế (25.000đ)
   4. Trà Sữa & Ăn Vặt Gong Cha: Trà Sữa Trân Châu Đen (45.000đ), Bánh Mì Nướng Bơ Tỏi (30.000đ)
 - Voucher đang có: RIDEEAT50 (Giảm 50% tối đa 25k), FREESHIP15K (Giảm 15k)
-Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn ăn phở"), TUYỆT ĐỐI KHÔNG gợi ý lại món đó mà phải đổi sang các món khác (như Cơm Tấm, Bún Bò Huế, Gà Xối Mỡ hoặc Trà Sữa). Trả lời ngắn gọn (2-3 câu), tự nhiên bằng tiếng Việt.`;
+Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn ăn phở"), TUYỆT ĐỐI KHÔNG gợi ý lại món đó mà đổi sang món khác (như Cơm Tấm, Bún Bò Huế, Gà Xối Mỡ hoặc Trà Sữa). Trả lời ngắn gọn (2-3 câu), tự nhiên bằng tiếng Việt.`;
 
     try {
       if (aiKey.trim()) {
@@ -190,7 +194,10 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
           role: m.role === 'user' ? 'user' : 'model',
           parts: [
             {
-              text: idx === updatedHistory.slice(-6).length - 1 ? `${systemInstruction}\n\nKhách hỏi: "${m.text}"` : m.text
+              text:
+                idx === updatedHistory.slice(-6).length - 1
+                  ? `${systemInstruction}\n\nKhách hỏi: "${m.text}"`
+                  : m.text
             }
           ]
         }));
@@ -216,12 +223,11 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
               }
             }
           } catch {
-            // Try next Gemini model
+            // Try next model
           }
         }
       }
 
-      // Context-aware conversational fallback (handles negations like "tôi không muốn ăn phở")
       const q = question.toLowerCase();
       const isNegation =
         q.includes('không') || q.includes('đổi') || q.includes('khác') || q.includes('ngán') || q.includes('chán');
@@ -236,8 +242,6 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
       } else if (isNegation && (q.includes('ăn') || q.includes('món'))) {
         replyText =
           'Vậy mình đổi sang món nước thanh mát nhé: Trà Sữa Trân Châu Hoàng Kim (45.000đ) hoặc Bún Bò Huế Đặc Biệt (60.000đ), đang có ưu đãi giảm 50% (mã RIDEEAT50)!';
-      } else if (q.includes('user') || q.includes('tài khoản') || q.includes('ai đang') || q.includes('vai trò')) {
-        replyText = `Bạn đang đăng nhập với tài khoản ${currentUser.name} (${currentUser.email}) — Vai trò: ${currentUser.roleLabel}. Bạn có thể chuyển nhanh sang Tài xế, Nhà hàng hoặc Admin ngay trên thanh công cụ phía trên cùng nhé!`;
       } else if (q.includes('ăn') || q.includes('món') || q.includes('phở') || q.includes('cơm') || q.includes('đói')) {
         replyText =
           'Hôm nay mình gợi ý Phở Bò Tái Lăn (65.000đ), Cơm Tấm Sườn Bì Chả (55.000đ) hoặc Bún Bò Huế (60.000đ). Bạn thích món nước hay món khô để mình chọn giúp?';
@@ -245,7 +249,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
         replyText =
           'Bạn đang có mã RIDEEAT50 (giảm 50% tối đa 25.000đ) và FREESHIP15K (giảm 15.000đ phí ship). Chọn mã ngay ở mục Khuyến mãi khi đặt đơn nhé!';
       } else {
-        replyText = `Chào ${currentUser.name}! Với lộ trình ${pickup.name} → ${dropoff.name} (${routeInfo.distance_km} km), cước Xe máy là ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ và Ô tô 4 chỗ là ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ. Bạn cần mình hỗ trợ đặt xe hay chọn món ăn?`;
+        replyText = `Với lộ trình ${pickup.name} → ${dropoff.name} (${routeInfo.distance_km} km), cước Xe máy là ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ và Ô tô 4 chỗ là ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ. Bạn cần mình hỗ trợ đặt xe hay chọn món ăn?`;
       }
       setAiMessages((prev) => [...prev, { role: 'bot', text: replyText }]);
     } catch {
@@ -308,7 +312,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
 
   // Render Leaflet Map
   useEffect(() => {
-    if (activeTab !== 'RIDE' || !mapContainerRef.current || !window.L) return;
+    if (!currentUser || activeTab !== 'RIDE' || !mapContainerRef.current || !window.L) return;
 
     if (!leafletMapRef.current) {
       const map = window.L.map(mapContainerRef.current).setView([10.778, 106.705], 13);
@@ -369,15 +373,15 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
 
       map.fitBounds(poly.getBounds(), { padding: [30, 30] });
     }
-  }, [activeTab, pickupId, dropoffId, routeInfo, activeRide, driverStepIndex]);
+  }, [currentUser, activeTab, pickupId, dropoffId, routeInfo, activeRide, driverStepIndex]);
 
   useEffect(() => {
-    if (activeTab !== 'RIDE' && leafletMapRef.current) {
+    if ((!currentUser || activeTab !== 'RIDE') && leafletMapRef.current) {
       leafletMapRef.current.remove();
       leafletMapRef.current = null;
       leafletLayerGroupRef.current = null;
     }
-  }, [activeTab]);
+  }, [currentUser, activeTab]);
 
   const currentVehicleEstimate =
     fareEstimates.find((e) => e.vehicleCode === selectedVehicleCode) || fareEstimates[0];
@@ -401,7 +405,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
     });
 
     const payRes = await apiRegistry.payment.processTransaction({
-      userId: 'usr-customer-001',
+      userId: currentUser?.id || 'usr-customer-001',
       amount: currentVehicleEstimate.finalFare,
       method: paymentMethod,
       referenceId: res.ride_id,
@@ -416,6 +420,8 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
     setTransactions((prev) => [{ ...payRes, type: 'DEBIT' }, ...prev]);
     setActiveRide({
       ...res,
+      pickupName: pickup.name,
+      dropoffName: dropoff.name,
       fare: currentVehicleEstimate.finalFare,
       vehicleName: currentVehicleEstimate.vehicleName
     });
@@ -475,7 +481,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
     });
 
     const payRes = await apiRegistry.payment.processTransaction({
-      userId: 'usr-customer-001',
+      userId: currentUser?.id || 'usr-customer-001',
       amount: foodFinalTotal,
       method: paymentMethod,
       referenceId: orderRes.order_id,
@@ -491,6 +497,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
     setActiveFoodOrder({
       ...orderRes,
       restaurantName: selectedRestaurant?.name,
+      items: [...cart],
       total: foodFinalTotal
     });
   };
@@ -511,13 +518,13 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
 
   const handleDriverVerifyOtp = () => {
     if (!activeRide) {
-      setOtpVerifyMessage('Chưa có chuyến xe nào. Hãy đặt xe ở mục Đặt xe trước.');
+      setOtpVerifyMessage('Hiện chưa có chuyến xe nào đang chờ.');
       return;
     }
     if (otpInput.trim() === activeRide.otp_code) {
       setActiveRide({ ...activeRide, state: 'IN_PROGRESS' });
       setDriverStepIndex(8);
-      setOtpVerifyMessage(`✅ Mã OTP ${activeRide.otp_code} chính xác! Đã bắt đầu chuyến đi.`);
+      setOtpVerifyMessage(`✅ Xác nhận mã OTP thành công! Đang thực hiện chuyến đi.`);
     } else {
       setOtpVerifyMessage('❌ Mã OTP chưa đúng.');
     }
@@ -525,6 +532,102 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
 
   const microservicesCatalog = apiRegistry.monitor.getMicroservicesCatalog();
 
+  // ============================================================================
+  // 1. MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ (HIỂN THỊ ĐẦU TIÊN KHI VÀO WEB)
+  // ============================================================================
+  if (!currentUser) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <div className="auth-brand">
+            <div className="auth-logo">🛵</div>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 800 }}>RideEat</h1>
+            <p className="price-sub">Ứng dụng Đặt xe & Giao đồ ăn trực tuyến</p>
+          </div>
+
+          <div className="nav-tabs" style={{ marginBottom: '16px' }}>
+            <button
+              type="button"
+              className={`nav-tab ${authMode === 'LOGIN' ? 'active' : ''}`}
+              onClick={() => setAuthMode('LOGIN')}
+            >
+              Đăng nhập
+            </button>
+            <button
+              type="button"
+              className={`nav-tab ${authMode === 'REGISTER' ? 'active' : ''}`}
+              onClick={() => setAuthMode('REGISTER')}
+            >
+              Đăng ký
+            </button>
+          </div>
+
+          <div className="form-label">Chọn vai trò đăng nhập</div>
+          <div className="auth-role-grid">
+            {Object.values(DEMO_ACCOUNTS).map((acc) => (
+              <button
+                key={acc.role}
+                type="button"
+                className={`auth-role-item ${selectedPresetRole === acc.role ? 'active' : ''}`}
+                onClick={() => handleSelectRolePreset(acc.role)}
+              >
+                <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>
+                  {acc.icon} {acc.roleLabel}
+                </div>
+                <div className="price-sub">{acc.name}</div>
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleAuthSubmit}>
+            {authMode === 'REGISTER' && (
+              <div className="form-group">
+                <label className="form-label">Họ và tên</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Nhập họ tên của bạn..."
+                  value={registerName}
+                  onChange={(e) => setRegisterName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className="form-input"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '18px' }}>
+              <label className="form-label">Mật khẩu</label>
+              <input
+                type="password"
+                className="form-input"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn-primary">
+              {authMode === 'LOGIN' ? 'Đăng nhập vào RideEat' : 'Tạo tài khoản & Bắt đầu'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // 2. GIAO DIỆN CHÍNH SAU KHI ĐĂNG NHẬP (THEO ĐÚNG VAI TRÒ CỦA USER)
+  // ============================================================================
   return (
     <div className="app-shell">
       {/* HEADER */}
@@ -534,124 +637,28 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
           <div className="brand-title">
             <h1>
               RideEat
-              <span className="badge-soa">SOA • 9 Services</span>
+              <span className="badge-soa">{currentUser.roleLabel}</span>
             </h1>
-            <p className="brand-subtitle">Ứng dụng Đặt xe & Giao đồ ăn</p>
+            <p className="brand-subtitle">
+              Xin chào, <strong>{currentUser.name}</strong> ({currentUser.email})
+            </p>
           </div>
         </div>
 
         <div className="header-pills">
           <div className="wallet-pill">
-            <span>Ví của bạn:</span>
+            <span>Số dư ví:</span>
             <span className="wallet-amount">{walletBalance.toLocaleString('vi-VN')} đ</span>
           </div>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setShowLoginModal(true)}
-          >
-            🔐 Đổi tài khoản / Đăng nhập
+          <button type="button" className="btn-secondary" onClick={handleLogout}>
+            Đăng xuất
           </button>
         </div>
       </header>
 
-      {/* USER ACCOUNT & ROLE SWITCHER BAR (auth-service:8001) */}
-      <div className="user-role-bar">
-        <div className="user-current-info">
-          <div className="user-avatar">{currentUser.icon}</div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>Đang là: {currentUser.name}</span>
-              <span className="badge-soa">{currentUser.roleLabel}</span>
-            </div>
-            <div className="price-sub mono">{currentUser.email} • auth-service:8001 (RBAC)</div>
-          </div>
-        </div>
-
-        <div className="role-switcher-group">
-          <span className="price-sub" style={{ marginRight: '4px' }}>Chuyển nhanh vai trò:</span>
-          {Object.values(DEMO_ACCOUNTS).map((acc) => (
-            <button
-              key={acc.role}
-              type="button"
-              className={`role-btn ${currentUser.role === acc.role ? 'active' : ''}`}
-              onClick={() => handleSwitchRole(acc.role)}
-            >
-              {acc.icon} {acc.roleLabel.split(' ')[0]}
-            </button>
-          ))}
-          <button
-            type="button"
-            className={`chip-toggle ${!showAllTabs ? 'active' : ''}`}
-            onClick={() => setShowAllTabs(!showAllTabs)}
-            title="Lọc menu theo đúng quyền RBAC của User hoặc hiện tất cả để dễ chấm bài Demo"
-          >
-            {showAllTabs ? '👁️ Hiện đủ 5 Tab (Demo)' : '🔒 Chỉ hiện Tab theo quyền'}
-          </button>
-        </div>
-      </div>
-
-      {/* LOGIN MODAL (auth-service:8001) */}
-      {showLoginModal && (
-        <div className="modal-backdrop" onClick={() => setShowLoginModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="card-header">
-              <div className="card-title">🔐 Đăng nhập hệ thống (auth-service:8001)</div>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setShowLoginModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleLoginSubmit}>
-              <div className="form-group">
-                <label className="form-label">Chọn nhanh tài khoản mẫu (Seeded Accounts)</label>
-                <div className="toggle-row" style={{ marginTop: '4px' }}>
-                  {Object.values(DEMO_ACCOUNTS).map((acc) => (
-                    <button
-                      key={acc.role}
-                      type="button"
-                      className={`chip-toggle ${loginEmail === acc.email ? 'active' : ''}`}
-                      onClick={() => setLoginEmail(acc.email)}
-                    >
-                      {acc.icon} {acc.email}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Email đăng nhập</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Mật khẩu</label>
-                <input
-                  type="password"
-                  className="form-input"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit" className="btn-primary">
-                Đăng nhập với JWT / Firebase Auth
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* NAVIGATION TABS */}
+      {/* NAVIGATION TABS (HIỂN THỊ ĐÚNG CHỨC NĂNG CỦA TỪNG VAI TRÒ) */}
       <nav className="nav-tabs">
-        {(showAllTabs || currentUser.allowedTabs.includes('RIDE')) && (
+        {currentUser.allowedTabs.includes('RIDE') && (
           <button
             className={`nav-tab ${activeTab === 'RIDE' ? 'active' : ''}`}
             onClick={() => setActiveTab('RIDE')}
@@ -659,41 +666,49 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
             🛵 Đặt xe
           </button>
         )}
-        {(showAllTabs || currentUser.allowedTabs.includes('FOOD')) && (
+        {currentUser.allowedTabs.includes('FOOD') && (
           <button
             className={`nav-tab ${activeTab === 'FOOD' ? 'active' : ''}`}
             onClick={() => setActiveTab('FOOD')}
           >
-            🍔 Đồ ăn
+            🍔 Đặt đồ ăn
           </button>
         )}
-        {(showAllTabs || currentUser.allowedTabs.includes('WALLET')) && (
-          <button
-            className={`nav-tab ${activeTab === 'WALLET' ? 'active' : ''}`}
-            onClick={() => setActiveTab('WALLET')}
-          >
-            💳 Ví & Thanh toán
-          </button>
-        )}
-        {(showAllTabs || currentUser.allowedTabs.includes('PARTNER')) && (
+        {currentUser.allowedTabs.includes('PARTNER') && (
           <button
             className={`nav-tab ${activeTab === 'PARTNER' ? 'active' : ''}`}
             onClick={() => setActiveTab('PARTNER')}
           >
-            👨‍✈️ Tài xế & Đối tác
+            🛵 Nhận chuyến & Giao hàng
           </button>
         )}
-        {(showAllTabs || currentUser.allowedTabs.includes('MONITOR')) && (
+        {currentUser.allowedTabs.includes('MERCHANT') && (
           <button
-            className={`nav-tab ${activeTab === 'MONITOR' ? 'active' : ''}`}
-            onClick={() => setActiveTab('MONITOR')}
+            className={`nav-tab ${activeTab === 'MERCHANT' ? 'active' : ''}`}
+            onClick={() => setActiveTab('MERCHANT')}
           >
-            📊 Hệ thống SOA
+            🏪 Quản lý đơn & Thực đơn
+          </button>
+        )}
+        {currentUser.allowedTabs.includes('ADMIN') && (
+          <button
+            className={`nav-tab ${activeTab === 'ADMIN' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ADMIN')}
+          >
+            📊 Quản trị hệ thống
+          </button>
+        )}
+        {currentUser.allowedTabs.includes('WALLET') && (
+          <button
+            className={`nav-tab ${activeTab === 'WALLET' ? 'active' : ''}`}
+            onClick={() => setActiveTab('WALLET')}
+          >
+            💳 Ví & Lịch sử giao dịch
           </button>
         )}
       </nav>
 
-      {/* TAB 1: ĐẶT XE */}
+      {/* MÀN HÌNH KHÁCH HÀNG: ĐẶT XE */}
       {activeTab === 'RIDE' && (
         <div className="grid-2">
           <div className="card">
@@ -801,7 +816,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
                   setDriverStepIndex((prev) => (prev + 2) % Math.max(2, routeInfo.polyline?.length || 10))
                 }
               >
-                Mô phỏng xe di chuyển
+                Xem vị trí tài xế
               </button>
             </div>
 
@@ -832,7 +847,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                  <span className="price-sub">Mã OTP xác nhận lên xe:</span>
+                  <span className="price-sub">Mã OTP đưa cho tài xế khi lên xe:</span>
                   <strong className="mono" style={{ fontSize: '1.1rem', color: '#00b14f' }}>
                     {activeRide.otp_code}
                   </strong>
@@ -847,7 +862,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
         </div>
       )}
 
-      {/* TAB 2: ĐẶT ĐỒ ĂN */}
+      {/* MÀN HÌNH KHÁCH HÀNG: ĐẶT ĐỒ ĂN */}
       {activeTab === 'FOOD' && (
         <div className="grid-2">
           <div className="card">
@@ -957,7 +972,7 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
                       setActiveFoodOrder({ ...activeFoodOrder, state: next });
                     }}
                   >
-                    Tiếp theo →
+                    Cập nhật trạng thái →
                   </button>
                 </div>
                 <div className="state-stepper">
@@ -975,13 +990,156 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
         </div>
       )}
 
-      {/* TAB 3: VÍ & THANH TOÁN */}
+      {/* MÀN HÌNH TÀI XẾ: NHẬN CHUYẾN & GIAO HÀNG */}
+      {activeTab === 'PARTNER' && (
+        <div className="grid-2">
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Trạng thái hoạt động</div>
+              <span className="badge-soa">{driverOnline ? 'Đang bật nhận chuyến' : 'Đang tạm nghỉ'}</span>
+            </div>
+
+            <div className="vehicle-item" style={{ marginBottom: '12px' }}>
+              <div className="vehicle-left">
+                <span className="vehicle-icon">🛵</span>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{currentUser.name}</div>
+                  <div className="price-sub">Honda SH • Biển số: 59-X3 888.99 • Đánh giá: 4.96 ★</div>
+                </div>
+              </div>
+              <button className="btn-secondary" onClick={() => setDriverOnline(!driverOnline)}>
+                {driverOnline ? 'Tắt nhận chuyến' : 'Bật nhận chuyến'}
+              </button>
+            </div>
+
+            <div className="info-box">
+              <div style={{ fontWeight: 600, marginBottom: '6px' }}>Xác nhận mã OTP khi đón khách</div>
+              <div className="price-sub" style={{ marginBottom: '8px' }}>
+                {activeRide
+                  ? `Chuyến hiện tại: ${activeRide.ride_id} (Mã OTP của khách: ${activeRide.otp_code})`
+                  : 'Nhập mã OTP 4 số từ khách hàng để bắt đầu hành trình.'}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  className="form-input mono"
+                  placeholder="Nhập mã OTP..."
+                  value={otpInput}
+                  onChange={(e) => setOtpInput(e.target.value)}
+                />
+                <button className="btn-primary" style={{ width: '160px' }} onClick={handleDriverVerifyOtp}>
+                  Bắt đầu chuyến
+                </button>
+              </div>
+              {otpVerifyMessage && (
+                <div style={{ marginTop: '8px', fontSize: '0.84rem', fontWeight: 500, color: '#00b14f' }}>
+                  {otpVerifyMessage}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Cuốc xe & Đơn hàng cần giao</div>
+              <span className="oop-tag">{driverOnline ? 'Sẵn sàng' : 'Tạm dừng'}</span>
+            </div>
+
+            {activeRide ? (
+              <div className="info-box">
+                <div style={{ fontWeight: 700 }}>🛵 Cuốc xe: {activeRide.ride_id}</div>
+                <div className="price-sub" style={{ margin: '4px 0' }}>
+                  Lộ trình: {activeRide.pickupName || 'Chợ Bến Thành'} → {activeRide.dropoffName || 'Landmark 81'}
+                </div>
+                <div className="price-main" style={{ marginBottom: '8px' }}>
+                  Thu nhập chuyến: {activeRide.fare?.toLocaleString('vi-VN')} đ
+                </div>
+                <button className="btn-primary" onClick={handleAdvanceRideState}>
+                  Cập nhật tiến độ chuyến ({activeRide.state})
+                </button>
+              </div>
+            ) : (
+              <div className="vehicle-item">
+                <div>
+                  <div style={{ fontWeight: 600 }}>🛵 Chợ Bến Thành → Vinhomes Landmark 81</div>
+                  <div className="price-sub">Khoảng cách: 3.9 km • Khách hàng: Nguyễn Văn A</div>
+                </div>
+                <button
+                  className="btn-primary"
+                  style={{ width: 'auto' }}
+                  onClick={handleBookRide}
+                >
+                  Nhận chuyến (28.000đ)
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MÀN HÌNH CHỦ QUÁN: QUẢN LÝ ĐƠN & THỰC ĐƠN */}
+      {activeTab === 'MERCHANT' && (
+        <div className="grid-2">
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Đơn đặt món mới</div>
+              <span className="badge-soa">Đang mở cửa</span>
+            </div>
+
+            {activeFoodOrder ? (
+              <div className="info-box">
+                <div style={{ fontWeight: 700 }}>Đơn hàng #{activeFoodOrder.order_id}</div>
+                <div className="price-sub" style={{ margin: '4px 0' }}>
+                  Trạng thái: <strong>{activeFoodOrder.state}</strong> • Tổng tiền: {activeFoodOrder.total?.toLocaleString('vi-VN')} đ
+                </div>
+                <button
+                  className="btn-primary"
+                  style={{ marginTop: '8px' }}
+                  onClick={() => {
+                    const idx = FOOD_STATES.indexOf(activeFoodOrder.state);
+                    const next = FOOD_STATES[Math.min(idx + 1, FOOD_STATES.length - 1)];
+                    setActiveFoodOrder({ ...activeFoodOrder, state: next });
+                  }}
+                >
+                  Xác nhận bước tiếp theo →
+                </button>
+              </div>
+            ) : (
+              <div className="price-sub" style={{ padding: '20px', textAlign: 'center' }}>
+                Hiện chưa có đơn đặt món mới nào chờ xác nhận.
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Thực đơn của quán ({selectedRestaurant?.name})</div>
+            </div>
+            {selectedRestaurant && (
+              <div className="vehicle-list">
+                {selectedRestaurant.menu.map((dish) => (
+                  <div key={dish.id} className="vehicle-item">
+                    <div className="vehicle-left">
+                      <span className="vehicle-icon">{dish.image}</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{dish.name}</div>
+                        <div className="price-sub">{dish.price.toLocaleString('vi-VN')} đ</div>
+                      </div>
+                    </div>
+                    <span className="badge-soa">Đang bán</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MÀN HÌNH VÍ & LỊCH SỬ GIAO DỊCH */}
       {activeTab === 'WALLET' && (
         <div className="grid-2">
           <div className="card">
             <div className="card-header">
               <div className="card-title">Ví điện tử RideEat</div>
-              <span className="oop-tag">Payment Service</span>
             </div>
 
             <div className="info-box" style={{ background: '#ecfdf5', borderColor: '#a7f3d0', marginBottom: '14px' }}>
@@ -1046,110 +1204,10 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
         </div>
       )}
 
-      {/* TAB 4: TÀI XẾ */}
-      {activeTab === 'PARTNER' && (
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">Thông tin tài xế</div>
-              <span className="badge-soa">{driverOnline ? 'Đang trực tuyến' : 'Tạm nghỉ'}</span>
-            </div>
-
-            <div className="vehicle-item" style={{ marginBottom: '12px' }}>
-              <div className="vehicle-left">
-                <span className="vehicle-icon">🛵</span>
-                <div>
-                  <div style={{ fontWeight: 700 }}>Trần Minh Tài</div>
-                  <div className="price-sub">Honda SH • Biển số: 59-X3 888.99 • Đánh giá: 4.96 ★</div>
-                </div>
-              </div>
-              <button className="btn-secondary" onClick={() => setDriverOnline(!driverOnline)}>
-                {driverOnline ? 'Tắt nhận chuyến' : 'Bật nhận chuyến'}
-              </button>
-            </div>
-
-            <div className="info-box">
-              <div style={{ fontWeight: 600, marginBottom: '6px' }}>Xác nhận mã OTP khách hàng</div>
-              <div className="price-sub" style={{ marginBottom: '8px' }}>
-                {activeRide
-                  ? `Chuyến hiện tại: ${activeRide.ride_id} (Mã OTP: ${activeRide.otp_code})`
-                  : 'Hãy đặt một chuyến xe ở mục Đặt xe để nhận mã OTP.'}
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  className="form-input mono"
-                  placeholder="Nhập mã OTP..."
-                  value={otpInput}
-                  onChange={(e) => setOtpInput(e.target.value)}
-                />
-                <button className="btn-primary" style={{ width: '160px' }} onClick={handleDriverVerifyOtp}>
-                  Xác nhận
-                </button>
-              </div>
-              {otpVerifyMessage && (
-                <div style={{ marginTop: '8px', fontSize: '0.84rem', fontWeight: 500, color: '#00b14f' }}>
-                  {otpVerifyMessage}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">Thiết kế OOP áp dụng</div>
-              <span className="oop-tag">4 Tính chất OOP</span>
-            </div>
-            <div className="vehicle-list">
-              <div className="vehicle-item">
-                <div>
-                  <strong>1. Đóng gói (Encapsulation)</strong>
-                  <div className="price-sub">Các Entity tự kiểm soát trạng thái chuyến xe, đơn hàng và số dư ví.</div>
-                </div>
-              </div>
-              <div className="vehicle-item">
-                <div>
-                  <strong>2. Kế thừa (Inheritance)</strong>
-                  <div className="price-sub">Tất cả 9 service kế thừa từ BaseORMModel, SqlAlchemyRepository, BaseApplicationService.</div>
-                </div>
-              </div>
-              <div className="vehicle-item">
-                <div>
-                  <strong>3. Đa hình (Polymorphism)</strong>
-                  <div className="price-sub">Tính giá theo loại xe, chiến lược giảm giá và đa kênh thanh toán/thông báo.</div>
-                </div>
-              </div>
-              <div className="vehicle-item">
-                <div>
-                  <strong>4. Trừu tượng (Abstraction)</strong>
-                  <div className="price-sub">Giao tiếp qua các Abstract Interfaces (IRepository, IEventPublisher, IPricingStrategy).</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 5: HỆ THỐNG SOA */}
-      {activeTab === 'MONITOR' && (
+      {/* MÀN HÌNH QUẢN TRỊ VIÊN (CHỈ ADMIN MỚI THẤY) */}
+      {activeTab === 'ADMIN' && (
         <div>
-          <div className="card" style={{ marginBottom: '18px' }}>
-            <div className="card-header">
-              <div className="card-title">Nhật ký sự kiện Kafka & API Gateway</div>
-              <span className="oop-tag">Event-Driven SOA</span>
-            </div>
-            <div className="event-log">
-              {eventLogs.map((ev) => (
-                <div key={ev.id} className="event-row">
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong>{ev.eventName || ev.endpoint}</strong>
-                    <span className="price-sub mono">{ev.service}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid-3">
+          <div className="grid-3" style={{ marginBottom: '18px' }}>
             {microservicesCatalog.map((svc) => (
               <div key={svc.id} className="card">
                 <div className="card-header">
@@ -1159,12 +1217,29 @@ Lưu ý quan trọng: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "k
                   </div>
                   <span className="oop-tag">:{svc.port}</span>
                 </div>
-                <div className="price-sub" style={{ marginBottom: '6px' }}>
-                  <strong>Nghiệp vụ:</strong> {svc.boundedContext}
-                </div>
-                <div className="price-sub mono">DB: {svc.dbSchema}</div>
+                <div className="price-sub">{svc.boundedContext}</div>
               </div>
             ))}
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Nhật ký hoạt động hệ thống</div>
+            </div>
+            <div className="event-log">
+              {eventLogs.length === 0 ? (
+                <div className="price-sub">Chưa có sự kiện mới.</div>
+              ) : (
+                eventLogs.map((ev) => (
+                  <div key={ev.id} className="event-row">
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <strong>{ev.eventName || ev.endpoint}</strong>
+                      <span className="price-sub mono">{ev.service}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -121,88 +121,73 @@ code, pre, .mono {
   font-weight: 700;
 }
 
-/* User Role Switcher Bar */
-.user-role-bar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  margin-bottom: 14px;
-}
-
-.user-current-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.user-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--primary-light);
-  border: 1px solid #a7f3d0;
+/* Login Screen */
+.auth-page {
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f8fafc 60%, #eff6ff 100%);
 }
 
-.role-switcher-group {
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 28px 24px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.auth-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 28px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 10px;
+  box-shadow: 0 6px 16px rgba(0, 177, 79, 0.25);
 }
 
-.role-btn {
-  padding: 6px 11px;
-  border-radius: 8px;
+.auth-role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.auth-role-item {
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--bg-subtle);
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
   cursor: pointer;
+  text-align: left;
   transition: 0.15s;
 }
 
-.role-btn:hover {
+.auth-role-item:hover {
   border-color: #cbd5e1;
-  color: var(--text-primary);
-}
-
-.role-btn.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #ffffff;
-}
-
-/* Modal */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
-  padding: 16px;
-}
-
-.modal-card {
   background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-  width: 100%;
-  max-width: 420px;
-  padding: 20px;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+}
+
+.auth-role-item.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
 }
 
 /* Navigation Tabs */
