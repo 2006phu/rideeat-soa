@@ -23,7 +23,7 @@ from services.common.exceptions import (
     InvalidStateTransitionException,
 )
 from services.common.messaging.interfaces import DomainEvent, IEventHandler, IEventPublisher
-from services.common.messaging.kafka_bus import KafkaEventBus
+from services.common.messaging.kafka_bus import InMemoryEventBus, KafkaEventBus
 from services.common.security.firebase_auth import (
     CurrentUser,
     FirebaseAuthVerifier,
@@ -75,6 +75,35 @@ class SampleEventHandler(IEventHandler):
 class TestRideEatOOPArchitecture(unittest.IsolatedAsyncioTestCase):
     """Verifies the 4 Pillars of OOP and Design Patterns across RideEat SOA."""
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        key_path = os.path.join(ROOT_DIR, "config", "firebase", "serviceAccountKey.json")
+        if not os.path.exists(key_path):
+            import json
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric import rsa
+
+            os.makedirs(os.path.dirname(key_path), exist_ok=True)
+            priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+            pem = priv.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            ).decode("utf-8")
+            dummy = {
+                "type": "service_account",
+                "project_id": "rideeat-ci-test",
+                "private_key_id": "ci-test-key",
+                "private_key": pem,
+                "client_email": "ci-test@rideeat-ci-test.iam.gserviceaccount.com",
+                "client_id": "1234567890",
+            }
+            with open(key_path, "w", encoding="utf-8") as f:
+                json.dump(dummy, f)
+            cls._created_dummy_key = True
+        else:
+            cls._created_dummy_key = False
+
     def test_01_exception_inheritance_hierarchy(self) -> None:
         exc1 = EntityNotFoundException("Ride", "ride-123")
         exc2 = InvalidStateTransitionException("Ride", "completed", "accepted")
@@ -89,7 +118,7 @@ class TestRideEatOOPArchitecture(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(exc3.status_code, 422)
 
     def test_02_auth_verifier_abstraction_and_encapsulation(self) -> None:
-        verifier: IAuthVerifier = FirebaseAuthVerifier(secret_key="test-secret-key")
+        verifier: IAuthVerifier = FirebaseAuthVerifier()
         token = verifier.create_signed_token(
             uid="user-001",
             email="customer@rideeat.vn",
@@ -122,7 +151,7 @@ class TestRideEatOOPArchitecture(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(nearby[0].member_id, "driver-1")
 
     async def test_04_kafka_event_bus_observer_polymorphism(self) -> None:
-        bus: IEventPublisher = KafkaEventBus("localhost:9092", "ride-service", enabled=False)
+        bus: IEventPublisher = InMemoryEventBus("ride-service")
         handler = SampleEventHandler()
         bus.register_handler(handler)
 

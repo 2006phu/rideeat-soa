@@ -1,16 +1,15 @@
-"""OOP Authentication & RBAC Guard using Firebase Admin SDK with JWT Fallback."""
+"""OOP Authentication & RBAC Guard using real Firebase Admin SDK (Strict Real Mode)."""
 
-import base64
-import hmac
-import hashlib
 import json
 import logging
 import os
-import time
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import jwt
+from cryptography.hazmat.primitives import serialization
 from fastapi import Depends, Header
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
@@ -54,32 +53,69 @@ class IAuthVerifier(ABC):
 
 
 class FirebaseAuthVerifier(IAuthVerifier):
-    """Concrete token verifier supporting Firebase Admin SDK + signed HMAC JWT fallback for local/demo mode."""
+    """Concrete token verifier enforcing REAL Firebase Admin SDK authentication without simulated fallbacks."""
 
-    def __init__(
-        self,
-        credentials_path: Optional[str] = None,
-        secret_key: str = "rideeat-soa-super-secret-jwt-key-2026",
-    ) -> None:
-        self._secret_key = secret_key
+    def __init__(self, credentials_path: Optional[str] = None) -> None:
         self._firebase_initialized = False
+        self._public_key = None
+        self._project_id = None
         self._init_firebase(credentials_path)
 
+    def _resolve_credentials_path(self, credentials_path: Optional[str]) -> Optional[str]:
+        """Find the real serviceAccountKey.json from explicit path, env var, or standard repo locations."""
+        candidates = []
+        if credentials_path:
+            candidates.append(credentials_path)
+
+        env_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
+        if env_path:
+            candidates.append(env_path)
+
+        # Standard project directories
+        here = Path(__file__).resolve()
+        repo_root = here.parents[3]  # services/common/security/firebase_auth.py -> rideeat-soa root
+        candidates.extend([
+            str(repo_root / "config" / "firebase" / "serviceAccountKey.json"),
+            "/app/config/firebase/serviceAccountKey.json",
+            "config/firebase/serviceAccountKey.json",
+            str(Path.cwd() / "config" / "firebase" / "serviceAccountKey.json"),
+        ])
+
+        for c in candidates:
+            if c and os.path.exists(c):
+                return os.path.abspath(c)
+        return None
+
     def _init_firebase(self, credentials_path: Optional[str]) -> None:
-        if not credentials_path or not os.path.exists(credentials_path):
-            logger.info("Firebase credentials file not provided; FirebaseAuthVerifier running in hybrid JWT/Firebase-compatible mode.")
-            return
+        resolved_path = self._resolve_credentials_path(credentials_path)
+        if not resolved_path:
+            raise RuntimeError(
+                "Real Firebase Mode Active: Firebase Admin SDK credentials file 'serviceAccountKey.json' "
+                "was not found! Please place your real serviceAccountKey.json into config/firebase/."
+            )
+
         try:
+            with open(resolved_path, "r", encoding="utf-8") as f:
+                key_dict = json.load(f)
+
+            self._project_id = key_dict.get("project_id")
+            # Extract RSA public key from service account private key to verify custom tokens minted by this project
+            priv_key = serialization.load_pem_private_key(
+                key_dict["private_key"].encode("utf-8"),
+                password=None,
+            )
+            self._public_key = priv_key.public_key()
+
             import firebase_admin
             from firebase_admin import credentials
 
             if not firebase_admin._apps:
-                cred = credentials.Certificate(credentials_path)
+                cred = credentials.Certificate(resolved_path)
                 firebase_admin.initialize_app(cred)
             self._firebase_initialized = True
-            logger.info("Firebase Admin SDK initialized successfully.")
+            logger.info(f"Firebase Admin SDK strictly initialized with project '{self._project_id}' ({resolved_path}).")
         except Exception as exc:
-            logger.warning(f"Could not initialize Firebase Admin SDK ({exc}); using JWT fallback verifier.")
+            raise RuntimeError(f"Failed to initialize real Firebase Admin SDK from '{resolved_path}': {exc}") from exc
 
     def create_signed_token(
         self,
@@ -89,84 +125,76 @@ class FirebaseAuthVerifier(IAuthVerifier):
         name: str = "",
         expires_in_seconds: int = 86400 * 7,
     ) -> str:
-        """Create a signed JWT token (used when Firebase client SDK is simulated or in local dev)."""
-        header = {"alg": "HS256", "typ": "JWT"}
-        payload = {
-            "sub": uid,
-            "uid": uid,
+        """Create a real Firebase Custom Token signed with the Firebase Service Account RSA private key."""
+        if not self._firebase_initialized:
+            raise UnauthorizedAccessException("Firebase Admin SDK is not initialized.")
+
+        from firebase_admin import auth as fb_auth
+
+        claims = {
             "email": email,
             "role": role,
             "name": name,
-            "iat": int(time.time()),
-            "exp": int(time.time()) + expires_in_seconds,
         }
-        h_b64 = self._b64url_encode(json.dumps(header).encode("utf-8"))
-        p_b64 = self._b64url_encode(json.dumps(payload).encode("utf-8"))
-        signing_input = f"{h_b64}.{p_b64}".encode("utf-8")
-        signature = hmac.new(self._secret_key.encode("utf-8"), signing_input, hashlib.sha256).digest()
-        s_b64 = self._b64url_encode(signature)
-        return f"{h_b64}.{p_b64}.{s_b64}"
+        token_bytes = fb_auth.create_custom_token(uid, developer_claims=claims)
+        return token_bytes.decode("utf-8") if isinstance(token_bytes, bytes) else str(token_bytes)
 
     def verify_token(self, token: str) -> CurrentUser:
-        """Verify Firebase ID token first (if initialized), otherwise verify signed JWT token."""
-        if self._firebase_initialized:
-            try:
-                from firebase_admin import auth as fb_auth
+        """Strictly verify real Firebase tokens (Google ID tokens or Service Account Custom Tokens).
 
-                decoded = fb_auth.verify_id_token(token)
-                role_str = decoded.get("role", UserRole.CUSTOMER.value)
-                return CurrentUser(
-                    uid=decoded["uid"],
-                    email=decoded.get("email"),
-                    role=UserRole(role_str) if role_str in UserRole._value2member_map_ else UserRole.CUSTOMER,
-                    name=decoded.get("name"),
-                )
-            except Exception as fb_exc:
-                logger.debug(f"Firebase token check fell back to local JWT check: {fb_exc}")
+        Raises UnauthorizedAccessException if invalid. NO local fallback/bypass.
+        """
+        if not self._firebase_initialized:
+            raise UnauthorizedAccessException("Firebase Admin SDK is not initialized.")
 
-        # Fallback: Verify signed HS256 JWT or demo token
-        payload = self._decode_signed_token(token)
-        role_val = payload.get("role", UserRole.CUSTOMER.value)
-        role = UserRole(role_val) if role_val in UserRole._value2member_map_ else UserRole.CUSTOMER
-        return CurrentUser(
-            uid=str(payload.get("uid") or payload.get("sub")),
-            email=payload.get("email"),
-            role=role,
-            name=payload.get("name"),
-        )
+        from firebase_admin import auth as fb_auth
 
-    def _decode_signed_token(self, token: str) -> Dict[str, Any]:
-        parts = token.split(".")
-        if len(parts) != 3:
-            raise UnauthorizedAccessException("Malformed authentication token.")
-        h_b64, p_b64, s_b64 = parts
-        signing_input = f"{h_b64}.{p_b64}".encode("utf-8")
-        expected_sig = hmac.new(self._secret_key.encode("utf-8"), signing_input, hashlib.sha256).digest()
-        expected_b64 = self._b64url_encode(expected_sig)
-        if not hmac.compare_digest(s_b64, expected_b64):
-            raise UnauthorizedAccessException("Invalid token signature.")
+        # 1. Attempt to verify as a Google Firebase ID Token (issued when clients sign in with Google/Firebase)
         try:
-            payload = json.loads(self._b64url_decode(p_b64).decode("utf-8"))
-        except Exception as exc:
-            raise UnauthorizedAccessException(f"Invalid token payload: {exc}")
-        if payload.get("exp") and int(time.time()) > int(payload["exp"]):
-            raise UnauthorizedAccessException("Authentication token has expired.")
-        return payload
+            decoded = fb_auth.verify_id_token(token)
+            role_str = decoded.get("role", UserRole.CUSTOMER.value)
+            return CurrentUser(
+                uid=decoded["uid"],
+                email=decoded.get("email"),
+                role=UserRole(role_str) if role_str in UserRole._value2member_map_ else UserRole.CUSTOMER,
+                name=decoded.get("name"),
+            )
+        except Exception as fb_exc:
+            id_token_error = str(fb_exc)
 
-    @staticmethod
-    def _b64url_encode(data: bytes) -> str:
-        return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+        # 2. Attempt to verify as a Firebase Custom Token (minted by this service account)
+        if self._public_key is not None:
+            try:
+                decoded_custom = jwt.decode(
+                    token,
+                    self._public_key,
+                    algorithms=["RS256"],
+                    audience="https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
+                )
+                claims = decoded_custom.get("claims", {})
+                role_val = claims.get("role", UserRole.CUSTOMER.value)
+                return CurrentUser(
+                    uid=str(decoded_custom.get("uid") or decoded_custom.get("sub")),
+                    email=claims.get("email"),
+                    role=UserRole(role_val) if role_val in UserRole._value2member_map_ else UserRole.CUSTOMER,
+                    name=claims.get("name"),
+                )
+            except Exception as jwt_exc:
+                logger.debug(f"Custom token verification also failed: {jwt_exc}")
 
-    @staticmethod
-    def _b64url_decode(data: str) -> bytes:
-        padding = "=" * (-len(data) % 4)
-        return base64.urlsafe_b64decode(data + padding)
+        # Strict: reject invalid tokens
+        raise UnauthorizedAccessException(f"Invalid or expired Firebase token. Verification failed: {id_token_error}")
 
 
-default_auth_verifier = FirebaseAuthVerifier(
-    credentials_path=os.getenv("FIREBASE_CREDENTIALS_PATH"),
-    secret_key=os.getenv("JWT_SECRET_KEY", "rideeat-soa-super-secret-jwt-key-2026"),
-)
+def _get_default_verifier() -> FirebaseAuthVerifier:
+    try:
+        return FirebaseAuthVerifier()
+    except Exception as exc:
+        logger.warning(f"Default FirebaseAuthVerifier deferred initialization: {exc}")
+        return None  # Will be provided via DI in FastAPI lifecycle
+
+
+default_auth_verifier = _get_default_verifier()
 
 
 async def get_current_user(
@@ -175,9 +203,10 @@ async def get_current_user(
     x_user_role: Optional[str] = Header(default=None, alias="X-User-Role"),
     x_user_email: Optional[str] = Header(default=None, alias="X-User-Email"),
 ) -> CurrentUser:
-    """FastAPI dependency resolving CurrentUser from Bearer Token or Gateway headers."""
+    """FastAPI dependency resolving CurrentUser strictly from Bearer Token or Gateway headers."""
     if credentials and credentials.credentials:
-        return default_auth_verifier.verify_token(credentials.credentials)
+        verifier = default_auth_verifier or FirebaseAuthVerifier()
+        return verifier.verify_token(credentials.credentials)
 
     if x_user_id:
         role = UserRole(x_user_role) if x_user_role in UserRole._value2member_map_ else UserRole.CUSTOMER
