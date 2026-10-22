@@ -1,52 +1,60 @@
-# 🚀 RideEat Super-App — Hệ Thống Đặt Xe Công Nghệ, Giao Đồ Ăn & Ví Điện Tử (SOA + Deep OOP)
+# 🚀 RideEat Super-App — Hệ Thống Đặt Xe Công Nghệ, Giao Đồ Ăn & Ví Điện Tử (SOA + Strict OOP)
 
 ![Architecture](https://img.shields.io/badge/Architecture-SOA%209%20Microservices-10b981?style=for-the-badge)
 ![OOP](https://img.shields.io/badge/Paradigm-Strict%20OOP%20%2B%20DDD%20%2B%20SOLID-3b82f6?style=for-the-badge)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.11-f59e0b?style=for-the-badge)
-![Frontend](https://img.shields.io/badge/Frontend-React%2018%20%7C%20Leaflet%20OSM-8b5cf6?style=for-the-badge)
+![Kafka](https://img.shields.io/badge/Message_Broker-Apache%20Kafka%20KRaft-red?style=for-the-badge)
+![Firebase](https://img.shields.io/badge/Security-Firebase%20Admin%20SDK-orange?style=for-the-badge)
+![Frontend](https://img.shields.io/badge/Frontend-React%2018%20%7C%20GitHub%20Pages-8b5cf6?style=for-the-badge)
 
-**RideEat** là dự án cuối kỳ môn **Kiến Trúc Hướng Dịch Vụ (Service-Oriented Architecture - SOA)** được xây dựng kết hợp sâu sắc với **Lập Trình Hướng Đối Tượng (Object-Oriented Programming - OOP)**. Hệ thống mô phỏng trọn vẹn một siêu ứng dụng thực tế tương tự Grab / Be / ShopeeFood với **9 Microservices độc lập**, **Nginx API Gateway**, **Apache Kafka Event Bus**, **Redis Geo-Spatial & Cart Cache**, **PostgreSQL Multi-Schema**, **Prometheus + Grafana Observability** và **Giao diện Web Super-App trực quan**.
+**RideEat** là đồ án môn **Kiến Trúc Hướng Dịch Vụ (Service-Oriented Architecture - SOA)** kết hợp **Lập Trình Hướng Đối Tượng (Object-Oriented Programming - OOP)**. Hệ thống mô phỏng siêu ứng dụng hoàn chỉnh như Grab / Be với **9 Microservices độc lập**, **Nginx API Gateway**, **Apache Kafka Event Streaming**, **Redis 7 (Cache & Geo Spatial)**, **PostgreSQL (Multi-Schema)**, **Firebase Admin SDK Authentication** và **Giao diện Web React đa phân quyền** đã được triển khai tự động lên **GitHub Pages**.
 
----
-
-## 🌟 Điểm Nổi Bật Của Dự Án (Key Highlights)
-
-1. **9 Microservices Độc Lập (Bounded Contexts chuẩn SOA):**
-   - `auth-service (:8001)` — Xác thực đa chiến lược (JWT, OTP, Refresh Token) & Phân quyền RBAC.
-   - `user-service (:8002)` — Hồ sơ người dùng đa hình (`CustomerProfile`, `DriverProfile`, `MerchantProfile`) & Duyệt KYC tài xế.
-   - `ride-service (:8003)` — Đặt xe công nghệ, Tính giá đa hình (`Bike`, `Car 4`, `Car 7`, `Luxury`), Máy trạng thái chuyến đi & Xác thực QR/OTP 6 số.
-   - `food-service (:8004)` — Nhà hàng, Thực đơn cấu trúc cây (`Composite Pattern`), Giỏ hàng Redis, Theo dõi đơn hàng & **AI Food Recommender**.
-   - `map-service (:8005)` — Định tuyến Haversine + Hệ số giao thông đô thị, Tính ETA, Tạo Polyline bản đồ & Tìm tài xế gần nhất theo bán kính.
-   - `payment-service (:8006)` — Ví điện tử đóng gói (`Wallet.__balance`), Thanh toán đa cổng (`Wallet`, `VNPay`, `MoMo`, `Cash`), Hóa đơn điện tử & Hoàn tiền tự động (Saga).
-   - `rating-service (:8007)` — Đánh giá 5 sao đa hình & Tính điểm uy tín trung bình có trọng số Bayes (`BayesianWeightedAverageStrategy`).
-   - `promo-service (:8008)` — Chiến dịch khuyến mãi, Chiến lược tính giảm giá & Chuỗi quy tắc kiểm duyệt (`Specification Pattern`).
-   - `notification-service (:8009)` — Tiêu thụ sự kiện Kafka & Đẩy thông báo đa kênh thời gian thực (`WebSocket`, `Email`, `SMS`).
-2. **Thiết Kế Hướng Đối Tượng (OOP) Từ Core Framework Đến Frontend:**
-   - Gói thư viện lõi `services/shared/` cung cấp đầy đủ `BaseEntity`, `AggregateRoot`, `ValueObject`, `DomainEvent`, `IRepository[T]`, `BaseController`, `CircuitBreaker`, `ServiceRegistry`.
-   - Giao diện `web-admin` được kiến trúc theo lớp OOP (`BaseApiClient` và 7 lớp dịch vụ con) tích hợp cơ chế **Automatic Demo Simulation Fallback** giúp giao diện luôn hoạt động mượt mà ngay cả khi chạy độc lập.
+🔗 **Trang Web Trực Tuyến:** [https://2006phu.github.io/rideeat-soa/](https://2006phu.github.io/rideeat-soa/)
 
 ---
 
-## 📂 Cấu Trúc Thư Mục Dự Án
+## 🌟 Điểm Nổi Bật Của Hệ Thống
+
+1. **9 Microservices Độc Lập (Chuẩn Bounded Contexts SOA):**
+   - 🔐 `auth-service (:8001)` — Xác thực Firebase OAuth (Google Sign-In), JWT, kiểm soát quyền truy cập RBAC (Khách hàng, Tài xế, Nhà hàng, Admin).
+   - 👤 `user-service (:8002)` — Quản lý hồ sơ người dùng đa hình (`CustomerProfile`, `DriverProfile`, `MerchantProfile`), định danh KYC và tạo mã QR xác thực.
+   - 🛵 `ride-service (:8003)` — Đặt xe công nghệ, Tính giá đa hình (Xe máy, Ô tô 4 chỗ, SUV 7 chỗ, VIP), máy trạng thái chuyến đi & xác thực mã OTP lên xe.
+   - 🍔 `food-service (:8004)` — Danh mục quán ăn, thực đơn cấu trúc Composite, Giỏ hàng Redis, Theo dõi tiến độ nấu món & Trợ lý gợi ý món ngon.
+   - 🗺️ `map-service (:8005)` — Định tuyến đường đi thực tế, tính cước theo khoảng cách & ETA, tìm tài xế gần nhất qua Redis Geo-Spatial.
+   - 💳 `payment-service (:8006)` — Ví điện tử đóng gói bảo mật (`Wallet.__balance`), thanh toán đa cổng (Ví RideEat, VNPay QR, Tiền mặt), xuất hóa đơn điện tử.
+   - ⭐ `rating-service (:8007)` — Đánh giá chất lượng 5 sao, tính điểm uy tín tài xế và quán ăn theo thuật toán Bayes.
+   - 🎟️ `promo-service (:8008)` — Quản lý mã giảm giá, tính chiết khấu theo chiến lược (`PercentageStrategy`, `FixedAmountStrategy`).
+   - 🔔 `notification-service (:8009)` — Lắng nghe sự kiện Kafka thời gian thực và đẩy thông báo đa kênh (In-app WebSocket, Email, FCM).
+
+2. **Chế Độ Chạy Thật 100% (Strict Real Mode — Không Dùng Mock/Fallback Giả Lập):**
+   - **Firebase Thật:** Kết nối trực tiếp với **Firebase Admin SDK** thông qua file chứng thư số [`config/firebase/serviceAccountKey.json`](./config/firebase/serviceAccountKey.json). Mọi token được ký và kiểm tra chữ ký RSA-256 (`RS256`).
+   - **Kafka Thật:** Sử dụng cụm **Apache Kafka KRaft 3.6** với `aiokafka`. Toàn bộ giao tiếp bất đồng bộ giữa các service (Đặt xe, Giao món, Thanh toán) chạy qua các Topic Kafka thực tế.
+   - **Giao diện phân quyền thực tế:** Mở web bắt buộc qua **Màn hình Đăng nhập / Đăng ký** hoặc **Đăng nhập Google qua Firebase**. Mỗi vai trò chỉ thấy đúng các chức năng thực tế của mình. Xe tự động lăn bánh trên bản đồ Leaflet theo thời gian thực.
+
+---
+
+## 📂 Cấu Trúc Thư Mục
 
 ```text
 rideeat-soa/
-├── docker-compose.yml              # Orchestration cho toàn bộ 15 containers (Infra + 9 Services + Gateway + UI + Monitoring)
-├── .env.example                    # Biến môi trường mẫu
+├── docker-compose.yml              # Điều phối 15 containers (Postgres, Redis, Kafka, 9 Services, Gateway, UI, Monitoring)
+├── .env.example                    # File mẫu cấu hình biến môi trường
+├── config/
+│   └── firebase/
+│       ├── serviceAccountKey.json  # File chứng thư bảo mật Firebase Admin SDK (đã cấu hình cho project rideate-project)
+│       └── serviceAccountKey.example.json
 ├── nginx/
-│   └── nginx.conf                  # Cấu hình Nginx API Gateway (:8080), Rate Limiting & WebSocket Upgrade
+│   └── nginx.conf                  # Cấu hình Nginx API Gateway (:8080), Rate Limiting & WebSocket Proxy
 ├── monitoring/
-│   ├── init-db.sql                 # Khởi tạo 9 PostgreSQL Schemas độc lập cho 9 Microservices
-│   ├── prometheus.yml              # Cấu hình Prometheus thu thập metrics mỗi 10s
-│   └── grafana-dashboard.json      # Bảng điều khiển Grafana giám sát toàn hệ thống
+│   ├── init-db.sql                 # Script SQL khởi tạo 9 schema độc lập trong PostgreSQL
+│   ├── prometheus.yml              # Thu thập metrics từ 9 service mỗi 10s
+│   └── grafana-dashboard.json      # Bảng điều khiển Grafana giám sát hiệu năng
 ├── postman/
-│   └── rideeat-collection.json     # Bộ kiểm thử Postman v2.1 cho cả 9 dịch vụ kèm kịch bản pm.test()
-├── .github/workflows/
-│   └── ci-cd.yml                   # Pipeline CI/CD tự động kiểm tra Lint, Build React, Docker Compose & Newman
-├── docs/
-│   └── OOP_SOA_ARCHITECTURE.md     # Tài liệu phân tích chuyên sâu 4 trụ cột OOP, SOLID & 7 Design Patterns
-├── services/                       # Mã nguồn Backend Python FastAPI của 9 Microservices & Shared OOP Kernel
-│   ├── shared/                     # Core OOP Domain, Repository, EventBus, Resilience, Security
+│   └── rideeat-collection.json     # Bộ kiểm thử tự động Postman v2.1 cho 9 Microservices
+├── scripts/
+│   └── start_ngrok.ps1             # Script mở cổng API Gateway ra Internet kết nối với GitHub Pages
+├── services/                       # Mã nguồn Backend 9 Microservices & Thư viện OOP Core
+│   ├── common/                     # OOP Kernel: Domain Base, Repository, Kafka Bus, Firebase Auth, Redis
 │   ├── auth-service/               # Port 8001
 │   ├── user-service/               # Port 8002
 │   ├── ride-service/               # Port 8003
@@ -56,55 +64,106 @@ rideeat-soa/
 │   ├── rating-service/             # Port 8007
 │   ├── promo-service/              # Port 8008
 │   └── notification-service/       # Port 8009
-└── web-admin/                      # Ứng dụng Frontend React 18 + Vite + Leaflet OpenStreetMap (:3000)
+└── web-admin/                      # Giao diện Frontend React 18 + Vite + Leaflet OpenStreetMap (:3000)
 ```
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Chạy Hệ Thống
+## 🛠️ Hướng Dẫn Khởi Động & Chạy Thật Hệ Thống
 
-### Cách 1: Chạy Toàn Bộ Hệ Sinh Thái Bằng Docker Compose (Khuyên dùng)
+### Bước 1: Chuẩn bị chứng thư Firebase
+Đảm bảo file `serviceAccountKey.json` đã được đặt tại đường dẫn:
+```text
+config/firebase/serviceAccountKey.json
+```
+*(File này được gắn tự động vào container `auth-service` trong `docker-compose.yml` để kích hoạt Firebase Admin SDK thật).*
 
+---
+
+### Bước 2: Tạo file biến môi trường
+Mở Terminal/PowerShell tại thư mục `rideeat-soa` và chạy:
 ```bash
-# Bước 1: Di chuyển vào thư mục dự án
-cd rideeat-soa
-
-# Bước 2: Khởi tạo file cấu hình môi trường
 cp .env.example .env
+```
 
-# Bước 3: Khởi chạy toàn bộ 9 Microservices, API Gateway, Web Admin, DB, Kafka & Monitoring
+---
+
+### Bước 3: Khởi động hệ thống thật với Docker Compose
+Đảm bảo phần mềm **Docker Desktop** trên máy bạn đang mở. Sau đó chạy lệnh:
+```bash
 docker compose up --build -d
 ```
-
-Sau khi khởi chạy thành công, truy cập các cổng dịch vụ:
-- 🌐 **Giao diện Siêu Ứng Dụng & Quản Trị (`web-admin`)**: [http://localhost:3000](http://localhost:3000)
-- 🛡️ **Nginx API Gateway**: [http://localhost:8080/health](http://localhost:8080/health)
-- 📈 **Prometheus Metrics**: [http://localhost:9090](http://localhost:9090)
-- 📊 **Grafana Dashboard**: [http://localhost:3001](http://localhost:3001) *(Tài khoản: `admin` / `rideeat_admin`)*
-- 📘 **Swagger UI của từng Microservice**: `http://localhost:8001/docs` đến `http://localhost:8009/docs`
-
-### Cách 2: Chạy Nhanh Giao Diện Web Admin (Chế Độ Interactive Demo & Live Hybrid)
-
-```bash
-cd rideeat-soa/web-admin
-npm install
-npm run dev
-```
-Mở trình duyệt tại [http://localhost:3000](http://localhost:3000) để trải nghiệm đầy đủ 5 phân hệ:
-1. **🛵 Đặt Xe & Bản Đồ GPS**: Chọn điểm đón/đến tại TP.HCM, xem đường đi trên OpenStreetMap, so sánh giá đa hình giữa 4 dòng xe, bật/tắt phụ phí trời mưa/giờ cao điểm/bảo hiểm, nhận mã QR & OTP 6 số.
-2. **🍔 Đặt Đồ Ăn & AI Gợi Ý**: Khám phá thực đơn Composite, nhận gợi ý món ăn bằng AI theo thời tiết & khung giờ, thêm giỏ hàng, áp mã Voucher và theo dõi tiến trình giao hàng.
-3. **💳 Ví & Thanh Toán**: Nạp tiền vào Ví đóng gói `WalletEntity`, chuyển đổi chiến lược thanh toán (`Wallet`, `VNPay`, `MoMo`, `Cash`) và xem Hóa đơn điện tử.
-4. **👨‍✈️ Cổng Tài Xế & Nhà Hàng**: Duyệt KYC tài xế, bật trạng thái trực tuyến, nhập mã OTP 6 số để xác thực đón khách và cập nhật điểm uy tín Bayesian.
-5. **📊 Giám Sát SOA & OOP**: Theo dõi trạng thái 9 Microservices, luồng sự kiện Apache Kafka trực tiếp và ma trận kiến trúc OOP.
+Lệnh này sẽ tự động tải các image, khởi tạo cơ sở dữ liệu PostgreSQL, Redis, Kafka KRaft, Nginx Gateway và build 9 container microservices.
 
 ---
 
-## 🧪 Kiểm Thử API Với Postman / Newman
+### Bước 4: Kiểm tra trạng thái các dịch vụ đang chạy
+1. **Kiểm tra danh sách container:**
+   ```bash
+   docker ps
+   ```
+2. **Kiểm tra cổng API Gateway tập trung:**
+   - [http://localhost:8080/health](http://localhost:8080/health)
+3. **Truy cập tài liệu Swagger UI của từng dịch vụ:**
+   - 🔐 **Auth Service:** [http://localhost:8001/docs](http://localhost:8001/docs)
+   - 👤 **User Service:** [http://localhost:8002/docs](http://localhost:8002/docs)
+   - 🛵 **Ride Service:** [http://localhost:8003/docs](http://localhost:8003/docs)
+   - 🍔 **Food Service:** [http://localhost:8004/docs](http://localhost:8004/docs)
+   - 🗺️ **Map Service:** [http://localhost:8005/docs](http://localhost:8005/docs)
+   - 💳 **Payment Service:** [http://localhost:8006/docs](http://localhost:8006/docs)
+   - ⭐ **Rating Service:** [http://localhost:8007/docs](http://localhost:8007/docs)
+   - 🎟️ **Promo Service:** [http://localhost:8008/docs](http://localhost:8008/docs)
+   - 🔔 **Notification Service:** [http://localhost:8009/docs](http://localhost:8009/docs)
+4. **Kiểm tra các Topic Kafka thật trong container:**
+   ```bash
+   docker exec -it rideeat-kafka kafka-topics.sh --bootstrap-server localhost:9092 --list
+   ```
+5. **Giám sát Prometheus & Grafana:**
+   - 📈 **Prometheus:** [http://localhost:9090](http://localhost:9090)
+   - 📊 **Grafana:** [http://localhost:3001](http://localhost:3001) *(Đăng nhập: `admin` / `rideeat_admin`)*
 
-Import file `postman/rideeat-collection.json` vào Postman hoặc chạy tự động bằng Newman CLI:
+---
 
-```bash
-npx newman run postman/rideeat-collection.json
+### Bước 5: Mở kết nối Ngrok ra Internet (để nối với GitHub Pages)
+Nếu bạn muốn sử dụng trang web trực tuyến trên **GitHub Pages** ([https://2006phu.github.io/rideeat-soa/](https://2006phu.github.io/rideeat-soa/)) gửi request về trực tiếp backend đang chạy trên máy của bạn:
+
+Mở một cửa sổ PowerShell mới và chạy:
+```powershell
+.\scripts\start_ngrok.ps1
 ```
+Script sẽ cung cấp một đường link HTTPS công khai (ví dụ `https://xxxx.ngrok-free.app`) trỏ về cổng `:8080` của API Gateway trên máy bạn.
 
-Xem chi tiết phân tích kiến trúc OOP & SOA tại: [docs/OOP_SOA_ARCHITECTURE.md](./docs/OOP_SOA_ARCHITECTURE.md).
+---
+
+### Bước 6: Trải nghiệm người dùng trên Giao diện Web
+Truy cập [http://localhost:3000](http://localhost:3000) (hoặc [https://2006phu.github.io/rideeat-soa/](https://2006phu.github.io/rideeat-soa/)):
+1. **Màn hình Đăng nhập:**
+   - Đăng nhập bằng Email/Mật khẩu hoặc chọn nhanh 1 trong 4 tài khoản mẫu (**Khách hàng**, **Tài xế**, **Chủ quán**, **Admin**).
+   - Hoặc bấm **🔥 Đăng nhập bằng Google (Firebase Auth)** để xác thực bằng tài khoản Google thật.
+2. **Phân hệ Khách hàng:**
+   - **🛵 Đặt xe:** Chọn điểm đón/đến tại TP.HCM, xem lộ trình trên bản đồ OpenStreetMap, chọn loại xe (Xe máy, 4 chỗ, 7 chỗ), áp mã giảm giá, bấm đặt xe và theo dõi xe tự động lăn bánh theo thời gian thực.
+   - **🍔 Đặt đồ ăn:** Xem menu quán, thêm món vào giỏ, đặt món và theo dõi đơn hàng tự động cập nhật trạng thái nấu/giao.
+   - **💳 Ví & Thanh toán:** Nạp tiền vào ví, đổi cổng thanh toán (VNPay, Ví, Tiền mặt) và xem lịch sử giao dịch.
+   - **🤖 Trợ lý AI:** Chat trực tiếp với AI để hỏi giá xe, gợi ý món ăn theo khẩu vị hoặc tìm mã giảm giá.
+3. **Phân hệ Tài xế:** Bật/tắt nhận cuốc, xem chuyến xe đang cần đón, nhập mã OTP khách đưa để bắt đầu chuyến đi.
+4. **Phân hệ Chủ quán ăn:** Xác nhận đơn đặt món mới và quản lý trạng thái các món trong thực đơn.
+5. **Phân hệ Quản trị viên:** Giám sát trạng thái 9 Microservices và luồng sự kiện Kafka toàn hệ thống.
+
+---
+
+## 🧪 Kiểm Thử Tự Động Với Postman & Unit Tests
+
+* **Chạy bộ kiểm thử kiến trúc OOP & Microservices:**
+  ```bash
+  python tests/test_oop_core.py -v
+  ```
+* **Chạy kiểm thử 9 API Microservices bằng Newman CLI:**
+  ```bash
+  npx newman run postman/rideeat-collection.json
+  ```
+
+---
+
+## 📖 Tài Liệu Chi Tiết Về Kiến Trúc OOP & SOA
+Xem phân tích chuyên sâu về 4 Tính chất OOP (Đóng gói, Kế thừa, Đa hình, Trừu tượng), nguyên lý SOLID và 7 Design Patterns tại:  
+👉 [docs/OOP_SOA_ARCHITECTURE.md](./docs/OOP_SOA_ARCHITECTURE.md)

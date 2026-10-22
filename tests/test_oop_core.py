@@ -79,28 +79,31 @@ class TestRideEatOOPArchitecture(unittest.IsolatedAsyncioTestCase):
     def setUpClass(cls) -> None:
         key_path = os.path.join(ROOT_DIR, "config", "firebase", "serviceAccountKey.json")
         if not os.path.exists(key_path):
-            import json
-            from cryptography.hazmat.primitives import serialization
-            from cryptography.hazmat.primitives.asymmetric import rsa
+            try:
+                import json
+                from cryptography.hazmat.primitives import serialization
+                from cryptography.hazmat.primitives.asymmetric import rsa
 
-            os.makedirs(os.path.dirname(key_path), exist_ok=True)
-            priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-            pem = priv.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption(),
-            ).decode("utf-8")
-            dummy = {
-                "type": "service_account",
-                "project_id": "rideeat-ci-test",
-                "private_key_id": "ci-test-key",
-                "private_key": pem,
-                "client_email": "ci-test@rideeat-ci-test.iam.gserviceaccount.com",
-                "client_id": "1234567890",
-            }
-            with open(key_path, "w", encoding="utf-8") as f:
-                json.dump(dummy, f)
-            cls._created_dummy_key = True
+                os.makedirs(os.path.dirname(key_path), exist_ok=True)
+                priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+                pem = priv.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption(),
+                ).decode("utf-8")
+                dummy = {
+                    "type": "service_account",
+                    "project_id": "rideeat-ci-test",
+                    "private_key_id": "ci-test-key",
+                    "private_key": pem,
+                    "client_email": "ci-test@rideeat-ci-test.iam.gserviceaccount.com",
+                    "client_id": "1234567890",
+                }
+                with open(key_path, "w", encoding="utf-8") as f:
+                    json.dump(dummy, f)
+                cls._created_dummy_key = True
+            except ImportError:
+                cls._created_dummy_key = False
         else:
             cls._created_dummy_key = False
 
