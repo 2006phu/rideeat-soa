@@ -8,18 +8,29 @@ import { initializeApp, getApps, deleteApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 export const getFirebaseWebApiKey = () => {
-  return (
-    import.meta.env.VITE_FIREBASE_API_KEY ||
-    localStorage.getItem('RIDEEAT_FIREBASE_API_KEY') ||
-    localStorage.getItem('RIDEEAT_GEMINI_KEY') || // Often the same Google Cloud project API key
-    ''
-  );
+  const envKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  if (envKey) return envKey;
+
+  const storedKey = localStorage.getItem('RIDEEAT_FIREBASE_API_KEY');
+  const geminiKey = localStorage.getItem('RIDEEAT_GEMINI_KEY');
+
+  // Prevent using the Gemini API key (which belongs to a different GCP project) for Firebase
+  if (storedKey && geminiKey && storedKey === geminiKey) {
+    localStorage.removeItem('RIDEEAT_FIREBASE_API_KEY');
+    return '';
+  }
+
+  return storedKey || '';
 };
 
 export const setFirebaseWebApiKey = (key) => {
   if (key && key.trim()) {
     localStorage.setItem('RIDEEAT_FIREBASE_API_KEY', key.trim());
   }
+};
+
+export const clearFirebaseWebApiKey = () => {
+  localStorage.removeItem('RIDEEAT_FIREBASE_API_KEY');
 };
 
 export const getFirebaseApp = async () => {

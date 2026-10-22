@@ -3,7 +3,8 @@ import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import {
   signInWithGooglePopup,
   getFirebaseWebApiKey,
-  setFirebaseWebApiKey
+  setFirebaseWebApiKey,
+  clearFirebaseWebApiKey
 } from './services/firebaseClient.js';
 
 const HCMC_LOCATIONS = [
@@ -216,15 +217,33 @@ export default function App() {
       setActiveTab(userObj.defaultTab);
     } catch (err) {
       console.error('Google Sign-In Error:', err);
-      if (err.code === 'auth/api-key-not-valid' || err.message?.includes('API key')) {
+      const msg = err.message || '';
+      const code = err.code || '';
+
+      if (
+        code.includes('identity-toolkit-api') ||
+        msg.includes('identity-toolkit-api') ||
+        msg.includes('identitytoolkit')
+      ) {
+        clearFirebaseWebApiKey();
+        setFirebaseApiKeyInput('');
+        setFirebaseError(
+          'API Key đang dùng thuộc dự án GCP khác (chỉ dùng cho Gemini AI, chưa bật Firebase Auth). Vui lòng dán Web API Key từ Firebase Console dự án "rideate-project".'
+        );
+        setShowApiKeyPrompt(true);
+      } else if (code === 'auth/api-key-not-valid' || msg.includes('API key') || code.includes('invalid-api-key')) {
+        clearFirebaseWebApiKey();
+        setFirebaseApiKeyInput('');
         setFirebaseError('Web API Key chưa đúng hoặc chưa kích hoạt Google Provider trên Firebase Console.');
         setShowApiKeyPrompt(true);
-      } else if (err.code === 'auth/popup-closed-by-user') {
+      } else if (code === 'auth/popup-closed-by-user') {
         setFirebaseError('Bạn vừa đóng cửa sổ đăng nhập Google.');
-      } else if (err.code === 'auth/unauthorized-domain') {
-        setFirebaseError('Tên miền này chưa được thêm vào Authorized Domains trên Firebase Console (Authentication -> Settings -> Authorized domains).');
+      } else if (code === 'auth/unauthorized-domain') {
+        setFirebaseError(
+          'Tên miền này chưa được thêm vào Authorized Domains trên Firebase Console (Authentication ➡️ Settings ➡️ Authorized domains).'
+        );
       } else {
-        setFirebaseError(err.message || 'Lỗi kết nối Firebase Google Auth.');
+        setFirebaseError(msg || 'Lỗi kết nối Firebase Google Auth.');
       }
     } finally {
       setFirebaseLoading(false);
@@ -779,6 +798,26 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             <span>🔥</span>
             <span>{firebaseLoading ? 'Đang mở cửa sổ Google...' : 'Đăng nhập bằng Google (Firebase Auth)'}</span>
           </button>
+
+          <div style={{ marginTop: '8px', textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setFirebaseApiKeyInput(getFirebaseWebApiKey());
+                setShowApiKeyPrompt(true);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#64748b',
+                fontSize: '12px',
+                textDecoration: 'underline',
+                cursor: 'pointer'
+              }}
+            >
+              ⚙️ Đổi / Nhập Web API Key của dự án Firebase
+            </button>
+          </div>
 
           {firebaseError && !showApiKeyPrompt && (
             <div style={{ marginTop: '12px', fontSize: '13px', color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', textAlign: 'left', lineHeight: 1.4 }}>
