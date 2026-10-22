@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
-import {
-  signInWithGooglePopup,
-  getFirebaseWebApiKey,
-  setFirebaseWebApiKey,
-  clearFirebaseWebApiKey
-} from './services/firebaseClient.js';
+import { signInWithGooglePopup } from './services/firebaseClient.js';
 
 const HCMC_LOCATIONS = [
   { id: 'ben-thanh', name: 'Chợ Bến Thành, Quận 1', lat: 10.7726, lng: 106.6980 },
@@ -85,8 +80,6 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState('customer@rideeat.vn');
   const [loginPassword, setLoginPassword] = useState('Password123!');
   const [registerName, setRegisterName] = useState('');
-  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
-  const [firebaseApiKeyInput, setFirebaseApiKeyInput] = useState(() => getFirebaseWebApiKey());
   const [firebaseLoading, setFirebaseLoading] = useState(false);
   const [firebaseError, setFirebaseError] = useState('');
   const [activeTab, setActiveTab] = useState('RIDE');
@@ -186,12 +179,6 @@ export default function App() {
 
   const handleGoogleSignIn = async () => {
     setFirebaseError('');
-    const currentKey = getFirebaseWebApiKey();
-    if (!currentKey) {
-      setShowApiKeyPrompt(true);
-      return;
-    }
-
     setFirebaseLoading(true);
     try {
       const googleUser = await signInWithGooglePopup();
@@ -217,49 +204,17 @@ export default function App() {
       setActiveTab(userObj.defaultTab);
     } catch (err) {
       console.error('Google Sign-In Error:', err);
-      const msg = err.message || '';
       const code = err.code || '';
-
-      if (
-        code.includes('identity-toolkit-api') ||
-        msg.includes('identity-toolkit-api') ||
-        msg.includes('identitytoolkit')
-      ) {
-        clearFirebaseWebApiKey();
-        setFirebaseApiKeyInput('');
-        setFirebaseError(
-          'API Key đang dùng thuộc dự án GCP khác (chỉ dùng cho Gemini AI, chưa bật Firebase Auth). Vui lòng dán Web API Key từ Firebase Console dự án "rideate-project".'
-        );
-        setShowApiKeyPrompt(true);
-      } else if (code === 'auth/api-key-not-valid' || msg.includes('API key') || code.includes('invalid-api-key')) {
-        clearFirebaseWebApiKey();
-        setFirebaseApiKeyInput('');
-        setFirebaseError('Web API Key chưa đúng hoặc chưa kích hoạt Google Provider trên Firebase Console.');
-        setShowApiKeyPrompt(true);
-      } else if (code === 'auth/popup-closed-by-user') {
+      if (code === 'auth/popup-closed-by-user') {
         setFirebaseError('Bạn vừa đóng cửa sổ đăng nhập Google.');
       } else if (code === 'auth/unauthorized-domain') {
-        setFirebaseError(
-          'Tên miền này chưa được thêm vào Authorized Domains trên Firebase Console (Authentication ➡️ Settings ➡️ Authorized domains).'
-        );
+        setFirebaseError('Tên miền này chưa được cấu hình Authorized Domain trên Firebase Console.');
       } else {
-        setFirebaseError(msg || 'Lỗi kết nối Firebase Google Auth.');
+        setFirebaseError(err.message || 'Không thể đăng nhập bằng Google lúc này. Vui lòng thử lại sau.');
       }
     } finally {
       setFirebaseLoading(false);
     }
-  };
-
-  const handleSaveApiKeyAndSignIn = () => {
-    if (!firebaseApiKeyInput.trim()) {
-      alert('Vui lòng dán Web API Key từ Firebase Console.');
-      return;
-    }
-    setFirebaseWebApiKey(firebaseApiKeyInput.trim());
-    setShowApiKeyPrompt(false);
-    setTimeout(() => {
-      handleGoogleSignIn();
-    }, 150);
   };
 
   const handleLogout = () => {
@@ -799,96 +754,12 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             <span>{firebaseLoading ? 'Đang mở cửa sổ Google...' : 'Đăng nhập bằng Google (Firebase Auth)'}</span>
           </button>
 
-          <div style={{ marginTop: '8px', textAlign: 'center' }}>
-            <button
-              type="button"
-              onClick={() => {
-                setFirebaseApiKeyInput(getFirebaseWebApiKey());
-                setShowApiKeyPrompt(true);
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#64748b',
-                fontSize: '12px',
-                textDecoration: 'underline',
-                cursor: 'pointer'
-              }}
-            >
-              ⚙️ Đổi / Nhập Web API Key của dự án Firebase
-            </button>
-          </div>
-
-          {firebaseError && !showApiKeyPrompt && (
+          {firebaseError && (
             <div style={{ marginTop: '12px', fontSize: '13px', color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', textAlign: 'left', lineHeight: 1.4 }}>
               ⚠️ {firebaseError}
             </div>
           )}
         </div>
-
-        {/* FIREBASE WEB API KEY CONFIGURATION MODAL */}
-        {showApiKeyPrompt && (
-          <div className="modal-backdrop" onClick={() => setShowApiKeyPrompt(false)}>
-            <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-              <div className="card-header">
-                <div className="card-title">🔥 Cấu hình Firebase Google Auth</div>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowApiKeyPrompt(false)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5, marginBottom: '14px' }}>
-                Dự án Firebase: <strong className="mono">rideate-project</strong> (Project #107127608434).<br />
-                Để mở cửa sổ Google Popup chính thức (<code>accounts.google.com</code>), vui lòng dán <strong>Web API Key</strong> của dự án:
-              </p>
-
-              <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '6px', fontSize: '12px', color: '#475569', marginBottom: '14px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
-                💡 <strong>Cách lấy key trong 10 giây:</strong><br />
-                Vào tab Firebase Console dự án <code>rideate-project</code> ➡️ Bấm biểu tượng bánh răng ⚙️ (Project settings) ➡️ Tab <strong>General</strong> ➡️ Copy dòng <strong>Web API Key</strong> (bắt đầu bằng <code>AIzaSy...</code>).
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '16px', textAlign: 'left' }}>
-                <label className="form-label">Firebase Web API Key (AIzaSy...)</label>
-                <input
-                  type="text"
-                  className="form-input mono"
-                  value={firebaseApiKeyInput}
-                  onChange={(e) => setFirebaseApiKeyInput(e.target.value)}
-                  placeholder="AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  autoFocus
-                />
-              </div>
-
-              {firebaseError && (
-                <div style={{ marginBottom: '14px', fontSize: '12px', color: '#ef4444', textAlign: 'left' }}>
-                  ⚠️ {firebaseError}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowApiKeyPrompt(false)}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={handleSaveApiKeyAndSignIn}
-                  disabled={!firebaseApiKeyInput.trim()}
-                >
-                  🚀 Lưu Key & Mở Google Đăng Nhập
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
