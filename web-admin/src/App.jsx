@@ -11,13 +11,14 @@ const HCMC_LOCATIONS = [
   { id: 'sala-thu-thiem', name: 'Khu Đô Thị Sala, TP. Thủ Đức', lat: 10.7719, lng: 106.7224 }
 ];
 
-const RIDE_STATES = ['REQUESTED', 'DRIVER_ASSIGNED', 'ARRIVING', 'IN_PROGRESS', 'COMPLETED'];
+const RIDE_STATES = ['REQUESTED', 'DRIVER_ASSIGNED', 'ARRIVING', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
 const RIDE_STATE_LABELS = {
-  REQUESTED: 'Đang tìm xe',
-  DRIVER_ASSIGNED: 'Tài xế đã nhận',
-  ARRIVING: 'Đang đến đón',
-  IN_PROGRESS: 'Đang di chuyển',
-  COMPLETED: 'Đã đến nơi'
+  REQUESTED: '1. Tìm tài xế',
+  DRIVER_ASSIGNED: '2. Đã ghép đôi',
+  ARRIVING: '3. Đến điểm đón',
+  ARRIVED: '4. Đã đến nơi',
+  IN_PROGRESS: '5. Đang di chuyển',
+  COMPLETED: '6. Hoàn thành'
 };
 
 const FOOD_STATES = ['PENDING', 'CONFIRMED', 'PREPARING', 'DELIVERING', 'DELIVERED'];
@@ -101,7 +102,7 @@ export default function App() {
     }
   ]);
 
-  // Ride State
+  // Ride State & Realistic Simulation Lifecycle
   const [pickupId, setPickupId] = useState('ben-thanh');
   const [dropoffId, setDropoffId] = useState('landmark-81');
   const [weather, setWeather] = useState('CLEAR');
@@ -110,7 +111,21 @@ export default function App() {
   const [routeInfo, setRouteInfo] = useState({ distance_km: 3.9, duration_minutes: 10, polyline: [] });
   const [fareEstimates, setFareEstimates] = useState([]);
   const [activeRide, setActiveRide] = useState(null);
+  const [rideStage, setRideStage] = useState('IDLE'); // IDLE | SEARCHING | ARRIVING | ARRIVED | IN_PROGRESS | COMPLETED
+  const [searchProgress, setSearchProgress] = useState(0);
+  const [nearbyRadarDrivers, setNearbyRadarDrivers] = useState([]);
+  const [approachPolyline, setApproachPolyline] = useState([]);
+  const [approachStep, setApproachStep] = useState(0);
   const [driverStepIndex, setDriverStepIndex] = useState(0);
+  const [driverBearing, setDriverBearing] = useState(0);
+  const [currentSpeedKmh, setCurrentSpeedKmh] = useState(0);
+  const [assignedDriverInfo, setAssignedDriverInfo] = useState({
+    name: 'Trần Minh Tài',
+    plate: '59-X3 888.99',
+    vehicle: 'Honda SH 150i ABS',
+    rating: 4.98
+  });
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const mapContainerRef = useRef(null);
   const leafletMapRef = useRef(null);
@@ -464,15 +479,26 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
     });
   }, [pickupId, dropoffId, weather, isPeakHour, selectedVoucherCode, selectedVehicleCode, vouchers]);
 
-  // Render Leaflet Map
+  const handleSwapLocations = () => {
+    const temp = pickupId;
+    setPickupId(dropoffId);
+    setDropoffId(temp);
+  };
+
+  // Render Leaflet Map (Grab-style Custom DivIcon Pins, Sonar Radar & Dynamic Heading)
   useEffect(() => {
     if (!currentUser || activeTab !== 'RIDE' || !mapContainerRef.current || !window.L) return;
 
     if (!leafletMapRef.current) {
-      const map = window.L.map(mapContainerRef.current).setView([10.778, 106.705], 13);
+      const map = window.L.map(mapContainerRef.current, {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([10.778, 106.705], 13);
+
       window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
+        maxZoom: 19
       }).addTo(map);
+
       leafletMapRef.current = map;
       leafletLayerGroupRef.current = window.L.layerGroup().addTo(map);
     }
@@ -484,50 +510,166 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
     const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
     const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
 
-    window.L.circleMarker([pickup.lat, pickup.lng], {
-      radius: 8,
-      fillColor: '#00b14f',
-      color: '#ffffff',
-      weight: 2,
-      fillOpacity: 1
-    })
+    // 1. Pickup Pin with High-End Badge
+    const pickupHtml = `
+      <div class="custom-leaflet-marker">
+        <div class="pin-pickup-badge">🟢 ${pickup.name.split(',')[0]}</div>
+      </div>
+    `;
+    const pickupIcon = window.L.divIcon({
+      html: pickupHtml,
+      className: '',
+      iconSize: [140, 32],
+      iconAnchor: [70, 16]
+    });
+    window.L.marker([pickup.lat, pickup.lng], { icon: pickupIcon })
       .addTo(layerGroup)
       .bindPopup(`<b>Điểm đón:</b> ${pickup.name}`);
 
-    window.L.circleMarker([dropoff.lat, dropoff.lng], {
-      radius: 8,
-      fillColor: '#e11d48',
-      color: '#ffffff',
-      weight: 2,
-      fillOpacity: 1
-    })
+    // 2. Dropoff Pin with Checker Flag
+    const dropoffHtml = `
+      <div class="custom-leaflet-marker">
+        <div class="pin-dropoff-badge">🏁 ${dropoff.name.split(',')[0]}</div>
+      </div>
+    `;
+    const dropoffIcon = window.L.divIcon({
+      html: dropoffHtml,
+      className: '',
+      iconSize: [140, 32],
+      iconAnchor: [70, 16]
+    });
+    window.L.marker([dropoff.lat, dropoff.lng], { icon: dropoffIcon })
       .addTo(layerGroup)
       .bindPopup(`<b>Điểm đến:</b> ${dropoff.name}`);
 
-    if (routeInfo.polyline && routeInfo.polyline.length > 1) {
-      const poly = window.L.polyline(routeInfo.polyline, {
-        color: '#2563eb',
+    // 3. Stage 1: SEARCHING (Sonar Radar Wave & Ghost Drivers)
+    if (rideStage === 'SEARCHING') {
+      const radarHtml = `<div class="radar-sonar-circle"></div>`;
+      const radarIcon = window.L.divIcon({
+        html: radarHtml,
+        className: '',
+        iconSize: [80, 80],
+        iconAnchor: [40, 40]
+      });
+      window.L.marker([pickup.lat, pickup.lng], { icon: radarIcon, interactive: false }).addTo(layerGroup);
+
+      nearbyRadarDrivers.forEach((ghost) => {
+        const ghostHtml = `
+          <div class="custom-leaflet-marker">
+            <div class="pin-ghost-driver">🛵</div>
+          </div>
+        `;
+        const ghostIcon = window.L.divIcon({
+          html: ghostHtml,
+          className: '',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+        window.L.marker([ghost.lat, ghost.lng], { icon: ghostIcon })
+          .addTo(layerGroup)
+          .bindPopup(`<b>${ghost.name}</b> (${ghost.rating}★)<br>${ghost.vehicle}`);
+      });
+
+      map.setView([pickup.lat, pickup.lng], 15);
+    }
+
+    // 4. Stage 2: ARRIVING (Approach Dashed Route & Approaching Vehicle)
+    if (rideStage === 'ARRIVING' && approachPolyline.length > 0) {
+      const approachLine = window.L.polyline(approachPolyline, {
+        color: '#f59e0b',
         weight: 4,
-        opacity: 0.85
+        dashArray: '6, 8',
+        opacity: 0.95
       }).addTo(layerGroup);
 
-      const idx = Math.min(driverStepIndex, routeInfo.polyline.length - 1);
-      const driverCoord = routeInfo.polyline[idx];
-      if (driverCoord) {
-        window.L.circleMarker(driverCoord, {
-          radius: 9,
-          fillColor: '#f59e0b',
-          color: '#ffffff',
-          weight: 2,
-          fillOpacity: 1
-        })
-          .addTo(layerGroup)
-          .bindPopup(`<b>🛵 Tài xế Trần Minh Tài</b>`);
-      }
+      const currentCoord = approachPolyline[approachStep] || approachPolyline[0];
+      const vehicleEmoji = selectedVehicleCode === 'BIKE' ? '🛵' : '🚗';
+      const driverHtml = `
+        <div class="custom-leaflet-marker" style="transform: rotate(${driverBearing}deg);">
+          <div class="pin-driver-vehicle">${vehicleEmoji}</div>
+        </div>
+      `;
+      const driverIcon = window.L.divIcon({
+        html: driverHtml,
+        className: '',
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
+      });
+      window.L.marker(currentCoord, { icon: driverIcon })
+        .addTo(layerGroup)
+        .bindPopup(`<b>${assignedDriverInfo?.name || 'Tài xế'}</b><br>Đang di chuyển đến điểm đón`);
 
-      map.fitBounds(poly.getBounds(), { padding: [30, 30] });
+      map.fitBounds(approachLine.getBounds(), { padding: [50, 50] });
     }
-  }, [currentUser, activeTab, pickupId, dropoffId, routeInfo, activeRide, driverStepIndex]);
+
+    // 5. Stage 3, 4 & 5: ARRIVED / IN_PROGRESS / COMPLETED (Full Curved Route)
+    if (rideStage === 'ARRIVED' || rideStage === 'IN_PROGRESS' || rideStage === 'COMPLETED') {
+      if (routeInfo.polyline && routeInfo.polyline.length > 1) {
+        const mainPoly = window.L.polyline(routeInfo.polyline, {
+          color: '#00b14f',
+          weight: 5,
+          opacity: 0.95
+        }).addTo(layerGroup);
+
+        let driverCoord = [pickup.lat, pickup.lng];
+        if (rideStage === 'IN_PROGRESS') {
+          const idx = Math.min(driverStepIndex, routeInfo.polyline.length - 1);
+          driverCoord = routeInfo.polyline[idx] || driverCoord;
+        } else if (rideStage === 'COMPLETED') {
+          driverCoord = [dropoff.lat, dropoff.lng];
+        }
+
+        const vehicleEmoji = selectedVehicleCode === 'BIKE' ? '🛵' : '🚗';
+        const driverHtml = `
+          <div class="custom-leaflet-marker" style="transform: rotate(${driverBearing}deg);">
+            <div class="pin-driver-vehicle">${vehicleEmoji}</div>
+          </div>
+        `;
+        const driverIcon = window.L.divIcon({
+          html: driverHtml,
+          className: '',
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        });
+        window.L.marker(driverCoord, { icon: driverIcon })
+          .addTo(layerGroup)
+          .bindPopup(`<b>${assignedDriverInfo?.name || 'Tài xế'} (${assignedDriverInfo?.plate || '59-X3 888.99'})</b>`);
+
+        if (rideStage === 'IN_PROGRESS') {
+          map.panTo(driverCoord, { animate: true, duration: 0.4 });
+        } else {
+          map.fitBounds(mainPoly.getBounds(), { padding: [50, 50] });
+        }
+      }
+    }
+
+    // 6. Idle Preview
+    if (rideStage === 'IDLE') {
+      if (routeInfo.polyline && routeInfo.polyline.length > 1) {
+        const previewPoly = window.L.polyline(routeInfo.polyline, {
+          color: '#3b82f6',
+          weight: 4,
+          opacity: 0.75
+        }).addTo(layerGroup);
+        map.fitBounds(previewPoly.getBounds(), { padding: [50, 50] });
+      }
+    }
+  }, [
+    currentUser,
+    activeTab,
+    pickupId,
+    dropoffId,
+    routeInfo,
+    rideStage,
+    searchProgress,
+    approachStep,
+    driverStepIndex,
+    driverBearing,
+    nearbyRadarDrivers,
+    approachPolyline,
+    assignedDriverInfo,
+    selectedVehicleCode
+  ]);
 
   useEffect(() => {
     if ((!currentUser || activeTab !== 'RIDE') && leafletMapRef.current) {
@@ -547,8 +689,8 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
       return;
     }
 
-    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId);
-    const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId);
+    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
+    const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
 
     const res = await apiRegistry.ride.bookRide({
       pickup,
@@ -572,64 +714,193 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
     }
 
     setTransactions((prev) => [{ ...payRes, type: 'DEBIT' }, ...prev]);
+
+    // Real-Life Stage 1: Initialize Radar Searching Phase
+    const ghosts = apiRegistry.map.generateNearbyDrivers(pickup);
+    setNearbyRadarDrivers(ghosts);
+    setSearchProgress(0);
+    setApproachStep(0);
+    setDriverStepIndex(0);
+    setRideStage('SEARCHING');
+
+    const matchedDriver = ghosts[0] || {
+      name: 'Trần Minh Tài',
+      plate: '59-X3 888.99',
+      vehicle: 'Honda SH 150i ABS',
+      rating: 4.98
+    };
+    setAssignedDriverInfo(matchedDriver);
+
     setActiveRide({
       ...res,
       state: 'REQUESTED',
       pickupName: pickup.name,
       dropoffName: dropoff.name,
       fare: currentVehicleEstimate.finalFare,
-      vehicleName: currentVehicleEstimate.vehicleName
+      vehicleName: currentVehicleEstimate.vehicleName,
+      driver: {
+        name: matchedDriver.name,
+        license_plate: matchedDriver.plate,
+        vehicle: matchedDriver.vehicle,
+        rating: matchedDriver.rating
+      }
     });
     setOtpInput(res.otp_code);
-    setDriverStepIndex(0);
   };
 
-  // Tự động chạy xe trên bản đồ & tự động chuyển trạng thái chuyến xe (Real-time Simulation)
+  // Stage 1: SEARCHING Engine (~4.5s Radar Scan)
   useEffect(() => {
-    if (!activeRide || activeRide.state === 'COMPLETED') return;
+    if (rideStage !== 'SEARCHING' || !activeRide) return;
+    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
 
-    const totalSteps = Math.max(12, routeInfo.polyline?.length || 16);
-    const timer = setInterval(() => {
-      setDriverStepIndex((prevStep) => {
-        const nextStep = Math.min(prevStep + 1, totalSteps - 1);
-        const progressRatio = nextStep / (totalSteps - 1);
-
-        let nextState = 'REQUESTED';
-        if (progressRatio >= 1) nextState = 'COMPLETED';
-        else if (progressRatio >= 0.45) nextState = 'IN_PROGRESS';
-        else if (progressRatio >= 0.22) nextState = 'ARRIVING';
-        else if (progressRatio >= 0.08) nextState = 'DRIVER_ASSIGNED';
-
-        setActiveRide((curr) => (curr && curr.state !== nextState ? { ...curr, state: nextState } : curr));
-        return nextStep;
+    const interval = setInterval(() => {
+      setSearchProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          const driver = assignedDriverInfo || nearbyRadarDrivers[0] || {
+            lat: pickup.lat + 0.0035,
+            lng: pickup.lng + 0.0028,
+            name: 'Trần Minh Tài',
+            plate: '59-X3 888.99',
+            vehicle: 'Honda SH 150i ABS',
+            rating: 4.98
+          };
+          const approach = apiRegistry.map.generateApproachRoute(
+            { lat: driver.lat, lng: driver.lng },
+            pickup,
+            24
+          );
+          setApproachPolyline(approach);
+          setApproachStep(0);
+          const initBearing = apiRegistry.map.constructor.calculateBearing(
+            driver.lat,
+            driver.lng,
+            pickup.lat,
+            pickup.lng
+          );
+          setDriverBearing(initBearing);
+          setCurrentSpeedKmh(28);
+          setRideStage('ARRIVING');
+          setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVING' } : curr));
+          return 100;
+        }
+        return prev + 12;
       });
-    }, 900);
+    }, 450);
 
-    return () => clearInterval(timer);
-  }, [activeRide?.ride_id, activeRide?.state, routeInfo.polyline]);
+    return () => clearInterval(interval);
+  }, [rideStage, activeRide, assignedDriverInfo, nearbyRadarDrivers, pickupId]);
 
-  // Tự động chuyển trạng thái đơn đồ ăn (Real-time Order Progression)
+  // Stage 2: ARRIVING Engine (Driver moving from initial location to pickup ~12s)
   useEffect(() => {
-    if (!activeFoodOrder || activeFoodOrder.state === 'DELIVERED') return;
+    if (rideStage !== 'ARRIVING' || !activeRide || approachPolyline.length === 0) return;
 
-    const timer = setInterval(() => {
-      setActiveFoodOrder((curr) => {
-        if (!curr || curr.state === 'DELIVERED') return curr;
-        const idx = FOOD_STATES.indexOf(curr.state);
-        const next = FOOD_STATES[Math.min(idx + 1, FOOD_STATES.length - 1)];
-        return { ...curr, state: next };
+    const interval = setInterval(() => {
+      setApproachStep((prev) => {
+        const next = prev + 1;
+        if (next >= approachPolyline.length) {
+          clearInterval(interval);
+          setCurrentSpeedKmh(0);
+          setRideStage('ARRIVED');
+          setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVED' } : curr));
+          return approachPolyline.length - 1;
+        }
+        const pCurr = approachPolyline[prev];
+        const pNext = approachPolyline[next];
+        if (pCurr && pNext) {
+          const brg = apiRegistry.map.constructor.calculateBearing(pCurr[0], pCurr[1], pNext[0], pNext[1]);
+          setDriverBearing(brg);
+          setCurrentSpeedKmh(Math.floor(24 + Math.random() * 8));
+        }
+        return next;
       });
-    }, 2500);
+    }, 550);
 
-    return () => clearInterval(timer);
-  }, [activeFoodOrder?.order_id, activeFoodOrder?.state]);
+    return () => clearInterval(interval);
+  }, [rideStage, activeRide, approachPolyline]);
 
-  const handleAdvanceRideState = () => {
+  // Stage 3: ARRIVED Engine (Waiting for customer to board ~3.5s)
+  useEffect(() => {
+    if (rideStage !== 'ARRIVED' || !activeRide) return;
+    const timer = setTimeout(() => {
+      setDriverStepIndex(0);
+      setCurrentSpeedKmh(32);
+      setRideStage('IN_PROGRESS');
+      setActiveRide((curr) => (curr ? { ...curr, state: 'IN_PROGRESS' } : curr));
+    }, 3800);
+    return () => clearTimeout(timer);
+  }, [rideStage, activeRide]);
+
+  // Stage 4: IN_PROGRESS Engine (Realistic slow transit to destination ~28s)
+  useEffect(() => {
+    if (rideStage !== 'IN_PROGRESS' || !activeRide || !routeInfo.polyline || routeInfo.polyline.length === 0) return;
+    const totalSteps = routeInfo.polyline.length;
+
+    const interval = setInterval(() => {
+      setDriverStepIndex((prev) => {
+        const next = prev + 1;
+        if (next >= totalSteps) {
+          clearInterval(interval);
+          setCurrentSpeedKmh(0);
+          setRideStage('COMPLETED');
+          setActiveRide((curr) => (curr ? { ...curr, state: 'COMPLETED' } : curr));
+          setShowRatingModal(true);
+          return totalSteps - 1;
+        }
+        const pCurr = routeInfo.polyline[prev];
+        const pNext = routeInfo.polyline[next];
+        if (pCurr && pNext) {
+          const brg = apiRegistry.map.constructor.calculateBearing(pCurr[0], pCurr[1], pNext[0], pNext[1]);
+          setDriverBearing(brg);
+          setCurrentSpeedKmh(Math.floor(28 + Math.random() * 9));
+        }
+        return next;
+      });
+    }, 450);
+
+    return () => clearInterval(interval);
+  }, [rideStage, activeRide, routeInfo.polyline]);
+
+  const handleManualSkipStage = () => {
     if (!activeRide) return;
-    const currentIdx = RIDE_STATES.indexOf(activeRide.state);
-    const nextState = RIDE_STATES[Math.min(currentIdx + 1, RIDE_STATES.length - 1)];
-    setActiveRide({ ...activeRide, state: nextState });
-    setDriverStepIndex((prev) => Math.min(prev + 4, (routeInfo.polyline?.length || 16) - 1));
+    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
+
+    if (rideStage === 'SEARCHING') {
+      const driver = assignedDriverInfo || nearbyRadarDrivers[0] || {
+        lat: pickup.lat + 0.0035,
+        lng: pickup.lng + 0.0028,
+        name: 'Trần Minh Tài',
+        plate: '59-X3 888.99',
+        vehicle: 'Honda SH 150i ABS',
+        rating: 4.98
+      };
+      const approach = apiRegistry.map.generateApproachRoute({ lat: driver.lat, lng: driver.lng }, pickup, 24);
+      setApproachPolyline(approach);
+      setApproachStep(0);
+      setRideStage('ARRIVING');
+      setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVING' } : curr));
+    } else if (rideStage === 'ARRIVING') {
+      setRideStage('ARRIVED');
+      setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVED' } : curr));
+    } else if (rideStage === 'ARRIVED') {
+      setDriverStepIndex(0);
+      setRideStage('IN_PROGRESS');
+      setActiveRide((curr) => (curr ? { ...curr, state: 'IN_PROGRESS' } : curr));
+    } else if (rideStage === 'IN_PROGRESS') {
+      setDriverStepIndex((routeInfo.polyline?.length || 64) - 1);
+      setRideStage('COMPLETED');
+      setActiveRide((curr) => (curr ? { ...curr, state: 'COMPLETED' } : curr));
+      setShowRatingModal(true);
+    }
+  };
+
+  const handleCancelRide = () => {
+    setActiveRide(null);
+    setRideStage('IDLE');
+    setSearchProgress(0);
+    setApproachStep(0);
+    setDriverStepIndex(0);
+    setCurrentSpeedKmh(0);
   };
 
   const addToCart = (dish) => {
@@ -937,42 +1208,100 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
         )}
       </nav>
 
-      {/* MÀN HÌNH KHÁCH HÀNG: ĐẶT XE */}
+      {/* MÀN HÌNH KHÁCH HÀNG: ĐẶT XE (GRAB/UBER SUPER-APP HERO DESIGN) */}
       {activeTab === 'RIDE' && (
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">Đặt chuyến xe</div>
-              <span className="oop-tag">{routeInfo.distance_km} km • {routeInfo.duration_minutes} phút</span>
+        <div className="ride-hero-container">
+          {/* CỘT TRÁI: FLOATING BOOKING DRAWER */}
+          <div className="card" style={{ padding: '22px' }}>
+            <div className="card-header" style={{ marginBottom: '16px' }}>
+              <div>
+                <div className="card-title" style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🛵 Đặt chuyến xe</span>
+                  <span className="badge-soa" style={{ fontSize: '0.72rem' }}>Super-App Mobility</span>
+                </div>
+                <p className="brand-subtitle" style={{ marginTop: '2px' }}>
+                  Định tuyến thực tế & Ghép tài xế thông minh
+                </p>
+              </div>
+              <span className="oop-tag" style={{ fontWeight: 700 }}>
+                {routeInfo.distance_km} km • ~{routeInfo.duration_minutes} phút
+              </span>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Điểm đón</label>
-              <select
-                className="form-select"
-                value={pickupId}
-                onChange={(e) => setPickupId(e.target.value)}
-              >
-                {HCMC_LOCATIONS.map((loc) => (
-                  <option key={loc.id} value={loc.id}>{loc.name}</option>
-                ))}
-              </select>
+            {/* LOCATION CONNECTED STOPS */}
+            <div className="location-connect-card">
+              <div className="stop-connector-line" />
+
+              {/* Pickup Stop */}
+              <div className="location-stop-row">
+                <div className="stop-indicator pickup" />
+                <div style={{ flex: 1 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#00b14f' }}>
+                    🟢 ĐIỂM ĐÓN KHÁCH
+                  </label>
+                  <select
+                    className="form-select"
+                    style={{ fontWeight: 600, padding: '7px 10px', fontSize: '0.85rem' }}
+                    value={pickupId}
+                    onChange={(e) => setPickupId(e.target.value)}
+                    disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
+                  >
+                    {HCMC_LOCATIONS.map((loc) => (
+                      <option key={loc.id} value={loc.id}>{loc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Swap Button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 0', zIndex: 3 }}>
+                <button
+                  type="button"
+                  onClick={handleSwapLocations}
+                  disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
+                  title="Đổi chiều điểm đón và điểm đến"
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '50%',
+                    width: '26px',
+                    height: '26px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  ⇅
+                </button>
+              </div>
+
+              {/* Dropoff Stop */}
+              <div className="location-stop-row">
+                <div className="stop-indicator dropoff" />
+                <div style={{ flex: 1 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#e11d48' }}>
+                    🏁 ĐIỂM ĐẾN
+                  </label>
+                  <select
+                    className="form-select"
+                    style={{ fontWeight: 600, padding: '7px 10px', fontSize: '0.85rem' }}
+                    value={dropoffId}
+                    onChange={(e) => setDropoffId(e.target.value)}
+                    disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
+                  >
+                    {HCMC_LOCATIONS.map((loc) => (
+                      <option key={loc.id} value={loc.id}>{loc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Điểm đến</label>
-              <select
-                className="form-select"
-                value={dropoffId}
-                onChange={(e) => setDropoffId(e.target.value)}
-              >
-                {HCMC_LOCATIONS.map((loc) => (
-                  <option key={loc.id} value={loc.id}>{loc.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="toggle-row">
+            {/* TOGGLES: WEATHER & PEAK HOUR */}
+            <div className="toggle-row" style={{ marginTop: '0', marginBottom: '12px' }}>
               <button
                 type="button"
                 className={`chip-toggle ${weather === 'RAIN' ? 'active' : ''}`}
@@ -989,102 +1318,279 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               </button>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Mã khuyến mãi</label>
+            {/* VOUCHER PICKER */}
+            <div className="form-group" style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="form-label" style={{ marginBottom: '4px' }}>Ưu đãi & Voucher</label>
+                {selectedVoucherCode && (
+                  <span style={{ fontSize: '0.72rem', color: '#00b14f', fontWeight: 700 }}>
+                    Đã áp mã {selectedVoucherCode}
+                  </span>
+                )}
+              </div>
               <select
                 className="form-select"
                 value={selectedVoucherCode}
                 onChange={(e) => setSelectedVoucherCode(e.target.value)}
               >
-                <option value="">Không dùng mã</option>
+                <option value="">Không dùng mã ưu đãi</option>
                 {vouchers.map((v) => (
                   <option key={v.code} value={v.code}>
-                    {v.code} — {v.title}
+                    🎁 {v.code} — {v.title}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="form-label">Chọn loại xe</div>
-            <div className="vehicle-list">
-              {fareEstimates.slice(0, 3).map((est) => (
-                <div
-                  key={est.vehicleCode}
-                  className={`vehicle-item ${selectedVehicleCode === est.vehicleCode ? 'selected' : ''}`}
-                  onClick={() => setSelectedVehicleCode(est.vehicleCode)}
-                >
-                  <div className="vehicle-left">
-                    <span className="vehicle-icon">{est.icon}</span>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{est.vehicleName}</div>
-                      <div className="price-sub">{est.capacity} chỗ ngồi</div>
-                    </div>
-                  </div>
-                  <div className="vehicle-price">
-                    <div className="price-main">{est.finalFare.toLocaleString('vi-VN')} đ</div>
-                    {est.voucherDiscount > 0 && (
-                      <div className="price-sub">Đã giảm {est.voucherDiscount.toLocaleString('vi-VN')}đ</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button className="btn-primary" onClick={handleBookRide}>
-              Đặt xe ngay • {currentVehicleEstimate?.finalFare?.toLocaleString('vi-VN') || 0} đ
-            </button>
-          </div>
-
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">Bản đồ lộ trình</div>
-              {activeRide && (
-                <span className="badge-soa">
-                  {RIDE_STATE_LABELS[activeRide.state] || activeRide.state}
-                </span>
-              )}
-            </div>
-
-            <div ref={mapContainerRef} className="leaflet-map-box" />
-
-            {activeRide ? (
-              <div className="info-box">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong>Chuyến xe: {activeRide.ride_id}</strong>
-                    <div className="price-sub">
-                      Tài xế: {activeRide.driver.name} • Biển số: <strong>{activeRide.driver.license_plate}</strong>
-                    </div>
-                  </div>
-                  <span className="oop-tag">
-                    {activeRide.state === 'COMPLETED' ? '✅ Hoàn tất' : '🛵 Xe đang tự động di chuyển...'}
-                  </span>
-                </div>
-
-                <div className="state-stepper">
-                  {RIDE_STATES.map((st, idx) => {
-                    const currentIdx = RIDE_STATES.indexOf(activeRide.state);
-                    const cls = idx < currentIdx ? 'done' : idx === currentIdx ? 'current' : '';
-                    return (
-                      <div key={st} className={`step-pill ${cls}`}>
-                        {RIDE_STATE_LABELS[st] || st}
+            {/* VEHICLE PICKER PRO */}
+            <div className="form-label" style={{ marginBottom: '8px' }}>Chọn phương tiện di chuyển</div>
+            <div className="vehicle-grid-pro">
+              {fareEstimates.slice(0, 4).map((est) => {
+                const isSelected = selectedVehicleCode === est.vehicleCode;
+                const originalFare = Math.round(est.finalFare + (est.voucherDiscount || 0));
+                return (
+                  <div
+                    key={est.vehicleCode}
+                    className={`vehicle-card-pro ${isSelected ? 'selected' : ''}`}
+                    onClick={() => setSelectedVehicleCode(est.vehicleCode)}
+                  >
+                    <div className="vehicle-pro-left">
+                      <div className="vehicle-pro-icon-box">{est.icon}</div>
+                      <div className="vehicle-pro-info">
+                        <h4>
+                          {est.vehicleName}
+                          <span className="vehicle-eta-badge">{est.etaMinutes || '2 phút'}</span>
+                        </h4>
+                        <div className="price-sub" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{est.capacity} chỗ</span>
+                          <span>•</span>
+                          <span>Đón tận nơi</span>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                    <div className="vehicle-pro-pricing">
+                      <div className="price-pro-main">{est.finalFare.toLocaleString('vi-VN')} đ</div>
+                      {est.voucherDiscount > 0 && (
+                        <div className="price-pro-original">{originalFare.toLocaleString('vi-VN')} đ</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                  <span className="price-sub">Mã OTP xác nhận lên xe:</span>
-                  <strong className="mono" style={{ fontSize: '1.1rem', color: '#00b14f' }}>
-                    {activeRide.otp_code}
-                  </strong>
-                </div>
+            {/* PAYMENT METHOD SELECTOR */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', background: '#f8fafc', padding: '8px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <span className="price-sub" style={{ fontWeight: 600 }}>Phương thức thanh toán:</span>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  className={`chip-toggle ${paymentMethod === 'WALLET' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('WALLET')}
+                  style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                >
+                  Ví ({walletBalance.toLocaleString('vi-VN')}đ)
+                </button>
+                <button
+                  type="button"
+                  className={`chip-toggle ${paymentMethod === 'CASH' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('CASH')}
+                  style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                >
+                  Tiền mặt
+                </button>
               </div>
+            </div>
+
+            {/* BOOK BUTTON / RIDE ACTION */}
+            {rideStage === 'IDLE' || rideStage === 'COMPLETED' ? (
+              <button
+                className="btn-primary"
+                style={{ padding: '13px 18px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                onClick={handleBookRide}
+              >
+                <span>Đặt xe ngay</span>
+                <span>•</span>
+                <span>{currentVehicleEstimate?.finalFare?.toLocaleString('vi-VN') || 0} đ</span>
+              </button>
             ) : (
-              <div className="price-sub" style={{ textAlign: 'center', padding: '8px' }}>
-                Chọn điểm đón, điểm đến và bấm <strong>Đặt xe ngay</strong> để theo dõi xe chạy trực tiếp trên bản đồ.
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ flex: 1, padding: '11px', fontWeight: 600, color: '#dc2626' }}
+                  onClick={handleCancelRide}
+                >
+                  ✕ Hủy chuyến
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ flex: 1.2, padding: '11px', fontWeight: 600, background: '#eff6ff', borderColor: '#bfdbfe', color: '#1d4ed8' }}
+                  onClick={handleManualSkipStage}
+                  title="Tua nhanh sang bước kế tiếp để kiểm tra trải nghiệm"
+                >
+                  ⏩ Tua bước tiếp
+                </button>
               </div>
             )}
+          </div>
+
+          {/* CỘT PHẢI: HERO MAP & FLOATING LIVE HUD */}
+          <div className="ride-map-wrapper">
+            {/* FLOATING STATUS HUD OVERLAY */}
+            {rideStage !== 'IDLE' && (
+              <div className="floating-hud-overlay">
+                <div className="hud-glass-card">
+                  {/* TOP ROW: STATE BADGE + METRICS */}
+                  <div className="hud-top-row">
+                    <div>
+                      {rideStage === 'SEARCHING' && (
+                        <span className="hud-state-tag searching">
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
+                          Giai đoạn 1: Đang quét tìm tài xế gần bạn nhất...
+                        </span>
+                      )}
+                      {rideStage === 'ARRIVING' && (
+                        <span className="hud-state-tag arriving">
+                          🚗 Giai đoạn 2: Tài xế đang đến điểm đón (~{Math.max(1, 25 - approachStep)}s)
+                        </span>
+                      )}
+                      {rideStage === 'ARRIVED' && (
+                        <span className="hud-state-tag arriving" style={{ background: '#ecfdf5', color: '#00b14f', borderColor: '#a7f3d0' }}>
+                          🟢 Giai đoạn 3: Tài xế đã đến điểm đón! Đưa mã OTP để lên xe
+                        </span>
+                      )}
+                      {rideStage === 'IN_PROGRESS' && (
+                        <span className="hud-state-tag in-progress">
+                          🛵 Giai đoạn 4: Đang di chuyển đến điểm đến ({Math.round(((driverStepIndex + 1) / (routeInfo.polyline?.length || 64)) * 100)}%)
+                        </span>
+                      )}
+                      {rideStage === 'COMPLETED' && (
+                        <span className="hud-state-tag completed">
+                          🎉 Hoàn thành: Bạn đã đến nơi an toàn!
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {rideStage === 'IN_PROGRESS' && (
+                        <span className="metric-pill">
+                          ⚡ Tốc độ: <strong>{currentSpeedKmh} km/h</strong>
+                        </span>
+                      )}
+                      <span className="metric-pill">
+                        🧭 Hướng: <strong>{driverBearing}°</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* PROGRESS BAR FOR SEARCHING OR TRAVEL */}
+                  {rideStage === 'SEARCHING' && (
+                    <div>
+                      <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', marginTop: '4px' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${searchProgress}%`,
+                            background: 'linear-gradient(90deg, #3b82f6, #00b14f)',
+                            transition: 'width 0.4s ease'
+                          }}
+                        />
+                      </div>
+                      <div className="price-sub" style={{ marginTop: '4px', textAlign: 'center' }}>
+                        Đang quét 4 tài xế trong bán kính 1km xung quanh {(HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]).name.split(',')[0]}...
+                      </div>
+                    </div>
+                  )}
+
+                  {/* DRIVER INFO & ACTIONS (ARRIVING / ARRIVED / IN_PROGRESS) */}
+                  {(rideStage === 'ARRIVING' || rideStage === 'ARRIVED' || rideStage === 'IN_PROGRESS' || rideStage === 'COMPLETED') && (
+                    <div className="driver-sheet-card">
+                      <div className="driver-sheet-left">
+                        <div className="driver-avatar-circle">
+                          👨🏻‍✈️
+                          <div className="driver-verified-check">✓</div>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>{assignedDriverInfo?.name || activeRide?.driver?.name || 'Trần Minh Tài'}</span>
+                            <span style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 600 }}>★ 4.98 (1.4k+)</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                            <span className="license-plate-vn">{assignedDriverInfo?.plate || activeRide?.driver?.license_plate || '59-X3 888.99'}</span>
+                            <span className="price-sub">{assignedDriverInfo?.vehicle || activeRide?.driver?.vehicle || 'Honda SH 150i ABS'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="driver-sheet-actions">
+                        <button
+                          type="button"
+                          className="btn-icon-action"
+                          onClick={() => alert(`Đang kết nối cuộc gọi thoại với tài xế ${assignedDriverInfo?.name || 'Trần Minh Tài'}...`)}
+                          title="Gọi điện cho tài xế"
+                        >
+                          📞
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-icon-action"
+                          onClick={() => handleSendAiChat(`Tài xế đang ở đâu rồi?`)}
+                          title="Nhắn tin với tài xế"
+                        >
+                          💬
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* OTP BOX (WHEN ARRIVED OR ARRIVING) */}
+                  {(rideStage === 'ARRIVING' || rideStage === 'ARRIVED') && activeRide?.otp_code && (
+                    <div className="otp-display-box">
+                      <div>
+                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          MÃ OTP XÁC NHẬN LÊN XE
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                          Cung cấp cho tài xế trước khi khởi hành
+                        </div>
+                      </div>
+                      <div className="otp-digit-group">
+                        {activeRide.otp_code.split('').map((ch, idx) => (
+                          <div key={idx} className="otp-digit">{ch}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 5-STEP TIMELINE STEPPER */}
+                  <div className="stepper-timeline">
+                    {[
+                      { key: 'REQUESTED', label: '1. Quét tìm xe' },
+                      { key: 'ARRIVING', label: '2. Xe đến đón' },
+                      { key: 'ARRIVED', label: '3. Lên xe (OTP)' },
+                      { key: 'IN_PROGRESS', label: '4. Đang di chuyển' },
+                      { key: 'COMPLETED', label: '5. Hoàn thành' }
+                    ].map((step, idx) => {
+                      const stagesOrder = ['SEARCHING', 'ARRIVING', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
+                      const currentStageIdx = stagesOrder.indexOf(rideStage);
+                      const isDone = currentStageIdx > idx;
+                      const isActive = currentStageIdx === idx;
+                      return (
+                        <div key={step.key} className={`stepper-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}>
+                          <div className="step-circle">{isDone ? '✓' : idx + 1}</div>
+                          <span className="step-label">{step.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LEAFLET MAP HERO CANVAS */}
+            <div ref={mapContainerRef} className="leaflet-map-hero" />
           </div>
         </div>
       )}
@@ -1689,6 +2195,82 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 onClick={() => handleSendAiChat()}
               >
                 Gửi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ĐÁNH GIÁ CHUYẾN ĐI (COMPLETED RIDE FEEDBACK & REWARD) */}
+      {showRatingModal && (
+        <div className="modal-backdrop" onClick={() => setShowRatingModal(false)}>
+          <div className="modal-card" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ textAlign: 'center', marginBottom: '14px' }}>
+              <div style={{ fontSize: '36px', marginBottom: '6px' }}>🎉</div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Chuyến đi đã hoàn thành!</h3>
+              <p className="price-sub" style={{ marginTop: '2px' }}>
+                Bạn cảm thấy chuyến đi với tài xế <strong>{assignedDriverInfo?.name || 'Trần Minh Tài'}</strong> thế nào?
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', margin: '14px 0', fontSize: '28px', cursor: 'pointer' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  onClick={() => setRatingStars(star)}
+                  style={{ color: star <= ratingStars ? '#f59e0b' : '#cbd5e1', transition: '0.15s' }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px', justifyContent: 'center' }}>
+              {['Lái xe an toàn', 'Xe êm ái', 'Rất đúng giờ', 'Thân thiện'].map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="chip-toggle"
+                  style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                  onClick={() => setRatingComment((prev) => (prev ? `${prev}, ${tag.toLowerCase()}` : tag))}
+                >
+                  + {tag}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              className="form-input"
+              rows="3"
+              placeholder="Chia sẻ thêm cảm nhận của bạn về chuyến đi..."
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              style={{ marginBottom: '14px', fontSize: '0.88rem' }}
+            />
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setShowRatingModal(false);
+                  const latestTx = transactions[0];
+                  if (latestTx) handleViewInvoice(latestTx);
+                }}
+              >
+                🧾 Xem hóa đơn VAT
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                style={{ flex: 1.2 }}
+                onClick={async () => {
+                  await handleSubmitRating();
+                  setShowRatingModal(false);
+                }}
+              >
+                Gửi (+5.000đ vào ví)
               </button>
             </div>
           </div>

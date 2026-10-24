@@ -719,3 +719,568 @@ code, pre, .mono {
   border-top: 1px solid var(--border-color);
 }
 
+/* ==========================================================================
+   PREMIUM RIDE-HAILING HERO MAP & FLOATING SYSTEM (GRAB / UBER STANDARD)
+   ========================================================================== */
+
+.ride-hero-container {
+  display: grid;
+  grid-template-columns: 390px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .ride-hero-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ride-map-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--border-color);
+  background: #f8fafc;
+}
+
+.leaflet-map-hero {
+  width: 100%;
+  height: 580px;
+  min-height: 480px;
+}
+
+@media (max-width: 768px) {
+  .leaflet-map-hero {
+    height: 420px;
+  }
+}
+
+/* Radar Sonar Wave Pulse Effect */
+@keyframes sonar-wave-pulse {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+.radar-sonar-circle {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  margin-top: -40px;
+  margin-left: -40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 177, 79, 0.4) 0%, rgba(0, 177, 79, 0.05) 70%, transparent 100%);
+  border: 2px solid #00b14f;
+  animation: sonar-wave-pulse 2.2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+  pointer-events: none;
+}
+
+/* Custom Leaflet Marker Pins */
+.custom-leaflet-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.pin-pickup-badge {
+  background: #00b14f;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 177, 79, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 2px solid #ffffff;
+  white-space: nowrap;
+}
+
+.pin-dropoff-badge {
+  background: #e11d48;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 2px solid #ffffff;
+  white-space: nowrap;
+}
+
+.pin-driver-vehicle {
+  background: #ffffff;
+  border: 2.5px solid #00b14f;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pin-ghost-driver {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid #10b981;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: pulse-ghost 1.8s infinite alternate;
+}
+
+@keyframes pulse-ghost {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Floating Status HUD Overlay on Map */
+.floating-hud-overlay {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.hud-glass-card {
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: slide-down 0.3s ease-out;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hud-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hud-state-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: #ecfdf5;
+  color: #00b14f;
+  border: 1px solid #a7f3d0;
+}
+
+.hud-state-tag.searching {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.hud-state-tag.arriving {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.hud-state-tag.in-progress {
+  background: #ecfdf5;
+  color: #00b14f;
+  border-color: #a7f3d0;
+}
+
+.hud-state-tag.completed {
+  background: #fdf2f8;
+  color: #db2777;
+  border-color: #fbcfe8;
+}
+
+/* License Plate Vietnam Standard */
+.license-plate-vn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef08a;
+  color: #1e293b;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1.5px solid #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  letter-spacing: 0.6px;
+}
+
+/* Speedometer & Metrics HUD */
+.metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.metric-pill strong {
+  color: #0f172a;
+}
+
+/* Modern Stepper Dots */
+.stepper-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  margin: 6px 0;
+}
+
+.stepper-timeline::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background: #e2e8f0;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.stepper-step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  transition: all 0.25s ease;
+}
+
+.stepper-step.active .step-circle {
+  background: #00b14f;
+  border-color: #00b14f;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 177, 79, 0.2);
+}
+
+.stepper-step.done .step-circle {
+  background: #ecfdf5;
+  border-color: #00b14f;
+  color: #00b14f;
+}
+
+.step-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.stepper-step.active .step-label {
+  color: #00b14f;
+  font-weight: 700;
+}
+
+/* Location Connected Stops Component */
+.location-connect-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.location-stop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.stop-indicator {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stop-indicator.pickup {
+  background: #00b14f;
+  box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.2);
+}
+
+.stop-indicator.dropoff {
+  background: #e11d48;
+  border-radius: 3px;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.2);
+}
+
+.stop-connector-line {
+  position: absolute;
+  top: 24px;
+  bottom: 24px;
+  left: 20px;
+  width: 2px;
+  border-left: 2px dashed #cbd5e1;
+}
+
+/* Vehicle Selector Pro Cards */
+.vehicle-grid-pro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.vehicle-card-pro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-color);
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.vehicle-card-pro:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.vehicle-card-pro.selected {
+  border-color: #00b14f;
+  background: #f0fdf4;
+  box-shadow: 0 4px 14px rgba(0, 177, 79, 0.12);
+}
+
+.vehicle-pro-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vehicle-pro-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.vehicle-card-pro.selected .vehicle-pro-icon-box {
+  background: #dcfce7;
+}
+
+.vehicle-pro-info h4 {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.vehicle-eta-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.vehicle-card-pro.selected .vehicle-eta-badge {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.vehicle-pro-pricing {
+  text-align: right;
+}
+
+.price-pro-main {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #00b14f;
+}
+
+.price-pro-original {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+/* Driver Profile Floating Bottom Sheet */
+.driver-sheet-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.driver-sheet-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.driver-avatar-circle {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 2px solid #00b14f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  position: relative;
+}
+
+.driver-verified-check {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00b14f;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  border: 2px solid #ffffff;
+}
+
+.driver-sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-icon-action:hover {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  transform: scale(1.05);
+}
+
+/* OTP Glow Display */
+.otp-display-box {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.15);
+}
+
+.otp-digit-group {
+  display: flex;
+  gap: 6px;
+}
+
+.otp-digit {
+  width: 32px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #34d399;
+}
+

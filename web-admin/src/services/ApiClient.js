@@ -349,6 +349,50 @@ export class MapApiService extends BaseApiClient {
     return +(R * c * 1.28).toFixed(2); // 1.28 urban road winding factor
   }
 
+  static calculateBearing(lat1, lon1, lat2, lon2) {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const toDeg = (r) => (r * 180) / Math.PI;
+    const dLon = toRad(lon2 - lon1);
+    const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+    const x =
+      Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+      Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+    const brng = toDeg(Math.atan2(y, x));
+    return Math.round((brng + 360) % 360);
+  }
+
+  generateNearbyDrivers(pickup) {
+    const offsets = [
+      { dLat: 0.0035, dLng: 0.0028, name: 'Trần Minh Tài', plate: '59-X3 888.99', vehicle: 'Honda SH 150i', rating: 4.98 },
+      { dLat: -0.0028, dLng: 0.0038, name: 'Lê Hoàng Nam', plate: '59-S1 234.56', vehicle: 'Yamaha Grande', rating: 4.95 },
+      { dLat: 0.0042, dLng: -0.0035, name: 'Nguyễn Văn Phúc', plate: '50-F2 678.90', vehicle: 'Honda AirBlade', rating: 4.92 },
+      { dLat: -0.0038, dLng: -0.0028, name: 'Vũ Quốc Bảo', plate: '59-K4 999.88', vehicle: 'Toyota Vios', rating: 4.97 }
+    ];
+    return offsets.map((o, idx) => ({
+      id: `drv-radar-${idx + 1}`,
+      name: o.name,
+      plate: o.plate,
+      vehicle: o.vehicle,
+      rating: o.rating,
+      lat: +(pickup.lat + o.dLat).toFixed(6),
+      lng: +(pickup.lng + o.dLng).toFixed(6)
+    }));
+  }
+
+  generateApproachRoute(driverPos, pickup, steps = 28) {
+    const polyline = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      // Slight urban turn curve
+      const curveOffset = Math.sin(t * Math.PI) * 0.0018;
+      polyline.push([
+        +(driverPos.lat + (pickup.lat - driverPos.lat) * t + curveOffset).toFixed(6),
+        +(driverPos.lng + (pickup.lng - driverPos.lng) * t - curveOffset * 0.5).toFixed(6)
+      ]);
+    }
+    return polyline;
+  }
+
   async calculateRoute(origin, destination, vehicleType = 'BIKE') {
     return this.request(
       '/route',
@@ -366,15 +410,19 @@ export class MapApiService extends BaseApiClient {
         const speedKmh = vehicleType === 'BIKE' ? 28 : 24;
         const durationMinutes = Math.max(4, Math.round((distanceKm / speedKmh) * 60));
 
-        // Generate smooth curved intermediate waypoints for Leaflet Polyline
-        const steps = 16;
+        // Generate high-density smooth curved waypoints for Leaflet Polyline (64 steps)
+        const steps = 64;
         const polyline = [];
         for (let i = 0; i <= steps; i++) {
           const t = i / steps;
-          const curveOffset = Math.sin(t * Math.PI) * 0.0028;
+          // Compound S-curve to mimic urban avenue turnings
+          const s1 = Math.sin(t * Math.PI) * 0.0035;
+          const s2 = Math.sin(t * Math.PI * 2) * 0.0012;
+          const curveLat = s1 + s2;
+          const curveLng = -s1 * 0.65 + s2 * 0.4;
           polyline.push([
-            +(origin.lat + (destination.lat - origin.lat) * t + curveOffset).toFixed(6),
-            +(origin.lng + (destination.lng - origin.lng) * t - curveOffset * 0.7).toFixed(6)
+            +(origin.lat + (destination.lat - origin.lat) * t + curveLat).toFixed(6),
+            +(origin.lng + (destination.lng - origin.lng) * t + curveLng).toFixed(6)
           ]);
         }
 
