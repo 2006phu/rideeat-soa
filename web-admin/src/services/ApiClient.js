@@ -234,6 +234,53 @@ export class AuthApiService extends BaseApiClient {
     );
   }
 
+  async googleOAuthExchange({ idToken, code, role = 'CUSTOMER' }) {
+    return this.request(
+      '/google/exchange',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          id_token: idToken || undefined,
+          code: code || undefined,
+          role: role.toLowerCase()
+        })
+      },
+      () => {
+        const token = `jwt-google-exchange-${Date.now()}`;
+        this.setAuthToken(token);
+        soaEventBus.publish('KAFKA_EVENT', {
+          topic: 'auth.events',
+          service: 'auth-service:8001',
+          eventName: 'GoogleOAuthExchangedEvent',
+          payload: { role: role.toLowerCase(), provider: 'google.com' }
+        });
+        return {
+          access_token: token,
+          refresh_token: `refresh-${Date.now()}`,
+          token_type: 'bearer',
+          expires_in: 86400,
+          role: role.toLowerCase()
+        };
+      }
+    );
+  }
+
+  async refreshToken(refreshToken) {
+    return this.request(
+      '/refresh',
+      {
+        method: 'POST',
+        body: JSON.stringify({ refresh_token: refreshToken })
+      },
+      () => ({
+        access_token: `jwt-refreshed-${Date.now()}`,
+        refresh_token: `refresh-${Date.now()}`,
+        token_type: 'bearer',
+        expires_in: 86400
+      })
+    );
+  }
+
   async firebaseLogin({ email, fullName, role = 'CUSTOMER', idToken = null, firebaseUid = null }) {
     const resolvedUid = firebaseUid || `fb-${btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 10)}`;
     return this.request(
@@ -690,7 +737,66 @@ export class PaymentApiService extends BaseApiClient {
 }
 
 /**
- * 7. SystemMonitorService - Aggregates Health, Metrics & OOP Architecture Across All 9 Services
+ * 7. RatingApiService (:8007) - Reviews, Bayesian Reputation & Fraud Guard
+ */
+export class RatingApiService extends BaseApiClient {
+  constructor() {
+    super('rating-service:8007', '/api/ratings');
+  }
+
+  async submitReview({ reviewerId, targetId, targetType, referenceId, stars, comment, imageUrl }) {
+    return this.request(
+      '',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          reviewer_id: reviewerId,
+          target_id: targetId,
+          target_type: targetType,
+          reference_id: referenceId,
+          stars,
+          comment,
+          image_url: imageUrl
+        })
+      },
+      () => {
+        soaEventBus.publish('KAFKA_EVENT', {
+          topic: 'rating.events',
+          service: 'rating-service:8007',
+          eventName: 'ReviewCreatedEvent',
+          payload: { targetId, targetType, stars, comment }
+        });
+        return {
+          id: `rev-${Date.now().toString().slice(-6)}`,
+          reviewer_id: reviewerId,
+          target_id: targetId,
+          target_type: targetType,
+          reference_id: referenceId,
+          stars,
+          comment,
+          created_at: new Date().toISOString()
+        };
+      }
+    );
+  }
+
+  async getTargetRatingSummary(targetType, targetId) {
+    return this.request(
+      `/${targetType}/${targetId}/summary`,
+      { method: 'GET' },
+      () => ({
+        target_type: targetType,
+        target_id: targetId,
+        average_stars: 4.95,
+        total_reviews: 128,
+        star_breakdown: { '1': 1, '2': 0, '3': 2, '4': 15, '5': 110 }
+      })
+    );
+  }
+}
+
+/**
+ * 8. SystemMonitorService - Aggregates Health, Metrics & OOP Architecture Across All 9 Services
  */
 export class SystemMonitorService extends BaseApiClient {
   constructor() {
@@ -828,5 +934,6 @@ export const apiRegistry = {
   food: new FoodApiService(),
   promo: new PromoApiService(),
   payment: new PaymentApiService(),
+  rating: new RatingApiService(),
   monitor: new SystemMonitorService()
 };
