@@ -43,6 +43,21 @@ import {
   Sparkles,
   Award,
   UtensilsCrossed,
+  Soup,
+  CookingPot,
+  Beef,
+  Drumstick,
+  Fish,
+  Coffee,
+  CupSoda,
+  Sandwich,
+  Salad,
+  Apple,
+  Leaf,
+  HeartPulse,
+  Cookie,
+  Cake,
+  Utensils,
   LogIn,
   LogOut,
   Copy,
@@ -126,6 +141,128 @@ const DEMO_ACCOUNTS = {
   }
 };
 
+const FOOD_CATEGORIES = [
+  { id: 'ALL', label: 'Tất cả món' },
+  { id: 'NOODLE', label: 'Phở & Món nước' },
+  { id: 'RICE', label: 'Cơm tấm Sài Gòn' },
+  { id: 'CENTRAL', label: 'Đặc sản miền Trung' },
+  { id: 'DRINK', label: 'Trà & Cà phê thủ công' },
+  { id: 'FASTFOOD', label: 'Burger & Gà rán' },
+  { id: 'HEALTHY', label: 'Healthy & Chay' }
+];
+
+const renderDishIcon = (iconCode) => {
+  switch (iconCode) {
+    case 'soup':
+      return {
+        icon: <Soup className="w-5 h-5 text-emerald-600" />,
+        bg: '#ecfdf5',
+        border: '#a7f3d0'
+      };
+    case 'cooking-pot':
+      return {
+        icon: <CookingPot className="w-5 h-5 text-emerald-700" />,
+        bg: '#d1fae5',
+        border: '#6ee7b7'
+      };
+    case 'beef':
+      return {
+        icon: <Beef className="w-5 h-5 text-rose-600" />,
+        bg: '#fff1f2',
+        border: '#fecdd3'
+      };
+    case 'drumstick':
+      return {
+        icon: <Drumstick className="w-5 h-5 text-amber-600" />,
+        bg: '#fffbeb',
+        border: '#fde68a'
+      };
+    case 'fish':
+      return {
+        icon: <Fish className="w-5 h-5 text-sky-600" />,
+        bg: '#f0f9ff',
+        border: '#bae6fd'
+      };
+    case 'coffee':
+      return {
+        icon: <Coffee className="w-5 h-5 text-amber-800" />,
+        bg: '#fef3c7',
+        border: '#fde68a'
+      };
+    case 'cup-soda':
+      return {
+        icon: <CupSoda className="w-5 h-5 text-cyan-600" />,
+        bg: '#ecfeff',
+        border: '#a5f3fc'
+      };
+    case 'sandwich':
+      return {
+        icon: <Sandwich className="w-5 h-5 text-orange-600" />,
+        bg: '#fff7ed',
+        border: '#fed7aa'
+      };
+    case 'salad':
+      return {
+        icon: <Salad className="w-5 h-5 text-emerald-600" />,
+        bg: '#ecfdf5',
+        border: '#a7f3d0'
+      };
+    case 'apple':
+      return {
+        icon: <Apple className="w-5 h-5 text-red-500" />,
+        bg: '#fef2f2',
+        border: '#fecaca'
+      };
+    case 'leaf':
+      return {
+        icon: <Leaf className="w-5 h-5 text-green-600" />,
+        bg: '#f0fdf4',
+        border: '#bbf7d0'
+      };
+    case 'heart-pulse':
+      return {
+        icon: <HeartPulse className="w-5 h-5 text-teal-600" />,
+        bg: '#f0fdfa',
+        border: '#99f6e4'
+      };
+    case 'cookie':
+      return {
+        icon: <Cookie className="w-5 h-5 text-amber-600" />,
+        bg: '#fffbeb',
+        border: '#fde68a'
+      };
+    case 'cake':
+      return {
+        icon: <Cake className="w-5 h-5 text-pink-600" />,
+        bg: '#fdf2f8',
+        border: '#fbcfe8'
+      };
+    case 'flame':
+      return {
+        icon: <Flame className="w-5 h-5 text-orange-600" />,
+        bg: '#fff7ed',
+        border: '#fed7aa'
+      };
+    default:
+      return {
+        icon: <Utensils className="w-5 h-5 text-emerald-600" />,
+        bg: '#f8fafc',
+        border: '#e2e8f0'
+      };
+  }
+};
+
+const renderDishBadge = (badge) => {
+  if (!badge) return null;
+  let cls = 'badge-default';
+  if (badge === 'BESTSELLER') cls = 'badge-bestseller';
+  else if (badge.includes('SPICY') || badge === 'HOT') cls = 'badge-spicy';
+  else if (badge === 'HEALTHY' || badge === 'THANH MÁT' || badge === 'THUẦN CHAY' || badge === 'DETOX') cls = 'badge-healthy';
+  else if (badge === 'CHEF_CHOICE' || badge === 'ĐẶC BIỆT') cls = 'badge-chef';
+
+  return <span className={`uiv-dish-badge ${cls}`}>{badge}</span>;
+};
+
 export default function App() {
   // Start at Login screen (currentUser === null)
   const [currentUser, setCurrentUser] = useState(null);
@@ -137,6 +274,7 @@ export default function App() {
   const [firebaseLoading, setFirebaseLoading] = useState(false);
   const [firebaseError, setFirebaseError] = useState('');
   const [activeTab, setActiveTab] = useState('RIDE');
+  const [foodCategoryFilter, setFoodCategoryFilter] = useState('ALL');
 
   // Shared User & Wallet State
   const [walletBalance, setWalletBalance] = useState(500000);
@@ -1722,13 +1860,37 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             <div className="card-header">
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Store className="w-5 h-5 text-emerald-600" />
-                <span>Danh sách quán ăn</span>
+                <span>Thực đơn & Quán ăn</span>
               </div>
-              <span className="oop-tag">{restaurants.length} quán</span>
+              <span className="oop-tag">{restaurants.length} đối tác quán</span>
             </div>
 
-            <div className="toggle-row" style={{ marginTop: 0 }}>
-              {restaurants.map((rest) => (
+            {/* Uiverse Category Filter Chips */}
+            <div className="uiv-category-scroll">
+              {FOOD_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={`uiv-category-chip ${foodCategoryFilter === cat.id ? 'active' : ''}`}
+                  onClick={() => {
+                    setFoodCategoryFilter(cat.id);
+                    const filtered = cat.id === 'ALL' ? restaurants : restaurants.filter((r) => r.categoryCode === cat.id);
+                    if (filtered.length > 0 && !filtered.find((r) => r.id === selectedRestaurant?.id)) {
+                      setSelectedRestaurant(filtered[0]);
+                    }
+                  }}
+                >
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Restaurant Selector Chips */}
+            <div className="toggle-row" style={{ marginTop: 0, marginBottom: '14px' }}>
+              {(foodCategoryFilter === 'ALL'
+                ? restaurants
+                : restaurants.filter((r) => r.categoryCode === foodCategoryFilter)
+              ).map((rest) => (
                 <button
                   key={rest.id}
                   type="button"
@@ -1744,25 +1906,88 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               ))}
             </div>
 
+            {/* Uiverse Restaurant Banner */}
             {selectedRestaurant && (
-              <div className="vehicle-list">
-                {selectedRestaurant.menu.map((dish) => (
-                  <div key={dish.id} className="vehicle-item">
-                    <div className="vehicle-left">
-                      <div className="vehicle-pro-icon-box" style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <UtensilsCrossed className="w-5 h-5 text-emerald-600" />
+              <div className="uiv-restaurant-banner">
+                <div className="uiv-restaurant-banner-left">
+                  <div className="uiv-restaurant-icon-circle">
+                    <Store className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#0f172a' }}>
+                      {selectedRestaurant.name}
+                    </div>
+                    <div className="uiv-restaurant-meta">
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#d97706', fontWeight: 700 }}>
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> {selectedRestaurant.rating}
+                      </span>
+                      <span>•</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <Clock className="w-3.5 h-3.5 text-slate-400" /> ~{selectedRestaurant.prepTimeMinutes || 12} phút
+                      </span>
+                      <span>•</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <Navigation className="w-3.5 h-3.5 text-slate-400" /> {selectedRestaurant.distanceKm || 1.4} km
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <span className="uiv-restaurant-badge">{selectedRestaurant.badge || 'Quán chất lượng ★'}</span>
+              </div>
+            )}
+
+            {/* Uiverse Dish Cards with Custom Semantic SVG Icons */}
+            {selectedRestaurant && (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {selectedRestaurant.menu.map((dish) => {
+                  const { icon, bg, border } = renderDishIcon(dish.iconCode);
+                  const itemInCart = cart.find((c) => c.id === dish.id);
+
+                  return (
+                    <div key={dish.id} className="uiv-dish-card">
+                      <div className="uiv-dish-main">
+                        <div
+                          className="uiv-dish-icon-box"
+                          style={{ background: bg, borderColor: border }}
+                        >
+                          {icon}
+                        </div>
+                        <div className="uiv-dish-info">
+                          <div className="uiv-dish-title-row">
+                            <span className="uiv-dish-title">{dish.name}</span>
+                            {renderDishBadge(dish.badge)}
+                          </div>
+                          {dish.desc && <div className="uiv-dish-desc">{dish.desc}</div>}
+                          <div className="uiv-dish-meta-row">
+                            {dish.calories && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#ea580c', fontWeight: 600 }}>
+                                <Flame className="w-3 h-3" /> {dish.calories} kcal
+                              </span>
+                            )}
+                            {dish.prepTime && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                <Clock className="w-3 h-3" /> {dish.prepTime} phút
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{dish.name}</div>
-                        <div className="price-sub">{dish.price.toLocaleString('vi-VN')} đ</div>
+
+                      <div className="uiv-dish-action">
+                        <span className="uiv-dish-price">{dish.price.toLocaleString('vi-VN')} đ</span>
+                        <button
+                          type="button"
+                          className="uiv-dish-add-btn"
+                          onClick={() => addToCart(dish)}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Thêm</span>
+                          {itemInCart && <span className="uiv-count-pill">{itemInCart.quantity}</span>}
+                        </button>
                       </div>
                     </div>
-                    <button className="btn-secondary" onClick={() => addToCart(dish)}>
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Thêm</span>
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1777,31 +2002,66 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             </div>
 
             {cart.length === 0 ? (
-              <div className="price-sub" style={{ padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <ShoppingBag className="w-8 h-8 text-slate-300" />
-                <span>Giỏ hàng đang trống. Hãy chọn món ăn từ thực đơn.</span>
+              <div className="price-sub" style={{ padding: '28px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                <ShoppingBag className="w-10 h-10 text-slate-300" />
+                <span style={{ fontWeight: 600, color: '#64748b' }}>Giỏ hàng đang trống. Hãy chọn món ăn từ thực đơn bên trái.</span>
               </div>
             ) : (
-              <div className="vehicle-list">
-                {cart.map((item) => (
-                  <div key={item.id} className="vehicle-item">
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{item.name}</div>
-                      <div className="price-sub">
-                        {item.price.toLocaleString('vi-VN')}đ x {item.quantity}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+                {cart.map((item) => {
+                  const { icon, bg, border } = renderDishIcon(item.iconCode);
+                  return (
+                    <div key={item.id} className="uiv-dish-card" style={{ padding: '10px 12px', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '10px',
+                            background: bg,
+                            borderColor: border,
+                            borderWidth: '1px',
+                            borderStyle: 'solid',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}
+                        >
+                          {icon}
+                        </div>
+                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.name}
+                          </div>
+                          <div className="price-sub">
+                            {item.price.toLocaleString('vi-VN')}đ / phần
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="uiv-stepper">
+                        <button
+                          type="button"
+                          className="uiv-stepper-btn"
+                          onClick={() => updateCartQty(item.id, -1)}
+                          title="Giảm 1"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="uiv-stepper-count">{item.quantity}</span>
+                        <button
+                          type="button"
+                          className="uiv-stepper-btn"
+                          onClick={() => updateCartQty(item.id, 1)}
+                          title="Tăng 1"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button className="btn-secondary" style={{ padding: '4px 8px' }} onClick={() => updateCartQty(item.id, -1)}>
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span style={{ fontWeight: 700, minWidth: '18px', textAlign: 'center' }}>{item.quantity}</span>
-                      <button className="btn-secondary" style={{ padding: '4px 8px' }} onClick={() => updateCartQty(item.id, 1)}>
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

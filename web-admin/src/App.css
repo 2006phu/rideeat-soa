@@ -1519,3 +1519,332 @@ code, pre, .mono {
   color: #34d399;
 }
 
+/* ==========================================================================
+   Uiverse & UI-UX Pro Max: Food Delivery Experience
+   ========================================================================== */
+
+.uiv-restaurant-banner {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.uiv-restaurant-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.uiv-restaurant-icon-circle {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #a7f3d0;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.12);
+}
+
+.uiv-restaurant-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.uiv-restaurant-badge {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.15);
+}
+
+/* Uiverse Category Filter Chips */
+.uiv-category-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  scrollbar-width: thin;
+}
+
+.uiv-category-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.uiv-category-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.uiv-category-chip {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uiv-category-chip:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.uiv-category-chip.active {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+}
+
+/* Uiverse Modern Dish Card */
+.uiv-dish-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+}
+
+.uiv-dish-card:hover {
+  border-color: #a7f3d0;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.uiv-dish-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.uiv-dish-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  transition: transform 0.2s ease;
+}
+
+.uiv-dish-card:hover .uiv-dish-icon-box {
+  transform: scale(1.06);
+}
+
+.uiv-dish-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.uiv-dish-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.uiv-dish-title {
+  font-weight: 700;
+  font-size: 0.94rem;
+  color: #0f172a;
+}
+
+.uiv-dish-desc {
+  font-size: 0.76rem;
+  color: #64748b;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.uiv-dish-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.uiv-dish-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+/* Badge Color Themes */
+.badge-bestseller {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+.badge-spicy {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.badge-healthy {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+.badge-chef {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+.badge-default {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* Uiverse Add Button with Micro Spring Physics */
+.uiv-dish-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.uiv-dish-price {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #00b14f;
+  white-space: nowrap;
+}
+
+.uiv-dish-add-btn {
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid #a7f3d0;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  color: #059669;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.1);
+}
+
+.uiv-dish-add-btn:hover {
+  background: linear-gradient(135deg, #00b14f 0%, #009341 100%);
+  color: #ffffff;
+  border-color: #00b14f;
+  transform: translateY(-1.5px);
+  box-shadow: 0 5px 14px rgba(0, 177, 79, 0.35);
+}
+
+.uiv-dish-add-btn:active {
+  transform: scale(0.93);
+}
+
+.uiv-count-pill {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00b14f;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uiv-dish-add-btn:hover .uiv-count-pill {
+  background: #ffffff;
+  color: #00b14f;
+}
+
+/* Uiverse Micro Stepper in Cart */
+.uiv-stepper {
+  display: inline-flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 2px 4px;
+  gap: 4px;
+}
+
+.uiv-stepper-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: none;
+  background: #ffffff;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uiv-stepper-btn:hover {
+  background: #00b14f;
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+.uiv-stepper-btn:active {
+  transform: scale(0.92);
+}
+
+.uiv-stepper-count {
+  font-size: 0.85rem;
+  font-weight: 800;
+  min-width: 22px;
+  text-align: center;
+  color: #0f172a;
+}
+
+

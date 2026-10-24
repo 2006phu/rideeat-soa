@@ -812,41 +812,102 @@ export class FoodApiService extends BaseApiClient {
           id: 'rest-pho-thin-01',
           name: 'Phở Thìn Bờ Hồ - Chi Nhánh Quận 1',
           category: 'Món Việt Truyền Thống',
+          categoryCode: 'NOODLE',
           rating: 4.9,
           prepTimeMinutes: 12,
-          distanceKm: 1.4,
+          distanceKm: 1.2,
           badge: 'Quán Yêu Thích ★',
           menu: [
-            { id: 'f-01', name: 'Phở Bò Tái Lăn Đặc Biệt', price: 65000, calories: 580, tags: ['RAIN', 'HOT', 'DINNER', 'MORNING'], image: '🍜' },
-            { id: 'f-02', name: 'Phở Gàu Giòn Nước Trong', price: 60000, calories: 520, tags: ['MORNING', 'LIGHT'], image: '🥣' },
-            { id: 'f-03', name: 'Combo Phở Tái + Quẩy Giòn + Trà Đá', price: 78000, calories: 690, tags: ['COMBO', 'BESTSELLER'], image: '🥢' }
+            { id: 'f-01', name: 'Phở Bò Tái Lăn Đặc Biệt', price: 65000, calories: 580, prepTime: 10, iconCode: 'soup', badge: 'BESTSELLER', tags: ['RAIN', 'HOT', 'DINNER', 'MORNING'], desc: 'Thịt bò thăn xào tỏi thơm nồng chảo gang, nước dùng ninh xương 18 giờ' },
+            { id: 'f-02', name: 'Phở Bò Chín Nạm Gầu Nước Trong', price: 62000, calories: 520, prepTime: 10, iconCode: 'soup', badge: 'TRUYỀN THỐNG', tags: ['MORNING', 'LIGHT'], desc: 'Nạm gầu giòn sần sật, nước dùng thanh ngọt tự nhiên không mì chính' },
+            { id: 'f-03', name: 'Bún Thang Phố Cổ Hà Nội', price: 68000, calories: 490, prepTime: 12, iconCode: 'cooking-pot', badge: 'CHEF_CHOICE', tags: ['LUNCH', 'SPECIAL'], desc: 'Trứng tráng chỉ mỏng tang, gà ta xé, giò lụa, nấm hương hòa quyện' },
+            { id: 'f-04', name: 'Quẩy Giòn Hà Nội Nóng Hổi (Đĩa)', price: 15000, calories: 180, prepTime: 3, iconCode: 'cookie', badge: 'ĂN KÈM', tags: ['SIDE'], desc: 'Quẩy chiên vàng ươm giòn rụm, nhúng nước dùng phở béo ngậy' },
+            { id: 'f-05', name: 'Trà Đá Thảo Mộc Thanh Nhiệt', price: 10000, calories: 15, prepTime: 2, iconCode: 'cup-soda', badge: 'THANH MÁT', tags: ['DRINK'], desc: 'Trà thảo mộc hoa cúc ủ lạnh thanh mát giải nhiệt tức thì' }
           ]
         },
         {
           id: 'rest-com-tam-02',
-          name: 'Cơm Tấm Phúc Lộc Thọ - Nguyễn Văn Cừ',
+          name: 'Cơm Tấm Ba Ghiền - Sài Gòn 1985',
           category: 'Cơm Tấm Sài Gòn',
-          rating: 4.8,
+          categoryCode: 'RICE',
+          rating: 4.85,
           prepTimeMinutes: 10,
           distanceKm: 1.8,
           badge: 'Freeship Extra',
           menu: [
-            { id: 'f-04', name: 'Cơm Tấm Sườn Bì Chả Trứng Ốp La', price: 58000, calories: 740, tags: ['LUNCH', 'DINNER', 'BESTSELLER'], image: '🍱' },
-            { id: 'f-05', name: 'Cơm Đùi Gà Nướng Mật Ong + Canh Khổ Qua', price: 62000, calories: 680, tags: ['LUNCH', 'HIGH_PROTEIN'], image: '🍗' }
+            { id: 'f-06', name: 'Cơm Tấm Sườn Bì Chả Trứng Đặc Biệt', price: 75000, calories: 760, prepTime: 8, iconCode: 'beef', badge: 'BESTSELLER', tags: ['LUNCH', 'DINNER', 'BESTSELLER'], desc: 'Sườn cốt lết to bản ướp sả ớt nướng than hoa rực hồng, chả trứng béo thơm' },
+            { id: 'f-07', name: 'Cơm Sườn Cây Nướng Mật Ong Rừng', price: 65000, calories: 680, prepTime: 8, iconCode: 'beef', badge: 'HOT', tags: ['LUNCH', 'HIGH_PROTEIN'], desc: 'Sườn cây nướng mềm róc xương, sốt mật ong bóng bẩy thơm lừng' },
+            { id: 'f-08', name: 'Cơm Đùi Gà Xối Mỡ Da Giòn', price: 58000, calories: 640, prepTime: 10, iconCode: 'drumstick', badge: 'GIÒN RỤM', tags: ['LUNCH'], desc: 'Đùi gà góc tư chiên xối mỡ giòn rụm bên ngoài, mọng nước bên trong' },
+            { id: 'f-09', name: 'Canh Khổ Qua Nhồi Thịt Thác Lác', price: 25000, calories: 140, prepTime: 5, iconCode: 'soup', badge: 'THANH NHIỆT', tags: ['SOUP'], desc: 'Khổ qua nhồi thịt băm và cá thác lác dẻo dai hầm xương ngọt lịm' },
+            { id: 'f-10', name: 'Trà Tắc Xí Muội Mát Lạnh', price: 18000, calories: 90, prepTime: 3, iconCode: 'cup-soda', badge: 'GIẢI KHÁT', tags: ['DRINK'], desc: 'Chua ngọt mặn mà đậm đà vị xí muội giải ngấy sau bữa cơm' }
           ]
         },
         {
-          id: 'rest-tea-coffee-03',
-          name: 'Katinat Saigon Kafe - Đồng Khởi',
+          id: 'rest-bun-bo-03',
+          name: 'Bún Bò Huế Cố Đô Đông Ba',
+          category: 'Đặc Sản Miền Trung',
+          categoryCode: 'CENTRAL',
+          rating: 4.88,
+          prepTimeMinutes: 12,
+          distanceKm: 2.1,
+          badge: 'Gia Truyền 3 Đời',
+          menu: [
+            { id: 'f-11', name: 'Bún Bò Huế Thập Cẩm Giò Heo', price: 72000, calories: 620, prepTime: 10, iconCode: 'cooking-pot', badge: 'BESTSELLER', tags: ['HOT', 'DINNER'], desc: 'Nước dùng ruốc sả thơm nồng, bắp hoa bò, móng giò mềm, chả cua Huế' },
+            { id: 'f-12', name: 'Bún Bò Tái Bắp Hoa Chả Cua', price: 62000, calories: 510, prepTime: 10, iconCode: 'soup', badge: 'ĐẶC BIỆT', tags: ['LUNCH'], desc: 'Bắp hoa bò giòn sần sật kết hợp chả cua nguyên chất giã tay' },
+            { id: 'f-13', name: 'Bánh Bèo Chén Tôm Cháy Sa Tế (6 Chén)', price: 38000, calories: 320, prepTime: 7, iconCode: 'utensils', badge: 'MÓN HUẾ', tags: ['SIDE'], desc: 'Bột gạo dẻo mịn rắc tôm cháy đỏ hồng, tóp mỡ da heo và mắm ớt cay' },
+            { id: 'f-14', name: 'Nem Lụi Nướng Than Bọc Sả (4 Cây)', price: 45000, calories: 380, prepTime: 8, iconCode: 'flame', badge: 'THƠM LỨNG', tags: ['SNACK'], desc: 'Nem giò sống quấn đầu sả nướng than thơm lừng chấm sốt tương gan' },
+            { id: 'f-15', name: 'Nước Mơ Ngâm Chùa Hương Đá', price: 22000, calories: 110, prepTime: 2, iconCode: 'cup-soda', badge: 'THANH MÁT', tags: ['DRINK'], desc: 'Mơ ngâm ủ đường phèn thanh chua kích thích vị giác' }
+          ]
+        },
+        {
+          id: 'rest-tea-coffee-04',
+          name: 'Katinat & Cà Phê Thủ Công Sài Gòn',
           category: 'Trà Sữa & Cà Phê Thủ Công',
-          rating: 4.92,
+          categoryCode: 'DRINK',
+          rating: 4.94,
           prepTimeMinutes: 8,
           distanceKm: 0.9,
-          badge: 'Giao Nhanh 15p',
+          badge: 'Giao Siêu Tốc 15p',
           menu: [
-            { id: 'f-06', name: 'Trà Sữa Chôm Chôm Nướng Kem Phô Mai', price: 55000, calories: 410, tags: ['SUNNY', 'AFTERNOON', 'SWEET'], image: '🧋' },
-            { id: 'f-07', name: 'Cà Phê Sữa Đá Sài Gòn Đậm Vị', price: 39000, calories: 210, tags: ['MORNING', 'ENERGY'], image: '☕' },
-            { id: 'f-08', name: 'Trà Đào Hồng Đài Hạt Chia Thanh Mát', price: 49000, calories: 180, tags: ['SUNNY', 'HEALTHY'], image: '🍹' }
+            { id: 'f-16', name: 'Trà Sữa Chôm Chôm Nướng Phô Mai', price: 55000, calories: 380, prepTime: 5, iconCode: 'cup-soda', badge: 'BESTSELLER', tags: ['SWEET', 'AFTERNOON'], desc: 'Kem phô mai béo ngậy nướng cháy mặt trên nền trà sữa ô long đậm đà' },
+            { id: 'f-17', name: 'Cà Phê Sữa Đá Sài Gòn Pha Phin', price: 35000, calories: 190, prepTime: 4, iconCode: 'coffee', badge: 'ĐẬM VỊ', tags: ['MORNING', 'ENERGY'], desc: 'Robusta Buôn Ma Thuột rang mộc pha phin, sữa đặc ngọt dịu đậm gu' },
+            { id: 'f-18', name: 'Trà Đào Hồng Đài Hạt Chia', price: 48000, calories: 160, prepTime: 4, iconCode: 'cup-soda', badge: 'HEALTHY', tags: ['TEA'], desc: 'Hồng trà ủ lạnh thơm thanh, đào miếng giòn sần sật và hạt chia bổ dưỡng' },
+            { id: 'f-19', name: 'Bánh Croissant Bơ Tỏi Phô Mai Nóng', price: 42000, calories: 310, prepTime: 6, iconCode: 'cake', badge: 'BÁNH TƯƠI', tags: ['BAKERY'], desc: 'Bánh sừng bò ngàn lớp nướng nóng giòn quyện sốt bơ tỏi thơm ngát' },
+            { id: 'f-20', name: 'Espresso Macchiato Đá Xay Caramel', price: 52000, calories: 290, prepTime: 5, iconCode: 'coffee', badge: 'NGỌT NGÀO', tags: ['COFFEE'], desc: 'Cà phê đậm vị kết hợp sốt caramel muối bồng bềnh béo mịn' }
+          ]
+        },
+        {
+          id: 'rest-crispy-burger-05',
+          name: 'Crispy Bro - Gà Rán Cay & Burger Mỹ',
+          category: 'Burger & Gà Rán Mỹ',
+          categoryCode: 'FASTFOOD',
+          rating: 4.82,
+          prepTimeMinutes: 12,
+          distanceKm: 2.4,
+          badge: 'Combo Ưu Đãi',
+          menu: [
+            { id: 'f-21', name: 'Burger Bò Phô Mai Khổng Lồ 2 Tầng', price: 79000, calories: 690, prepTime: 10, iconCode: 'sandwich', badge: 'BESTSELLER', tags: ['FASTFOOD'], desc: '2 lát bò Úc nướng lửa hồng, 2 lát phô mai Cheddar tan chảy, sốt BBQ' },
+            { id: 'f-22', name: 'Gà Rán Cay Giòn Cay Sốt Mật Ong (2 Miếng)', price: 68000, calories: 590, prepTime: 10, iconCode: 'drumstick', badge: 'SPICY & CRISP', tags: ['HOT', 'CHICKEN'], desc: 'Gà tươi tẩm bột 11 loại gia vị chiên giòn tan rắc mè rang thơm nức' },
+            { id: 'f-23', name: 'Burger Gà Giòn Sốt Mayo Tỏi Ớt', price: 59000, calories: 530, prepTime: 8, iconCode: 'sandwich', badge: 'HOT', tags: ['BURGER'], desc: 'Ức gà phi lê chiên giòn kẹp rau xà lách tươi, dưa chuột muối giòn' },
+            { id: 'f-24', name: 'Khoai Tây Chiên Lắc Phô Mai Rong Biển', price: 39000, calories: 340, prepTime: 6, iconCode: 'cookie', badge: 'ĂN VẶT', tags: ['SNACK'], desc: 'Khoai tây cọng Bỉ chiên vàng ươm lắc ngập bột phô mai mặn béo' },
+            { id: 'f-25', name: 'Coca-Cola Tươi Khổng Lồ Kèm Chanh Đá', price: 20000, calories: 140, prepTime: 2, iconCode: 'cup-soda', badge: 'GIẢI KHÁT', tags: ['DRINK'], desc: 'Nước ngọt có ga ướp lạnh đánh tan dầu mỡ sảng khoái' }
+          ]
+        },
+        {
+          id: 'rest-green-healthy-06',
+          name: 'Green Bowl - Salad & Chay Dưỡng Sinh',
+          category: 'Healthy, Salad & Eat Clean',
+          categoryCode: 'HEALTHY',
+          rating: 4.91,
+          prepTimeMinutes: 10,
+          distanceKm: 1.5,
+          badge: 'Healthy Choice',
+          menu: [
+            { id: 'f-26', name: 'Salad Ức Gà Nướng Sốt Mè Rang Nhật Bản', price: 65000, calories: 340, prepTime: 7, iconCode: 'salad', badge: 'HIGH_PROTEIN', tags: ['FITNESS'], desc: 'Ức gà thảo mộc xé sợi, xà lách xoăn, cà chua bi, trứng luộc và mè rang' },
+            { id: 'f-27', name: 'Bún Gạo Lứt Trộn Nấm Đùi Gà & Đậu Hũ', price: 55000, calories: 310, prepTime: 8, iconCode: 'leaf', badge: 'THUẦN CHAY', tags: ['VEGAN'], desc: 'Bún lứt dai giòn sốt xì dầu tỏi ớt, nấm kho tiêu và đậu non chiên vàng' },
+            { id: 'f-28', name: 'Poke Bowl Cá Hồi Tươi Bơ Sáp & Trứng Tôm', price: 89000, calories: 450, prepTime: 9, iconCode: 'fish', badge: 'CHEF_CHOICE', tags: ['SPECIAL'], desc: 'Cá hồi Na Uy sốt Ponzu mè, bơ sáp Đắk Lắk trên nền cơm gạo lứt' },
+            { id: 'f-29', name: 'Nước Ép Cần Tây Táo Xanh Detox Giữ Dáng', price: 42000, calories: 85, prepTime: 4, iconCode: 'apple', badge: 'DETOX', tags: ['DETOX'], desc: 'Ép lạnh nguyên chất 100% không thêm đường thanh lọc cơ thể' },
+            { id: 'f-30', name: 'Sữa Hạt Hạnh Nhân Yến Mạch Dưỡng Nhan', price: 38000, calories: 120, prepTime: 3, iconCode: 'heart-pulse', badge: 'DINH DƯỠNG', tags: ['ORGANIC'], desc: 'Sữa hạt organic nấu mới mỗi ngày giàu vitamin E và chất xơ hòa tan' }
           ]
         }
       ]
