@@ -22,6 +22,21 @@ from services.common.exceptions import (
     InsufficientBalanceException,
     InvalidStateTransitionException,
 )
+from services.common.contracts import (
+    ApiResponse,
+    ApiPaginationMeta,
+    GeoCoordinateDTO,
+    MoneyDTO,
+    UserPrincipalDTO,
+    RideEstimateDTO,
+    RideStatus,
+    OrderStatus,
+    PaymentStatus,
+    PaymentMethod,
+    VehicleType,
+    RideRequestedEventPayload,
+    PaymentCompletedEventPayload,
+)
 from services.common.messaging.interfaces import DomainEvent, IEventHandler, IEventPublisher
 from services.common.messaging.kafka_bus import InMemoryEventBus, KafkaEventBus
 from services.common.security.firebase_auth import (
@@ -258,6 +273,61 @@ class TestRideEatOOPArchitecture(unittest.IsolatedAsyncioTestCase):
                 any("Service" in cname for cname in class_names),
                 f"No OOP Service class found in {svc}/app/service.py",
             )
+
+    def test_10_enterprise_data_contracts_and_serialization(self) -> None:
+        """Verifies strongly-typed enterprise contracts, envelopes and serialization."""
+        # 1. API Envelope Factory methods
+        success_resp = ApiResponse.ok(data={"order_id": "ord-999"}, message="Order processed")
+        self.assertTrue(success_resp.success)
+        self.assertEqual(success_resp.data["order_id"], "ord-999")
+        self.assertIsNone(success_resp.error)
+
+        fail_resp = ApiResponse.fail(error_code="INSUFFICIENT_FUNDS", message="Not enough balance")
+        self.assertFalse(fail_resp.success)
+        self.assertIsNone(fail_resp.data)
+        self.assertIsNotNone(fail_resp.error)
+        self.assertEqual(fail_resp.error.error_code, "INSUFFICIENT_FUNDS")
+
+        # 2. Geo & Money DTOs
+        origin = GeoCoordinateDTO(lat=10.7769, lng=106.7009, address="Ben Thanh")
+        self.assertEqual(origin.lat, 10.7769)
+        self.assertEqual(origin.address, "Ben Thanh")
+
+        dest = GeoCoordinateDTO(lat=10.7950, lng=106.7218, address="Landmark 81")
+        estimate = RideEstimateDTO(
+            origin=origin,
+            destination=dest,
+            vehicle_type=VehicleType.CAR_4,
+            distance_km=4.5,
+            duration_minutes=12.0,
+            base_fare=25000.0,
+            distance_fare=49500.0,
+            time_fare=6000.0,
+            surge_multiplier=1.2,
+            total_fare=96600.0,
+        )
+        self.assertEqual(estimate.vehicle_type, VehicleType.CAR_4)
+        self.assertEqual(estimate.total_fare, 96600.0)
+
+        # 3. Kafka Event Contract Serialization
+        event_payload = RideRequestedEventPayload(
+            ride_id="ride-777",
+            customer_id="cust-1",
+            vehicle_type=VehicleType.MOTORBIKE,
+            origin=origin,
+            destination=dest,
+            estimated_fare=35000.0,
+            distance_km=3.2,
+        )
+        serialized_event = event_payload.model_dump()
+        self.assertEqual(serialized_event["ride_id"], "ride-777")
+        self.assertEqual(serialized_event["origin"]["address"], "Ben Thanh")
+
+        # 4. Enums integrity
+        self.assertEqual(RideStatus.IN_TRANSIT.value, "in_transit")
+        self.assertEqual(OrderStatus.READY_FOR_PICKUP.value, "ready_for_pickup")
+        self.assertEqual(PaymentStatus.SUCCESS.value, "success")
+        self.assertEqual(PaymentMethod.WALLET.value, "wallet")
 
 
 if __name__ == "__main__":
