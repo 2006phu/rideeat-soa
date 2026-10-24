@@ -748,13 +748,13 @@ code, pre, .mono {
 
 .leaflet-map-hero {
   width: 100%;
-  height: 580px;
-  min-height: 480px;
+  height: 480px;
+  min-height: 420px;
 }
 
 @media (max-width: 768px) {
   .leaflet-map-hero {
-    height: 420px;
+    height: 380px;
   }
 }
 
@@ -858,32 +858,21 @@ code, pre, .mono {
   100% { transform: scale(1.1); opacity: 1; }
 }
 
-/* Floating Status HUD Overlay on Map */
-.floating-hud-overlay {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  right: 14px;
-  z-index: 999;
-  pointer-events: none;
-}
-
-.hud-glass-card {
-  pointer-events: auto;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  border-radius: 16px;
-  padding: 14px 18px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+/* Standalone Status HUD Card Separated Below Map (No Map Blocking) */
+.hud-standalone-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.07);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  animation: slide-down 0.3s ease-out;
+  gap: 12px;
+  animation: slide-up 0.25s ease-out;
 }
 
-@keyframes slide-down {
-  from { opacity: 0; transform: translateY(-10px); }
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 

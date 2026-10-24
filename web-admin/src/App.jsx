@@ -1436,161 +1436,161 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             )}
           </div>
 
-          {/* CỘT PHẢI: HERO MAP & FLOATING LIVE HUD */}
-          <div className="ride-map-wrapper">
-            {/* FLOATING STATUS HUD OVERLAY */}
+          {/* CỘT PHẢI: BẢN ĐỒ TOÀN CẢNH & KHUNG THÔNG BÁO TÁCH RIÊNG (100% KHÔNG BỊ CHE BẢN ĐỒ) */}
+          <div className="ride-right-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* 1. BẢN ĐỒ TOÀN CẢNH (HOÀN TOÀN TRỐNG TRẢI, RÕ RÀNG 100%) */}
+            <div className="ride-map-wrapper">
+              <div ref={mapContainerRef} className="leaflet-map-hero" />
+            </div>
+
+            {/* 2. KHUNG THÔNG BÁO TIẾN TRÌNH CHUYẾN ĐI (TÁCH BIỆT HOÀN TOÀN BÊN DƯỚI) */}
             {rideStage !== 'IDLE' && (
-              <div className="floating-hud-overlay">
-                <div className="hud-glass-card">
-                  {/* TOP ROW: STATE BADGE + METRICS */}
-                  <div className="hud-top-row">
-                    <div>
-                      {rideStage === 'SEARCHING' && (
-                        <span className="hud-state-tag searching">
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
-                          Giai đoạn 1: Đang quét tìm tài xế gần bạn nhất...
-                        </span>
-                      )}
-                      {rideStage === 'ARRIVING' && (
-                        <span className="hud-state-tag arriving">
-                          🚗 Giai đoạn 2: Tài xế đang đến điểm đón (~{Math.max(1, 25 - approachStep)}s)
-                        </span>
-                      )}
-                      {rideStage === 'ARRIVED' && (
-                        <span className="hud-state-tag arriving" style={{ background: '#ecfdf5', color: '#00b14f', borderColor: '#a7f3d0' }}>
-                          🟢 Giai đoạn 3: Tài xế đã đến điểm đón! Đưa mã OTP để lên xe
-                        </span>
-                      )}
-                      {rideStage === 'IN_PROGRESS' && (
-                        <span className="hud-state-tag in-progress">
-                          🛵 Giai đoạn 4: Đang di chuyển đến điểm đến ({Math.round(((driverStepIndex + 1) / (routeInfo.polyline?.length || 64)) * 100)}%)
-                        </span>
-                      )}
-                      {rideStage === 'COMPLETED' && (
-                        <span className="hud-state-tag completed">
-                          🎉 Hoàn thành: Bạn đã đến nơi an toàn!
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {rideStage === 'IN_PROGRESS' && (
-                        <span className="metric-pill">
-                          ⚡ Tốc độ: <strong>{currentSpeedKmh} km/h</strong>
-                        </span>
-                      )}
-                      <span className="metric-pill">
-                        🧭 Hướng: <strong>{driverBearing}°</strong>
+              <div className="hud-standalone-card">
+                {/* TOP ROW: STATE BADGE + METRICS */}
+                <div className="hud-top-row">
+                  <div>
+                    {rideStage === 'SEARCHING' && (
+                      <span className="hud-state-tag searching">
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
+                        Giai đoạn 1: Đang quét tìm tài xế gần bạn nhất...
                       </span>
-                    </div>
+                    )}
+                    {rideStage === 'ARRIVING' && (
+                      <span className="hud-state-tag arriving">
+                        🚗 Giai đoạn 2: Tài xế đang đến điểm đón (~{Math.max(1, 25 - approachStep)}s)
+                      </span>
+                    )}
+                    {rideStage === 'ARRIVED' && (
+                      <span className="hud-state-tag arriving" style={{ background: '#ecfdf5', color: '#00b14f', borderColor: '#a7f3d0' }}>
+                        🟢 Giai đoạn 3: Tài xế đã đến điểm đón! Đưa mã OTP để lên xe
+                      </span>
+                    )}
+                    {rideStage === 'IN_PROGRESS' && (
+                      <span className="hud-state-tag in-progress">
+                        🛵 Giai đoạn 4: Đang di chuyển đến điểm đến ({Math.round(((driverStepIndex + 1) / (routeInfo.polyline?.length || 64)) * 100)}%)
+                      </span>
+                    )}
+                    {rideStage === 'COMPLETED' && (
+                      <span className="hud-state-tag completed">
+                        🎉 Hoàn thành: Bạn đã đến nơi an toàn!
+                      </span>
+                    )}
                   </div>
 
-                  {/* PROGRESS BAR FOR SEARCHING OR TRAVEL */}
-                  {rideStage === 'SEARCHING' && (
-                    <div>
-                      <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', marginTop: '4px' }}>
-                        <div
-                          style={{
-                            height: '100%',
-                            width: `${searchProgress}%`,
-                            background: 'linear-gradient(90deg, #3b82f6, #00b14f)',
-                            transition: 'width 0.4s ease'
-                          }}
-                        />
-                      </div>
-                      <div className="price-sub" style={{ marginTop: '4px', textAlign: 'center' }}>
-                        Đang quét 4 tài xế trong bán kính 1km xung quanh {(HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]).name.split(',')[0]}...
-                      </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {rideStage === 'IN_PROGRESS' && (
+                      <span className="metric-pill">
+                        ⚡ Tốc độ: <strong>{currentSpeedKmh} km/h</strong>
+                      </span>
+                    )}
+                    <span className="metric-pill">
+                      🧭 Hướng: <strong>{driverBearing}°</strong>
+                    </span>
+                  </div>
+                </div>
+
+                {/* PROGRESS BAR FOR SEARCHING OR TRAVEL */}
+                {rideStage === 'SEARCHING' && (
+                  <div>
+                    <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', marginTop: '4px' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${searchProgress}%`,
+                          background: 'linear-gradient(90deg, #3b82f6, #00b14f)',
+                          transition: 'width 0.4s ease'
+                        }}
+                      />
                     </div>
-                  )}
-
-                  {/* DRIVER INFO & ACTIONS (ARRIVING / ARRIVED / IN_PROGRESS) */}
-                  {(rideStage === 'ARRIVING' || rideStage === 'ARRIVED' || rideStage === 'IN_PROGRESS' || rideStage === 'COMPLETED') && (
-                    <div className="driver-sheet-card">
-                      <div className="driver-sheet-left">
-                        <div className="driver-avatar-circle">
-                          👨🏻‍✈️
-                          <div className="driver-verified-check">✓</div>
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>{assignedDriverInfo?.name || activeRide?.driver?.name || 'Trần Minh Tài'}</span>
-                            <span style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 600 }}>★ 4.98 (1.4k+)</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                            <span className="license-plate-vn">{assignedDriverInfo?.plate || activeRide?.driver?.license_plate || '59-X3 888.99'}</span>
-                            <span className="price-sub">{assignedDriverInfo?.vehicle || activeRide?.driver?.vehicle || 'Honda SH 150i ABS'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="driver-sheet-actions">
-                        <button
-                          type="button"
-                          className="btn-icon-action"
-                          onClick={() => alert(`Đang kết nối cuộc gọi thoại với tài xế ${assignedDriverInfo?.name || 'Trần Minh Tài'}...`)}
-                          title="Gọi điện cho tài xế"
-                        >
-                          📞
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-icon-action"
-                          onClick={() => handleSendAiChat(`Tài xế đang ở đâu rồi?`)}
-                          title="Nhắn tin với tài xế"
-                        >
-                          💬
-                        </button>
-                      </div>
+                    <div className="price-sub" style={{ marginTop: '4px', textAlign: 'center' }}>
+                      Đang quét 4 tài xế trong bán kính 1km xung quanh {(HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]).name.split(',')[0]}...
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* OTP BOX (WHEN ARRIVED OR ARRIVING) */}
-                  {(rideStage === 'ARRIVING' || rideStage === 'ARRIVED') && activeRide?.otp_code && (
-                    <div className="otp-display-box">
+                {/* DRIVER INFO & ACTIONS (ARRIVING / ARRIVED / IN_PROGRESS) */}
+                {(rideStage === 'ARRIVING' || rideStage === 'ARRIVED' || rideStage === 'IN_PROGRESS' || rideStage === 'COMPLETED') && (
+                  <div className="driver-sheet-card">
+                    <div className="driver-sheet-left">
+                      <div className="driver-avatar-circle">
+                        👨🏻‍✈️
+                        <div className="driver-verified-check">✓</div>
+                      </div>
                       <div>
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          MÃ OTP XÁC NHẬN LÊN XE
+                        <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{assignedDriverInfo?.name || activeRide?.driver?.name || 'Trần Minh Tài'}</span>
+                          <span style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 600 }}>★ 4.98 (1.4k+)</span>
                         </div>
-                        <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
-                          Cung cấp cho tài xế trước khi khởi hành
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                          <span className="license-plate-vn">{assignedDriverInfo?.plate || activeRide?.driver?.license_plate || '59-X3 888.99'}</span>
+                          <span className="price-sub">{assignedDriverInfo?.vehicle || activeRide?.driver?.vehicle || 'Honda SH 150i ABS'}</span>
                         </div>
-                      </div>
-                      <div className="otp-digit-group">
-                        {activeRide.otp_code.split('').map((ch, idx) => (
-                          <div key={idx} className="otp-digit">{ch}</div>
-                        ))}
                       </div>
                     </div>
-                  )}
 
-                  {/* 5-STEP TIMELINE STEPPER */}
-                  <div className="stepper-timeline">
-                    {[
-                      { key: 'REQUESTED', label: '1. Quét tìm xe' },
-                      { key: 'ARRIVING', label: '2. Xe đến đón' },
-                      { key: 'ARRIVED', label: '3. Lên xe (OTP)' },
-                      { key: 'IN_PROGRESS', label: '4. Đang di chuyển' },
-                      { key: 'COMPLETED', label: '5. Hoàn thành' }
-                    ].map((step, idx) => {
-                      const stagesOrder = ['SEARCHING', 'ARRIVING', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
-                      const currentStageIdx = stagesOrder.indexOf(rideStage);
-                      const isDone = currentStageIdx > idx;
-                      const isActive = currentStageIdx === idx;
-                      return (
-                        <div key={step.key} className={`stepper-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}>
-                          <div className="step-circle">{isDone ? '✓' : idx + 1}</div>
-                          <span className="step-label">{step.label}</span>
-                        </div>
-                      );
-                    })}
+                    <div className="driver-sheet-actions">
+                      <button
+                        type="button"
+                        className="btn-icon-action"
+                        onClick={() => alert(`Đang kết nối cuộc gọi thoại với tài xế ${assignedDriverInfo?.name || 'Trần Minh Tài'}...`)}
+                        title="Gọi điện cho tài xế"
+                      >
+                        📞
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon-action"
+                        onClick={() => handleSendAiChat(`Tài xế đang ở đâu rồi?`)}
+                        title="Nhắn tin với tài xế"
+                      >
+                        💬
+                      </button>
+                    </div>
                   </div>
+                )}
+
+                {/* OTP BOX (WHEN ARRIVED OR ARRIVING) */}
+                {(rideStage === 'ARRIVING' || rideStage === 'ARRIVED') && activeRide?.otp_code && (
+                  <div className="otp-display-box">
+                    <div>
+                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        MÃ OTP XÁC NHẬN LÊN XE
+                      </div>
+                      <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                        Cung cấp cho tài xế trước khi khởi hành
+                      </div>
+                    </div>
+                    <div className="otp-digit-group">
+                      {activeRide.otp_code.split('').map((ch, idx) => (
+                        <div key={idx} className="otp-digit">{ch}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5-STEP TIMELINE STEPPER */}
+                <div className="stepper-timeline">
+                  {[
+                    { key: 'REQUESTED', label: '1. Quét tìm xe' },
+                    { key: 'ARRIVING', label: '2. Xe đến đón' },
+                    { key: 'ARRIVED', label: '3. Lên xe (OTP)' },
+                    { key: 'IN_PROGRESS', label: '4. Đang di chuyển' },
+                    { key: 'COMPLETED', label: '5. Hoàn thành' }
+                  ].map((step, idx) => {
+                    const stagesOrder = ['SEARCHING', 'ARRIVING', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
+                    const currentStageIdx = stagesOrder.indexOf(rideStage);
+                    const isDone = currentStageIdx > idx;
+                    const isActive = currentStageIdx === idx;
+                    return (
+                      <div key={step.key} className={`stepper-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}>
+                        <div className="step-circle">{isDone ? '✓' : idx + 1}</div>
+                        <span className="step-label">{step.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
-
-            {/* LEAFLET MAP HERO CANVAS */}
-            <div ref={mapContainerRef} className="leaflet-map-hero" />
           </div>
         </div>
       )}
