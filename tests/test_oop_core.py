@@ -46,6 +46,11 @@ try:
     from tests.test_domain_services import TestCoreDomainServices
 except ImportError:
     TestCoreDomainServices = None
+
+try:
+    from tests.test_integration_services import TestIntegrationServices
+except ImportError:
+    TestIntegrationServices = None
 from services.common.messaging.interfaces import DomainEvent, IEventHandler, IEventPublisher
 from services.common.messaging.kafka_bus import InMemoryEventBus, KafkaEventBus
 from services.common.security.firebase_auth import (

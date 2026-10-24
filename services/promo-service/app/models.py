@@ -2,12 +2,17 @@
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 from sqlalchemy import Boolean, DateTime, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from services.common.db.base import BaseORMModel, TimestampMixin, utc_now
 from services.common.exceptions import BusinessRuleViolationException
+
+try:
+    from app.discount_strategy import DiscountStrategyFactory
+except Exception:
+    DiscountStrategyFactory = None
 
 
 class DiscountType(str, Enum):
@@ -80,6 +85,20 @@ class Voucher(BaseORMModel, TimestampMixin):
         self.validate_applicable(check_amount)
         self.used_count += 1
         self.updated_at = utc_now()
+
+    def calculate_discount(self, order_amount: float, strategy_factory: Any = None) -> float:
+        """Validate applicability and compute final discount using polymorphic strategy."""
+        self.validate_applicable(order_amount)
+        factory = strategy_factory or DiscountStrategyFactory
+        if factory is None:
+            from app.discount_strategy import DiscountStrategyFactory as imported_factory
+            factory = imported_factory
+        strategy = factory.get_strategy(self.discount_type)
+        return strategy.compute_discount(
+            order_amount=order_amount,
+            discount_value=self.discount_value,
+            max_discount=self.max_discount,
+        )
 
 
 class LoyaltyAccount(BaseORMModel, TimestampMixin):

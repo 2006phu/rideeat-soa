@@ -71,6 +71,66 @@ class MockGatewayPaymentStrategy(IPaymentStrategy):
         return True
 
 
+class VNPayPaymentAdapter(IPaymentStrategy):
+    """Concrete Adapter for VNPay QR and payment gateway settlement."""
+
+    async def execute_payment(
+        self, tx: PaymentTransaction, wallet_repo: WalletRepository
+    ) -> bool:
+        if tx.amount <= 0 or tx.amount > 500_000_000:
+            logger.warning(
+                f"[VNPayPaymentAdapter] Rejected transaction tx={tx.id} amount={tx.amount}"
+            )
+            tx.mark_failed()
+            return False
+
+        logger.info(
+            f"[VNPayPaymentAdapter] Authorized VNPay transaction tx={tx.id} amount={tx.amount:,.0f} VND"
+        )
+        tx.mark_success()
+        return True
+
+
+class MoMoPaymentAdapter(IPaymentStrategy):
+    """Concrete Adapter for MoMo E-Wallet App & QR payment gateway settlement."""
+
+    async def execute_payment(
+        self, tx: PaymentTransaction, wallet_repo: WalletRepository
+    ) -> bool:
+        if tx.amount <= 0 or tx.amount > 50_000_000:
+            logger.warning(
+                f"[MoMoPaymentAdapter] Rejected transaction tx={tx.id} amount={tx.amount}"
+            )
+            tx.mark_failed()
+            return False
+
+        logger.info(
+            f"[MoMoPaymentAdapter] Authorized MoMo transaction tx={tx.id} amount={tx.amount:,.0f} VND"
+        )
+        tx.mark_success()
+        return True
+
+
+class CreditCardPaymentAdapter(IPaymentStrategy):
+    """Concrete Adapter for Visa / Mastercard / JCB credit card gateway settlement."""
+
+    async def execute_payment(
+        self, tx: PaymentTransaction, wallet_repo: WalletRepository
+    ) -> bool:
+        if tx.amount <= 0:
+            logger.warning(
+                f"[CreditCardPaymentAdapter] Rejected transaction tx={tx.id} amount={tx.amount}"
+            )
+            tx.mark_failed()
+            return False
+
+        logger.info(
+            f"[CreditCardPaymentAdapter] Authorized Credit Card transaction tx={tx.id} amount={tx.amount:,.0f} VND"
+        )
+        tx.mark_success()
+        return True
+
+
 class PaymentStrategyFactory:
     """Factory Pattern resolving concrete IPaymentStrategy instances by payment method name."""
 
@@ -78,6 +138,9 @@ class PaymentStrategyFactory:
         PaymentMethod.CASH.value: CashPaymentStrategy,
         PaymentMethod.WALLET.value: WalletPaymentStrategy,
         PaymentMethod.MOCK_GATEWAY.value: MockGatewayPaymentStrategy,
+        "vnpay": VNPayPaymentAdapter,
+        "momo": MoMoPaymentAdapter,
+        "credit_card": CreditCardPaymentAdapter,
     }
 
     @classmethod

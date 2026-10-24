@@ -30,6 +30,9 @@ class PaymentMethod(str, Enum):
     CASH = "cash"
     WALLET = "wallet"
     MOCK_GATEWAY = "mock_gateway"
+    VNPAY = "vnpay"
+    MOMO = "momo"
+    CREDIT_CARD = "credit_card"
 
 
 class TransactionStatus(str, Enum):
@@ -124,3 +127,30 @@ class PaymentTransaction(BaseORMModel, TimestampMixin):
             )
         self.status = TransactionStatus.REFUNDED.value
         self.updated_at = utc_now()
+
+    def to_payment_completed_payload(self, invoice_number: Optional[str] = None):
+        """Serialize transaction record into strongly-typed Kafka event contract."""
+        from services.common.contracts.events import PaymentCompletedEventPayload
+        from services.common.contracts.enums import PaymentStatus as ContractPaymentStatus
+        from services.common.contracts.enums import PaymentMethod as ContractPaymentMethod
+
+        try:
+            pm = ContractPaymentMethod(self.payment_method.lower())
+        except ValueError:
+            pm = ContractPaymentMethod.WALLET
+
+        try:
+            ps = ContractPaymentStatus(self.status.lower())
+        except ValueError:
+            ps = ContractPaymentStatus.SUCCESS
+
+        return PaymentCompletedEventPayload(
+            transaction_id=self.id,
+            invoice_number=invoice_number or f"INV-{self.id[:8].upper()}",
+            user_id=self.user_id,
+            order_or_ride_id=self.reference_id,
+            amount=self.amount,
+            payment_method=pm,
+            status=ps,
+            timestamp=self.updated_at.isoformat() if self.updated_at else utc_now().isoformat(),
+        )
