@@ -8,6 +8,7 @@ from typing import Optional
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from services.common.contracts.dtos import UserPrincipalDTO
 from services.common.db.base import BaseORMModel, TimestampMixin
 from services.common.exceptions import BusinessRuleViolationException, InvalidStateTransitionException
 from services.common.security.firebase_auth import UserRole
@@ -75,3 +76,13 @@ class UserAccount(BaseORMModel, TimestampMixin):
                 details={"invalid_role": new_role},
             )
         self.role = new_role
+
+    def to_principal_dto(self) -> UserPrincipalDTO:
+        """Export domain entity to standard SOA UserPrincipalDTO contract."""
+        return UserPrincipalDTO(
+            uid=self.id,
+            email=self.email,
+            role=UserRole(self.role),
+            full_name=self.full_name,
+            phone_number=self.phone,
+        )

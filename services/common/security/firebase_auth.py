@@ -60,6 +60,16 @@ class CurrentUser(BaseModel):
             return True
         return self.role in allowed_roles
 
+    def to_principal_dto(self):
+        """Export to standard UserPrincipalDTO contract."""
+        from services.common.contracts.dtos import UserPrincipalDTO
+        return UserPrincipalDTO(
+            uid=self.uid,
+            email=self.email or "",
+            role=self.role,
+            full_name=self.name or "User",
+        )
+
 
 class IAuthVerifier(ABC):
     """Abstract interface for verifying identity tokens (Abstraction & Polymorphism)."""

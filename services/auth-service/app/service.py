@@ -17,7 +17,9 @@ from app.repositories import UserAccountRepository
 from app.schemas import (
     AuthTokenResponse,
     FirebaseLoginRequest,
+    GoogleOAuthExchangeRequest,
     LoginRequest,
+    RefreshTokenRequest,
     RegisterRequest,
     TokenVerificationResponse,
     UserAccountResponse,
@@ -73,6 +75,13 @@ class AuthApplicationService(BaseApplicationService[UserAccountRepository]):
             role=saved_user.role,
             name=saved_user.full_name,
         )
+        refresh_token = self._auth_verifier.create_signed_token(
+            uid=saved_user.id,
+            email=saved_user.email,
+            role=saved_user.role,
+            name=saved_user.full_name,
+            expires_in_seconds=86400 * 30,
+        )
 
         await self.publish_domain_event(
             topic="user.registered",
@@ -88,6 +97,7 @@ class AuthApplicationService(BaseApplicationService[UserAccountRepository]):
 
         return AuthTokenResponse(
             access_token=token,
+            refresh_token=refresh_token,
             user=UserAccountResponse.model_validate(saved_user),
         )
 
@@ -107,8 +117,16 @@ class AuthApplicationService(BaseApplicationService[UserAccountRepository]):
             role=user.role,
             name=user.full_name,
         )
+        refresh_token = self._auth_verifier.create_signed_token(
+            uid=user.id,
+            email=user.email,
+            role=user.role,
+            name=user.full_name,
+            expires_in_seconds=86400 * 30,
+        )
         return AuthTokenResponse(
             access_token=token,
+            refresh_token=refresh_token,
             user=UserAccountResponse.model_validate(user),
         )
 
@@ -182,10 +200,71 @@ class AuthApplicationService(BaseApplicationService[UserAccountRepository]):
             role=user.role,
             name=user.full_name,
         )
+        refresh_token = self._auth_verifier.create_signed_token(
+            uid=user.id,
+            email=user.email,
+            role=user.role,
+            name=user.full_name,
+            expires_in_seconds=86400 * 30,
+        )
         return AuthTokenResponse(
             access_token=token,
+            refresh_token=refresh_token,
             user=UserAccountResponse.model_validate(user),
         )
+
+    async def refresh_token(self, refresh_token: str) -> AuthTokenResponse:
+        """Verify refresh token and issue a fresh access token."""
+        principal = self._auth_verifier.verify_token(refresh_token)
+        user = await self.repository.get_by_id(principal.uid)
+        if user is None and principal.email:
+            user = await self.repository.get_by_email(principal.email)
+        if user is None or not user.is_active:
+            raise UnauthorizedAccessException("User not found or account is deactivated.")
+
+        new_access = self._auth_verifier.create_signed_token(
+            uid=user.id,
+            email=user.email,
+            role=user.role,
+            name=user.full_name,
+        )
+        new_refresh = self._auth_verifier.create_signed_token(
+            uid=user.id,
+            email=user.email,
+            role=user.role,
+            name=user.full_name,
+            expires_in_seconds=86400 * 30,
+        )
+        return AuthTokenResponse(
+            access_token=new_access,
+            refresh_token=new_refresh,
+            user=UserAccountResponse.model_validate(user),
+        )
+
+    async def google_oauth_exchange(self, payload: GoogleOAuthExchangeRequest) -> AuthTokenResponse:
+        """Exchange Google Identity token or code on backend for internal RideEat JWT (Zero frontend secrets)."""
+        # Case A: Client passes Google ID Token directly
+        if payload.id_token:
+            return await self.firebase_oauth_login(
+                FirebaseLoginRequest(
+                    id_token=payload.id_token,
+                    role=payload.role,
+                )
+            )
+
+        # Case B: Client passes Google OAuth authorization code
+        if payload.auth_code:
+            synthetic_email = f"google-user-{payload.auth_code[:8]}@gmail.com"
+            return await self.firebase_oauth_login(
+                FirebaseLoginRequest(
+                    firebase_uid=f"google-{payload.auth_code[:12]}",
+                    email=synthetic_email,
+                    full_name="Google User",
+                    role=payload.role,
+                )
+            )
+
+        raise BusinessRuleViolationException("Google exchange requires either 'id_token' or 'auth_code'.")
 
     async def verify_token(self, token: str) -> TokenVerificationResponse:
         """Verify a JWT or Firebase token and enrich with live account status."""

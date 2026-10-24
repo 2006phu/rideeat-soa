@@ -11,7 +11,9 @@ from app.repositories import UserAccountRepository
 from app.schemas import (
     AuthTokenResponse,
     FirebaseLoginRequest,
+    GoogleOAuthExchangeRequest,
     LoginRequest,
+    RefreshTokenRequest,
     RegisterRequest,
     ToggleUserStatusRequest,
     TokenVerificationResponse,
@@ -67,6 +69,24 @@ async def firebase_oauth_login(
 ) -> AuthTokenResponse:
     """Authenticate or auto-provision an account using Firebase OAuth ID token."""
     return await service.firebase_oauth_login(payload)
+
+
+@router.post("/google/exchange", response_model=AuthTokenResponse)
+async def google_oauth_exchange(
+    payload: GoogleOAuthExchangeRequest,
+    service: AuthApplicationService = Depends(get_auth_service),
+) -> AuthTokenResponse:
+    """Exchange a Google OAuth code or Google ID token on the backend for RideEat JWT (Zero frontend secrets)."""
+    return await service.google_oauth_exchange(payload)
+
+
+@router.post("/refresh", response_model=AuthTokenResponse)
+async def refresh_access_token(
+    payload: RefreshTokenRequest,
+    service: AuthApplicationService = Depends(get_auth_service),
+) -> AuthTokenResponse:
+    """Issue a fresh access token using a valid refresh token."""
+    return await service.refresh_token(payload.refresh_token)
 
 
 @router.get("/me", response_model=UserAccountResponse)

@@ -62,11 +62,28 @@ class UserAccountResponse(BaseModel):
     updated_at: datetime
 
 
+class RefreshTokenRequest(BaseModel):
+    """Payload to refresh an access token."""
+
+    refresh_token: str = Field(..., min_length=1, description="Valid signed refresh token")
+
+
+class GoogleOAuthExchangeRequest(BaseModel):
+    """Payload for backend OAuth2 code or id_token exchange (Zero frontend secrets)."""
+
+    id_token: Optional[str] = Field(default=None, description="Google Identity ID Token from popup/mobile")
+    auth_code: Optional[str] = Field(default=None, description="Google OAuth2 authorization code")
+    redirect_uri: Optional[str] = Field(default=None, description="OAuth redirect URI if code flow")
+    role: str = Field(default="customer", description="Target role if registering for the first time")
+
+
 class AuthTokenResponse(BaseModel):
-    """Authentication response returning JWT access token and user account details."""
+    """Authentication response returning JWT access token, refresh token and user account details."""
 
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
+    expires_in: int = Field(default=86400, description="Token validity in seconds")
     user: UserAccountResponse
 
 
