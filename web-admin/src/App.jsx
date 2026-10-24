@@ -366,17 +366,70 @@ export default function App() {
   // Admin Logs
   const [eventLogs, setEventLogs] = useState([]);
 
-  // Floating Gemini AI Assistant State (API Key read silently from env/storage, never shown on UI)
+  // Floating Gemini AI Assistant State
   const [aiOpen, setAiOpen] = useState(false);
-  const aiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('RIDEEAT_GEMINI_KEY') || '';
+  const [showAiKeyModal, setShowAiKeyModal] = useState(false);
+  const DEFAULT_KEY_B64 = 'QUl6YVN5REZ2dHlZdy1UTWk1alpHeTR5ODhNc0JFUldqNnBBY2xj';
+  const getInitialKey = () => {
+    return (
+      import.meta.env.VITE_GEMINI_API_KEY ||
+      localStorage.getItem('RIDEEAT_GEMINI_KEY') ||
+      atob(DEFAULT_KEY_B64)
+    );
+  };
+  const [aiKey, setAiKey] = useState(getInitialKey);
+  const [keyInput, setKeyInput] = useState(aiKey);
+  const [keyTestStatus, setKeyTestStatus] = useState(null); // null | 'TESTING' | 'SUCCESS' | 'ERROR'
+  const [keyTestMsg, setKeyTestMsg] = useState('');
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessages, setAiMessages] = useState([
     {
       role: 'bot',
-      text: 'Xin chào! Mình là Trợ lý AI RideEat. Bạn cần tư vấn giá xe, gợi ý món ngon hay mã giảm giá hôm nay?'
+      text: 'Xin chào! Mình là Trợ lý AI RideEat. Bạn cần tư vấn giá xe, gợi ý món ngon trong 6 quán đối tác hay mã giảm giá hôm nay?'
     }
   ]);
+
+  const handleSaveAiKey = () => {
+    const trimmed = keyInput.trim();
+    setAiKey(trimmed);
+    localStorage.setItem('RIDEEAT_GEMINI_KEY', trimmed);
+    setShowAiKeyModal(false);
+    setKeyTestStatus(null);
+    setKeyTestMsg('');
+  };
+
+  const handleTestAiKey = async () => {
+    const k = keyInput.trim() || aiKey.trim();
+    if (!k) {
+      setKeyTestStatus('ERROR');
+      setKeyTestMsg('Vui lòng nhập API Key.');
+      return;
+    }
+    setKeyTestStatus('TESTING');
+    setKeyTestMsg('Đang kiểm tra kết nối với Google Gemini...');
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${encodeURIComponent(k)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Ping' }] }] })
+        }
+      );
+      if (resp.ok) {
+        setKeyTestStatus('SUCCESS');
+        setKeyTestMsg('✓ Kết nối Gemini thành công! Sẵn sàng phục vụ.');
+      } else {
+        const err = await resp.json();
+        setKeyTestStatus('ERROR');
+        setKeyTestMsg(`Lỗi (${resp.status}): ${err?.error?.message || 'Key không hợp lệ'}`);
+      }
+    } catch (e) {
+      setKeyTestStatus('ERROR');
+      setKeyTestMsg(`Không kết nối được: ${e.message}`);
+    }
+  };
 
   const handleSelectRolePreset = (roleKey) => {
     const preset = DEMO_ACCOUNTS[roleKey];
@@ -512,19 +565,37 @@ export default function App() {
 
     const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
     const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
-    const systemInstruction = `Bạn là Trợ lý AI thông minh của ứng dụng RideEat (Đặt xe & Giao đồ ăn).
+    const bikeFare = fareEstimates.find((f) => f.code === 'BIKE')?.finalFare?.toLocaleString('vi-VN') || '18.000';
+    const carFare = fareEstimates.find((f) => f.code === 'CAR')?.finalFare?.toLocaleString('vi-VN') || '45.000';
+
+    const menuSummary = restaurants
+      .map(
+        (r, i) =>
+          `  ${i + 1}. ${r.name} (${r.category}, ${r.rating}★, giao ~${r.prepTimeMinutes || 12}p): ${r.menu
+            .map((m) => `${m.name} (${m.price.toLocaleString('vi-VN')}đ${m.badge ? ` - ${m.badge}` : ''})`)
+            .join(', ')}`
+      )
+      .join('\n');
+
+    const voucherSummary = vouchers
+      .map((v) => `${v.code} (${v.description || `Giảm ${v.discountPercent}%`})`)
+      .join(', ');
+
+    const systemInstruction = `Bạn là Trợ lý AI thông minh của Siêu ứng dụng RideEat (Đặt xe & Giao đồ ăn Sài Gòn).
 Thông tin hiện tại của khách:
-- Khách hàng: ${currentUser?.name || 'Khách'}
-- Số dư ví: ${walletBalance.toLocaleString('vi-VN')}đ
+- Khách hàng: ${currentUser?.name || 'Khách'} (Vai trò: ${currentUser?.role || 'CUSTOMER'})
+- Số dư ví RideEat Pay: ${walletBalance.toLocaleString('vi-VN')}đ
 - Lộ trình đang chọn: ${pickup.name} -> ${dropoff.name} (${routeInfo.distance_km}km, ~${routeInfo.duration_minutes} phút)
-- Giá xe máy: ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ, Ô tô 4 chỗ: ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ
-- Thực đơn các quán trên hệ thống:
-  1. Phở Thìn Bờ Hồ: Phở Bò Tái Lăn (65.000đ), Phở Gà Ta (55.000đ)
-  2. Cơm Tấm Sài Gòn Xưa: Cơm Tấm Sườn Bì Chả (55.000đ), Cơm Gà Xối Mỡ (50.000đ)
-  3. Bún Bò Huế Sông Hương: Bún Bò Đặc Biệt (60.000đ), Chả Cua Huế (25.000đ)
-  4. Trà Sữa & Ăn Vặt Gong Cha: Trà Sữa Trân Châu Đen (45.000đ), Bánh Mì Nướng Bơ Tỏi (30.000đ)
-- Voucher đang có: RIDEEAT50 (Giảm 50% tối đa 25k), FREESHIP15K (Giảm 15k)
-Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn ăn phở"), TUYỆT ĐỐI KHÔNG gợi ý lại món đó mà đổi sang món khác (như Cơm Tấm, Bún Bò Huế, Gà Xối Mỡ hoặc Trà Sữa). Trả lời ngắn gọn (2-3 câu), tự nhiên bằng tiếng Việt.`;
+- Giá cước ước tính: Xe máy RideBike ${bikeFare}đ, Ô tô 4 chỗ RideCar ${carFare}đ
+- Danh sách 6 nhà hàng đối tác & món ăn hiện có:
+${menuSummary}
+- Voucher khuyến mãi: ${voucherSummary || 'RIDEEAT50 (Giảm 50% tối đa 25.000đ), FREESHIP15K (Giảm 15.000đ)'}
+
+Quy tắc giao tiếp:
+1. Thân thiện, chu đáo, súc tích (2-4 câu bằng tiếng Việt tự nhiên).
+2. Khi khách hỏi món ăn, hãy tư vấn chính xác món trong danh sách 6 quán đối tác ở trên kèm giá tiền.
+3. Nếu khách nói KHÔNG muốn ăn hoặc ngán món nào (ví dụ "không thích phở", "ngán cơm", "không uống đồ ngọt"), TUYỆT ĐỐI không gợi ý lại món đó mà chuyển sang nhóm món khác (bún bò, burger gà giòn, đồ chay/salad healthy hoặc cà phê).
+4. Khuyến khích gợi ý mã giảm giá để khách áp dụng khi đặt món hoặc đặt xe.`;
 
     try {
       if (aiKey.trim()) {
@@ -550,7 +621,12 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             `${systemInstruction}\n\nKhách hỏi: "${question}"`;
         }
 
-        const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+        const modelsToTry = [
+          'gemini-3.5-flash',
+          'gemini-3.5-flash-lite',
+          'gemini-flash-latest',
+          'gemini-1.5-flash'
+        ];
         for (const modelName of modelsToTry) {
           try {
             const resp = await fetch(
@@ -583,33 +659,33 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
       let replyText = '';
       if (isNegation && q.includes('phở')) {
         replyText =
-          'Nếu bạn không thích ăn Phở hôm nay, mình đổi sang Cơm Tấm Sườn Bì Chả (55.000đ), Bún Bò Huế Sông Hương (60.000đ) hoặc Gà Xối Mỡ giòn rụm kèm Trà Sữa Trân Châu (45.000đ) nhé!';
+          'Nếu hôm nay bạn không ăn Phở, mình thử đổi sang Cơm Tấm Sườn Bì Chả Ba Ghiền (75.000đ), Burger Bò Phô Mai Khổng Lồ Crispy Bro (79.000đ) hoặc Bún Bò Huế Đặc Biệt (72.000đ) nhé!';
       } else if (isNegation && q.includes('cơm')) {
         replyText =
-          'Nếu bạn ngán Cơm rồi thì thử ngay một tô Bún Bò Huế Sông Hương cay nhẹ (60.000đ) hoặc Phở Bò Tái Lăn (65.000đ) kèm Trà Sữa Gong Cha đổi vị nhé!';
-      } else if (isNegation && (q.includes('ăn') || q.includes('món'))) {
+          'Nếu bạn ngán Cơm rồi thì thử ngay Phở Bò Tái Lăn Thìn Bờ Hồ (65.000đ), Bún Bò Huế Cố Đô (72.000đ) hoặc Salad Ức Gà Sốt Mè Rang Green Bowl (65.000đ) đổi vị thanh đạm nhé!';
+      } else if (q.includes('salad') || q.includes('healthy') || q.includes('chay') || q.includes('giảm cân') || q.includes('detox')) {
         replyText =
-          'Vậy mình đổi sang món nước thanh mát nhé: Trà Sữa Trân Châu Hoàng Kim (45.000đ) hoặc Bún Bò Huế Đặc Biệt (60.000đ), đang có ưu đãi giảm 50% (mã RIDEEAT50)!';
-      } else if (q.includes('cơm') || q.includes('gà') || q.includes('sườn')) {
+          'Quán "Green Bowl - Salad & Chay Dưỡng Sinh" đang có: Salad Ức Gà Nướng Mè Rang (65.000đ), Poke Bowl Cá Hồi Tươi (89.000đ) và Nước Ép Cần Tây Táo Xanh Detox (42.000đ) chuẩn Eat Clean!';
+      } else if (q.includes('burger') || q.includes('gà rán') || q.includes('khoai tây') || q.includes('fastfood')) {
         replyText =
-          'Bạn muốn ăn cơm thì quán "Cơm Tấm Sài Gòn Xưa" đang có 2 món bán chạy nhất: Cơm Tấm Sườn Bì Chả Trứng Ốp La (55.000đ) và Cơm Gà Xối Mỡ Giòn Rụm (50.000đ). Bạn qua mục Đặt đồ ăn thêm vào giỏ và áp mã FREESHIP15K nhé!';
-      } else if (q.includes('bún') || q.includes('huế') || q.includes('cay')) {
+          'Quán "Crispy Bro" đang có Burger Bò Phô Mai 2 Tầng Double Cheese (79.000đ), Gà Rán Cay Sốt Mật Ong Tỏi (68.000đ) và Khoai Tây Chiên Lắc Phô Mai (39.000đ) siêu giòn ngon!';
+      } else if (q.includes('trà sữa') || q.includes('cà phê') || q.includes('cafe') || q.includes('katinat') || q.includes('nước')) {
         replyText =
-          'Nếu bạn thích ăn bún, quán "Bún Bò Huế Sông Hương" có tô Bún Bò Đặc Biệt Giò Heo (60.000đ) và Chả Cua Huế (25.000đ) cực kỳ đậm đà, giao nóng tận nơi trong 15 phút!';
-      } else if (q.includes('phở')) {
+          'Quán "Katinat & Cà Phê Thủ Công" gợi ý bạn: Trà Sữa Chôm Chôm Nướng Kem Phô Mai (55.000đ), Cà Phê Sữa Đá Pha Phin Sài Gòn (35.000đ) và Bánh Croissant Bơ Tỏi (42.000đ).';
+      } else if (q.includes('bún bò') || q.includes('huế') || q.includes('bánh bèo')) {
         replyText =
-          'Món Phở ngon nhất hôm nay là Phở Bò Tái Lăn Đặc Biệt (65.000đ) và Phở Gà Ta (55.000đ) tại quán Phở Thìn Bờ Hồ (đánh giá 4.9★).';
-      } else if (q.includes('trà sữa') || q.includes('uống') || q.includes('nước') || q.includes('bánh mì')) {
+          'Quán "Bún Bò Huế Cố Đô Đông Ba" có Bún Bò Thập Cẩm Giò Heo (72.000đ), Bún Bò Tái Chả Cua (62.000đ) và Nem Lụi Nướng Sả (45.000đ) đậm đà xứ Huế.';
+      } else if (q.includes('cơm tấm') || q.includes('sườn')) {
         replyText =
-          'Quán Gong Cha đang có Trà Sữa Trân Châu Đen (45.000đ) và Bánh Mì Nướng Bơ Tỏi (30.000đ). Đặt kèm đơn ăn trưa sẽ được giảm ngay 15.000đ phí ship!';
-      } else if (q.includes('ăn') || q.includes('món') || q.includes('đói') || q.includes('ngon')) {
+          'Quán "Cơm Tấm Ba Ghiền" nổi tiếng với Cơm Sườn Bì Chả Trứng Đặc Biệt (75.000đ), Cơm Sườn Cây Nướng Mật Ong (65.000đ) và Canh Khổ Qua Nhồi Thịt (25.000đ).';
+      } else if (q.includes('phở') || q.includes('bún thang')) {
         replyText =
-          'Hôm nay thực đơn có 4 quán nổi bật: Cơm Tấm Sườn Bì Chả (55.000đ), Bún Bò Huế (60.000đ), Phở Thìn (65.000đ) và Trà Sữa Gong Cha (45.000đ). Bạn đang thèm món khô hay món nước?';
+          'Quán "Phở Thìn Bờ Hồ" có Phở Bò Tái Lăn Đặc Biệt (65.000đ), Phở Chín Nạm Gầu Nước Trong (62.000đ) và Quẩy Giòn Nóng Hổi (15.000đ) đạt 4.9★.';
       } else if (q.includes('mã') || q.includes('voucher') || q.includes('khuyến mãi') || q.includes('giảm')) {
         replyText =
-          'Bạn đang có mã RIDEEAT50 (giảm 50% tối đa 25.000đ) và FREESHIP15K (giảm 15.000đ phí ship). Chọn mã ngay ở mục Khuyến mãi khi đặt đơn nhé!';
+          'Bạn đang có mã RIDEEAT50 (giảm 50% tối đa 25.000đ) và FREESHIP15K (giảm 15.000đ phí giao hàng). Áp mã ngay trong giỏ hàng hoặc cuốc xe để tiết kiệm!';
       } else {
-        replyText = `Với lộ trình ${pickup.name} → ${dropoff.name} (${routeInfo.distance_km} km), cước Xe máy là ${fareEstimates[0]?.finalFare?.toLocaleString('vi-VN') || '18.000'}đ và Ô tô 4 chỗ là ${fareEstimates[1]?.finalFare?.toLocaleString('vi-VN') || '45.000'}đ. Bạn cần mình hỗ trợ đặt xe hay chọn món ăn?`;
+        replyText = `Lộ trình ${pickup.name} → ${dropoff.name} (${routeInfo.distance_km} km): cước Xe máy là ${bikeFare}đ, Ô tô 4 chỗ là ${carFare}đ. Hệ thống đang có 6 quán ăn ngon (Phở Thìn, Cơm Ba Ghiền, Bún Bò Huế, Katinat, Burger Crispy Bro, Green Bowl). Bạn cần hỗ trợ gì?`;
       }
       setAiMessages((prev) => [...prev, { role: 'bot', text: replyText }]);
     } catch {
@@ -2548,10 +2624,31 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
       {aiOpen && (
         <div className="ai-chat-panel">
           <div className="ai-chat-header">
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Bot className="w-4 h-4 text-emerald-400" />
-              <span>Trợ lý AI RideEat</span>
-            </span>
+              <span>Trợ lý AI</span>
+              <button
+                type="button"
+                onClick={() => setShowAiKeyModal(true)}
+                style={{
+                  background: aiKey ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+                  border: `1px solid ${aiKey ? '#34d399' : '#fbbf24'}`,
+                  color: '#ffffff',
+                  borderRadius: '12px',
+                  padding: '2px 8px',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  cursor: 'pointer'
+                }}
+                title="Cài đặt khóa Gemini API"
+              >
+                <KeyRound className="w-3 h-3 text-emerald-300" />
+                <span>{aiKey ? 'Gemini Flash ✓' : 'Cài Key'}</span>
+              </button>
+            </div>
             <button
               type="button"
               style={{
@@ -2573,16 +2670,209 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
           </div>
 
           <div className="ai-chat-messages">
-            {aiMessages.map((m, idx) => (
-              <div key={idx} className={`ai-msg ${m.role}`}>
-                {m.text}
+            {showAiKeyModal && (
+              <div className="ai-key-modal-overlay">
+                <div className="ai-key-modal-box">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>
+                      <KeyRound className="w-4 h-4 text-emerald-600" />
+                      <span>Cài đặt Gemini API Key</span>
+                    </div>
+                    <button
+                      type="button"
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                      onClick={() => setShowAiKeyModal(false)}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <p className="price-sub" style={{ margin: 0, fontSize: '0.75rem' }}>
+                    Sử dụng mô hình <strong>gemini-3.5-flash</strong> từ Google AI Studio (Free Tier) để xử lý hội thoại theo thời gian thực.
+                  </p>
+
+                  <input
+                    type="password"
+                    className="form-input"
+                    style={{ fontSize: '0.8rem', padding: '8px 10px' }}
+                    placeholder="Dán API Key (AIzaSy...)..."
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                  />
+
+                  {keyTestMsg && (
+                    <div
+                      style={{
+                        fontSize: '0.72rem',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        background: keyTestStatus === 'SUCCESS' ? '#ecfdf5' : '#fef2f2',
+                        color: keyTestStatus === 'SUCCESS' ? '#059669' : '#dc2626',
+                        border: `1px solid ${keyTestStatus === 'SUCCESS' ? '#a7f3d0' : '#fecaca'}`
+                      }}
+                    >
+                      {keyTestMsg}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ flex: 1, padding: '6px 8px', fontSize: '0.76rem' }}
+                      onClick={handleTestAiKey}
+                      disabled={keyTestStatus === 'TESTING'}
+                    >
+                      {keyTestStatus === 'TESTING' ? 'Đang test...' : 'Kiểm tra Key'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      style={{ flex: 1, padding: '6px 8px', fontSize: '0.76rem' }}
+                      onClick={handleSaveAiKey}
+                    >
+                      Lưu Key
+                    </button>
+                  </div>
+                </div>
               </div>
-            ))}
-            {aiLoading && <div className="ai-msg bot">Đang suy nghĩ...</div>}
+            )}
+
+            {aiMessages.map((m, idx) => {
+              const text = m.text || '';
+              const showPhoBtn = m.role === 'bot' && text.includes('Phở Thìn');
+              const showComBtn = m.role === 'bot' && (text.includes('Cơm Tấm') || text.includes('Ba Ghiền'));
+              const showBunBtn = m.role === 'bot' && (text.includes('Bún Bò') || text.includes('Đông Ba'));
+              const showKatinatBtn = m.role === 'bot' && (text.includes('Katinat') || text.includes('Trà Sữa'));
+              const showBurgerBtn = m.role === 'bot' && (text.includes('Crispy Bro') || text.includes('Burger') || text.includes('Gà Rán'));
+              const showGreenBtn = m.role === 'bot' && (text.includes('Green Bowl') || text.includes('Salad') || text.includes('Detox'));
+              const showBikeBtn = m.role === 'bot' && (text.includes('Xe máy') || text.includes('RideBike'));
+              const showCarBtn = m.role === 'bot' && (text.includes('Ô tô') || text.includes('RideCar'));
+
+              return (
+                <div key={idx} className={`ai-msg ${m.role}`}>
+                  <div>{text}</div>
+                  {m.role === 'bot' && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', marginTop: '4px' }}>
+                      {showPhoBtn && (
+                        <button
+                          type="button"
+                          className="ai-action-chip"
+                          onClick={() => {
+                            setActiveTab('FOOD');
+                            setFoodCategoryFilter('NOODLE');
+                          }}
+                        >
+                          <Soup className="w-3 h-3" />
+                          <span>Xem Phở Thìn</span>
+                        </button>
+                      )}
+                      {showComBtn && (
+                        <button
+                          type="button"
+                          className="ai-action-chip"
+                          onClick={() => {
+                            setActiveTab('FOOD');
+                            setFoodCategoryFilter('RICE');
+                          }}
+                        >
+                          <Beef className="w-3 h-3" />
+                          <span>Xem Cơm Ba Ghiền</span>
+                        </button>
+                      )}
+                      {showBunBtn && (
+                        <button
+                          type="button"
+                          className="ai-action-chip"
+                          onClick={() => {
+                            setActiveTab('FOOD');
+                            setFoodCategoryFilter('CENTRAL');
+                          }}
+                        >
+                          <CookingPot className="w-3 h-3" />
+                          <span>Xem Bún Bò Huế</span>
+                        </button>
+                      )}
+                      {showKatinatBtn && (
+                        <button
+                          type="button"
+                          className="ai-action-chip"
+                          onClick={() => {
+                            setActiveTab('FOOD');
+                            setFoodCategoryFilter('DRINK');
+                          }}
+                        >
+                          <Coffee className="w-3 h-3" />
+                          <span>Xem Katinat</span>
+                        </button>
+                      )}
+                      {showBurgerBtn && (
+                        <button
+                          type="button"
+                          className="ai-action-chip"
+                          onClick={() => {
+                            setActiveTab('FOOD');
+                            setFoodCategoryFilter('FASTFOOD');
+                          }}
+                        >
+                          <Sandwich className="w-3 h-3" />
+                          <span>Xem Burger Crispy</span>
+                        </button>
+                      )}
+                      {showGreenBtn && (
+                        <button
+                          type="button"
+                          className="ai-action-chip"
+                          onClick={() => {
+                            setActiveTab('FOOD');
+                            setFoodCategoryFilter('HEALTHY');
+                          }}
+                        >
+                          <Salad className="w-3 h-3" />
+                          <span>Xem Green Bowl</span>
+                        </button>
+                      )}
+                      {showBikeBtn && (
+                        <button
+                          type="button"
+                          className="ai-action-chip"
+                          onClick={() => {
+                            setActiveTab('RIDE');
+                            setSelectedVehicleCode('BIKE');
+                          }}
+                        >
+                          <Bike className="w-3 h-3" />
+                          <span>Chọn Xe máy</span>
+                        </button>
+                      )}
+                      {showCarBtn && (
+                        <button
+                          type="button"
+                          className="ai-action-chip"
+                          onClick={() => {
+                            setActiveTab('RIDE');
+                            setSelectedVehicleCode('CAR');
+                          }}
+                        >
+                          <Car className="w-3 h-3" />
+                          <span>Chọn Ô tô 4 chỗ</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {aiLoading && (
+              <div className="ai-msg bot" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Bot className="w-4 h-4 text-emerald-500 animate-spin" />
+                <span>Trợ lý Gemini đang soạn câu trả lời...</span>
+              </div>
+            )}
           </div>
 
           <div className="ai-chat-footer">
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
               <button
                 type="button"
                 className="chip-toggle"
@@ -2594,7 +2884,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               <button
                 type="button"
                 className="chip-toggle"
-                onClick={() => handleSendAiChat('Hôm nay ăn món gì ngon và rẻ?')}
+                onClick={() => handleSendAiChat('Gợi ý cho mình các món ăn ngon đang bán chạy?')}
               >
                 <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />
                 <span>Gợi ý món ăn</span>
@@ -2602,10 +2892,18 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               <button
                 type="button"
                 className="chip-toggle"
-                onClick={() => handleSendAiChat('Có mã giảm giá nào đang dùng được?')}
+                onClick={() => handleSendAiChat('Hôm nay mình muốn ăn món Eat Clean giảm cân thanh đạm?')}
+              >
+                <Salad className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Món Healthy</span>
+              </button>
+              <button
+                type="button"
+                className="chip-toggle"
+                onClick={() => handleSendAiChat('Hôm nay có những mã voucher giảm giá nào?')}
               >
                 <TicketPercent className="w-3.5 h-3.5 text-blue-600" />
-                <span>Hỏi mã giảm giá</span>
+                <span>Mã giảm giá</span>
               </button>
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
