@@ -361,79 +361,312 @@ export class MapApiService extends BaseApiClient {
     return Math.round((brng + 360) % 360);
   }
 
-  generateNearbyDrivers(pickup) {
-    const offsets = [
-      { dLat: 0.0035, dLng: 0.0028, name: 'Trần Minh Tài', plate: '59-X3 888.99', vehicle: 'Honda SH 150i', rating: 4.98 },
-      { dLat: -0.0028, dLng: 0.0038, name: 'Lê Hoàng Nam', plate: '59-S1 234.56', vehicle: 'Yamaha Grande', rating: 4.95 },
-      { dLat: 0.0042, dLng: -0.0035, name: 'Nguyễn Văn Phúc', plate: '50-F2 678.90', vehicle: 'Honda AirBlade', rating: 4.92 },
-      { dLat: -0.0038, dLng: -0.0028, name: 'Vũ Quốc Bảo', plate: '59-K4 999.88', vehicle: 'Toyota Vios', rating: 4.97 }
-    ];
-    return offsets.map((o, idx) => ({
-      id: `drv-radar-${idx + 1}`,
-      name: o.name,
-      plate: o.plate,
-      vehicle: o.vehicle,
-      rating: o.rating,
-      lat: +(pickup.lat + o.dLat).toFixed(6),
-      lng: +(pickup.lng + o.dLng).toFixed(6)
-    }));
-  }
+  // Resamples a road polyline into smooth, uniform distance steps for realistic pacing
+  static resamplePolyline(points, targetCount = 42) {
+    if (!points || points.length < 2) return points || [];
+    const cumDist = [0];
+    for (let i = 0; i < points.length - 1; i++) {
+      const d = MapApiService.haversineKm(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1]);
+      cumDist.push(cumDist[i] + d);
+    }
+    const totalDist = cumDist[cumDist.length - 1];
+    if (totalDist <= 0.001) return points;
 
-  generateApproachRoute(driverPos, pickup, steps = 28) {
-    const polyline = [];
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      // Slight urban turn curve
-      const curveOffset = Math.sin(t * Math.PI) * 0.0018;
-      polyline.push([
-        +(driverPos.lat + (pickup.lat - driverPos.lat) * t + curveOffset).toFixed(6),
-        +(driverPos.lng + (pickup.lng - driverPos.lng) * t - curveOffset * 0.5).toFixed(6)
+    const resampled = [];
+    let segIdx = 0;
+    for (let s = 0; s <= targetCount; s++) {
+      const targetD = (s / targetCount) * totalDist;
+      while (segIdx < cumDist.length - 2 && cumDist[segIdx + 1] < targetD) {
+        segIdx++;
+      }
+      const segStartD = cumDist[segIdx];
+      const segEndD = cumDist[segIdx + 1];
+      const segLen = segEndD - segStartD;
+      const t = segLen > 0 ? (targetD - segStartD) / segLen : 0;
+      const p1 = points[segIdx];
+      const p2 = points[segIdx + 1];
+      resampled.push([
+        +(p1[0] + (p2[0] - p1[0]) * t).toFixed(6),
+        +(p1[1] + (p2[1] - p1[1]) * t).toFixed(6)
       ]);
     }
-    return polyline;
+    return resampled;
   }
 
-  async calculateRoute(origin, destination, vehicleType = 'BIKE') {
-    return this.request(
-      '/route',
-      {
-        method: 'POST',
-        body: JSON.stringify({ origin, destination, vehicle_type: vehicleType })
-      },
-      () => {
-        const distanceKm = MapApiService.haversineKm(
-          origin.lat,
-          origin.lng,
-          destination.lat,
-          destination.lng
-        );
-        const speedKmh = vehicleType === 'BIKE' ? 28 : 24;
-        const durationMinutes = Math.max(4, Math.round((distanceKm / speedKmh) * 60));
+  // Realistic nearby driver positions pinned to actual street pavements
+  generateNearbyDrivers(pickup) {
+    // If near Landmark 81
+    if (Math.abs(pickup.lat - 10.7950) < 0.015 && Math.abs(pickup.lng - 106.7218) < 0.015) {
+      return [
+        { id: 'drv-radar-1', name: 'Trần Minh Tài', plate: '59-X3 888.99', vehicle: 'Honda SH 150i ABS', rating: 4.98, lat: 10.7915, lng: 106.7183, street: 'Nguyễn Hữu Cảnh (The Manor)' },
+        { id: 'drv-radar-2', name: 'Lê Hoàng Nam', plate: '59-S1 234.56', vehicle: 'Yamaha Grande', rating: 4.95, lat: 10.7995, lng: 106.7230, street: 'Điện Biên Phủ (Tân Cảng)' },
+        { id: 'drv-radar-3', name: 'Nguyễn Văn Phúc', plate: '50-F2 678.90', vehicle: 'Honda AirBlade', rating: 4.92, lat: 10.8015, lng: 106.7140, street: 'Ngã 4 Hàng Xanh' },
+        { id: 'drv-radar-4', name: 'Vũ Quốc Bảo', plate: '59-K4 999.88', vehicle: 'Toyota Vios', rating: 4.97, lat: 10.7965, lng: 106.7250, street: 'Cầu Sài Gòn' }
+      ];
+    }
+    // If near Ben Thanh
+    if (Math.abs(pickup.lat - 10.7726) < 0.015 && Math.abs(pickup.lng - 106.6980) < 0.015) {
+      return [
+        { id: 'drv-radar-1', name: 'Trần Minh Tài', plate: '59-X3 888.99', vehicle: 'Honda SH 150i ABS', rating: 4.98, lat: 10.7735, lng: 106.6995, street: 'Lê Lợi' },
+        { id: 'drv-radar-2', name: 'Lê Hoàng Nam', plate: '59-S1 234.56', vehicle: 'Yamaha Grande', rating: 4.95, lat: 10.7712, lng: 106.7020, street: 'Hàm Nghi' },
+        { id: 'drv-radar-3', name: 'Nguyễn Văn Phúc', plate: '50-F2 678.90', vehicle: 'Honda AirBlade', rating: 4.92, lat: 10.7760, lng: 106.6965, street: 'Nam Kỳ Khởi Nghĩa' },
+        { id: 'drv-radar-4', name: 'Vũ Quốc Bảo', plate: '59-K4 999.88', vehicle: 'Toyota Vios', rating: 4.97, lat: 10.7730, lng: 106.7015, street: 'Pasteur' }
+      ];
+    }
+    // If near Nguyen Hue
+    if (Math.abs(pickup.lat - 10.7744) < 0.015 && Math.abs(pickup.lng - 106.7035) < 0.015) {
+      return [
+        { id: 'drv-radar-1', name: 'Trần Minh Tài', plate: '59-X3 888.99', vehicle: 'Honda SH 150i ABS', rating: 4.98, lat: 10.7735, lng: 106.7065, street: 'Tôn Đức Thắng' },
+        { id: 'drv-radar-2', name: 'Lê Hoàng Nam', plate: '59-S1 234.56', vehicle: 'Yamaha Grande', rating: 4.95, lat: 10.7710, lng: 106.7040, street: 'Hàm Nghi' },
+        { id: 'drv-radar-3', name: 'Nguyễn Văn Phúc', plate: '50-F2 678.90', vehicle: 'Honda AirBlade', rating: 4.92, lat: 10.7765, lng: 106.7020, street: 'Đồng Khởi' },
+        { id: 'drv-radar-4', name: 'Vũ Quốc Bảo', plate: '59-K4 999.88', vehicle: 'Toyota Vios', rating: 4.97, lat: 10.7780, lng: 106.7040, street: 'Lê Thánh Tôn' }
+      ];
+    }
+    // If near Sala Thu Thiem
+    if (Math.abs(pickup.lat - 10.7719) < 0.015 && Math.abs(pickup.lng - 106.7224) < 0.015) {
+      return [
+        { id: 'drv-radar-1', name: 'Trần Minh Tài', plate: '59-X3 888.99', vehicle: 'Honda SH 150i ABS', rating: 4.98, lat: 10.7740, lng: 106.7250, street: 'Mai Chí Thọ' },
+        { id: 'drv-radar-2', name: 'Lê Hoàng Nam', plate: '59-S1 234.56', vehicle: 'Yamaha Grande', rating: 4.95, lat: 10.7700, lng: 106.7200, street: 'Nguyễn Cơ Thạch' },
+        { id: 'drv-radar-3', name: 'Nguyễn Văn Phúc', plate: '50-F2 678.90', vehicle: 'Honda AirBlade', rating: 4.92, lat: 10.7780, lng: 106.7160, street: 'Cầu Ba Son' },
+        { id: 'drv-radar-4', name: 'Vũ Quốc Bảo', plate: '59-K4 999.88', vehicle: 'Toyota Vios', rating: 4.97, lat: 10.7750, lng: 106.7280, street: 'Trần Não' }
+      ];
+    }
+    // Default street-anchored offsets
+    return [
+      { id: 'drv-radar-1', name: 'Trần Minh Tài', plate: '59-X3 888.99', vehicle: 'Honda SH 150i ABS', rating: 4.98, lat: +(pickup.lat + 0.0020).toFixed(6), lng: +(pickup.lng + 0.0015).toFixed(6), street: 'Đường phố nội bộ' },
+      { id: 'drv-radar-2', name: 'Lê Hoàng Nam', plate: '59-S1 234.56', vehicle: 'Yamaha Grande', rating: 4.95, lat: +(pickup.lat - 0.0022).toFixed(6), lng: +(pickup.lng + 0.0018).toFixed(6), street: 'Đường phố nội bộ' },
+      { id: 'drv-radar-3', name: 'Nguyễn Văn Phúc', plate: '50-F2 678.90', vehicle: 'Honda AirBlade', rating: 4.92, lat: +(pickup.lat + 0.0018).toFixed(6), lng: +(pickup.lng - 0.0022).toFixed(6), street: 'Đường phố nội bộ' },
+      { id: 'drv-radar-4', name: 'Vũ Quốc Bảo', plate: '59-K4 999.88', vehicle: 'Toyota Vios', rating: 4.97, lat: +(pickup.lat - 0.0019).toFixed(6), lng: +(pickup.lng - 0.0020).toFixed(6), street: 'Đường phố nội bộ' }
+    ];
+  }
 
-        // Generate high-density smooth curved waypoints for Leaflet Polyline (64 steps)
-        const steps = 64;
-        const polyline = [];
-        for (let i = 0; i <= steps; i++) {
-          const t = i / steps;
-          // Compound S-curve to mimic urban avenue turnings
-          const s1 = Math.sin(t * Math.PI) * 0.0035;
-          const s2 = Math.sin(t * Math.PI * 2) * 0.0012;
-          const curveLat = s1 + s2;
-          const curveLng = -s1 * 0.65 + s2 * 0.4;
-          polyline.push([
-            +(origin.lat + (destination.lat - origin.lat) * t + curveLat).toFixed(6),
-            +(origin.lng + (destination.lng - origin.lng) * t + curveLng).toFixed(6)
+  // 1. Direct OSRM Real-Road Shortest Path query (OpenStreetMap Road Network)
+  static async fetchOsrmRoute(origin, destination, vehicleType = 'BIKE') {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`;
+      const resp = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+          const best = data.routes[0];
+          const distKm = +(best.distance / 1000).toFixed(2);
+          const durMin = Math.max(2, Math.round(best.duration / 60));
+          const rawPoly = (best.geometry?.coordinates || []).map((pt) => [
+            +pt[1].toFixed(6),
+            +pt[0].toFixed(6)
           ]);
+          if (rawPoly.length >= 2) {
+            const polyline = MapApiService.resamplePolyline(rawPoly, 42);
+            return {
+              distance_km: distKm,
+              duration_minutes: durMin,
+              polyline,
+              algorithm: 'OSRM Contraction-Hierarchies Shortest Path (OpenStreetMap)'
+            };
+          }
+        }
+      }
+    } catch {
+      // OSRM failed or timed out, will fall back to A* Graph Engine
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    return null;
+  }
+
+  // 2. In-Memory A* Shortest Path Graph Engine on HCMC Urban Road Network (Resilient Fallback)
+  static aStarGraphRoute(origin, destination, vehicleType = 'BIKE') {
+    // 16 major urban intersection nodes in Ho Chi Minh City
+    const NODES = {
+      BEN_THANH: { id: 'BEN_THANH', name: 'Chợ Bến Thành', lat: 10.7726, lng: 106.6980 },
+      LE_LOI_PASTEUR: { id: 'LE_LOI_PASTEUR', name: 'Lê Lợi & Pasteur', lat: 10.7745, lng: 106.7005 },
+      NGUYEN_HUE: { id: 'NGUYEN_HUE', name: 'Phố Đi Bộ Nguyễn Huệ', lat: 10.7744, lng: 106.7035 },
+      TON_DUC_THANG: { id: 'TON_DUC_THANG', name: 'Tôn Đức Thắng & Bến Bạch Đằng', lat: 10.7785, lng: 106.7065 },
+      LE_DUAN_TON_DUC_THANG: { id: 'LE_DUAN_TON_DUC_THANG', name: 'Lê Duẩn & Tôn Đức Thắng', lat: 10.7845, lng: 106.7042 },
+      NGUYEN_HUU_CANH_BA_SON: { id: 'NGUYEN_HUU_CANH_BA_SON', name: 'Nguyễn Hữu Cảnh (Chân Cầu Ba Son)', lat: 10.7850, lng: 106.7082 },
+      NGUYEN_HUU_CANH_MANOR: { id: 'NGUYEN_HUU_CANH_MANOR', name: 'Nguyễn Hữu Cảnh (The Manor)', lat: 10.7915, lng: 106.7183 },
+      LANDMARK_81: { id: 'LANDMARK_81', name: 'Vinhomes Landmark 81 Gate', lat: 10.7950, lng: 106.7218 },
+      DIEN_BIEN_PHU_HANG_XANH: { id: 'DIEN_BIEN_PHU_HANG_XANH', name: 'Ngã 4 Hàng Xanh', lat: 10.8016, lng: 106.7118 },
+      CAU_SAI_GON: { id: 'CAU_SAI_GON', name: 'Cầu Sài Gòn', lat: 10.7995, lng: 106.7250 },
+      CAU_BA_SON_THU_THIEM: { id: 'CAU_BA_SON_THU_THIEM', name: 'Cầu Ba Son (Bờ Thủ Thiêm)', lat: 10.7785, lng: 106.7145 },
+      SALA_MAI_CHI_THO: { id: 'SALA_MAI_CHI_THO', name: 'Khu Đô Thị Sala (Mai Chí Thọ)', lat: 10.7719, lng: 106.7224 },
+      TRAN_NAO_THU_THIEM: { id: 'TRAN_NAO_THU_THIEM', name: 'Trần Não & Mai Chí Thọ', lat: 10.7850, lng: 106.7290 },
+      DH_KHTN: { id: 'DH_KHTN', name: 'ĐH KHTN (Nguyễn Văn Cừ, Q5)', lat: 10.7629, lng: 106.6822 },
+      TRAN_HUNG_DAO: { id: 'TRAN_HUNG_DAO', name: 'Trần Hưng Đạo & Nguyễn Thái Học', lat: 10.7665, lng: 106.6925 },
+      HOANG_VAN_THU: { id: 'HOANG_VAN_THU', name: 'Hoàng Văn Thụ & Phan Đăng Lưu', lat: 10.7985, lng: 106.6780 },
+      TAN_SON_NHAT: { id: 'TAN_SON_NHAT', name: 'Sân Bay Tân Sơn Nhất', lat: 10.8185, lng: 106.6588 }
+    };
+
+    // Real street adjacency list with street paths
+    const EDGES = [
+      { from: 'BEN_THANH', to: 'LE_LOI_PASTEUR', dist: 0.35 },
+      { from: 'LE_LOI_PASTEUR', to: 'NGUYEN_HUE', dist: 0.38 },
+      { from: 'NGUYEN_HUE', to: 'TON_DUC_THANG', dist: 0.55 },
+      { from: 'TON_DUC_THANG', to: 'LE_DUAN_TON_DUC_THANG', dist: 0.72 },
+      { from: 'LE_DUAN_TON_DUC_THANG', to: 'NGUYEN_HUU_CANH_BA_SON', dist: 0.52 },
+      { from: 'NGUYEN_HUU_CANH_BA_SON', to: 'NGUYEN_HUU_CANH_MANOR', dist: 1.35 },
+      { from: 'NGUYEN_HUU_CANH_MANOR', to: 'LANDMARK_81', dist: 0.65 },
+      { from: 'NGUYEN_HUU_CANH_MANOR', to: 'DIEN_BIEN_PHU_HANG_XANH', dist: 1.45 },
+      { from: 'DIEN_BIEN_PHU_HANG_XANH', to: 'CAU_SAI_GON', dist: 1.55 },
+      { from: 'CAU_SAI_GON', to: 'LANDMARK_81', dist: 0.85 },
+      { from: 'NGUYEN_HUU_CANH_BA_SON', to: 'CAU_BA_SON_THU_THIEM', dist: 1.10 },
+      { from: 'CAU_BA_SON_THU_THIEM', to: 'SALA_MAI_CHI_THO', dist: 1.25 },
+      { from: 'SALA_MAI_CHI_THO', to: 'TRAN_NAO_THU_THIEM', dist: 1.65 },
+      { from: 'TRAN_NAO_THU_THIEM', to: 'CAU_SAI_GON', dist: 1.40 },
+      { from: 'BEN_THANH', to: 'TRAN_HUNG_DAO', dist: 0.88 },
+      { from: 'TRAN_HUNG_DAO', to: 'DH_KHTN', dist: 1.25 },
+      { from: 'LE_DUAN_TON_DUC_THANG', to: 'HOANG_VAN_THU', dist: 3.40 },
+      { from: 'HOANG_VAN_THU', to: 'TAN_SON_NHAT', dist: 2.25 }
+    ];
+
+    // Build bidirectional adjacency map
+    const adj = {};
+    Object.keys(NODES).forEach((k) => (adj[k] = []));
+    EDGES.forEach((e) => {
+      adj[e.from].push({ to: e.to, dist: e.dist });
+      adj[e.to].push({ to: e.from, dist: e.dist });
+    });
+
+    // Find nearest graph node to coordinate
+    const findNearest = (coord) => {
+      let bestKey = Object.keys(NODES)[0];
+      let bestDist = Infinity;
+      Object.keys(NODES).forEach((k) => {
+        const d = MapApiService.haversineKm(coord.lat, coord.lng, NODES[k].lat, NODES[k].lng);
+        if (d < bestDist) {
+          bestDist = d;
+          bestKey = k;
+        }
+      });
+      return bestKey;
+    };
+
+    const startNode = findNearest(origin);
+    const destNode = findNearest(destination);
+
+    // A* Algorithm Search
+    const openSet = [startNode];
+    const cameFrom = {};
+    const gScore = {};
+    const fScore = {};
+    Object.keys(NODES).forEach((k) => {
+      gScore[k] = Infinity;
+      fScore[k] = Infinity;
+    });
+    gScore[startNode] = 0;
+    fScore[startNode] = MapApiService.haversineKm(
+      NODES[startNode].lat,
+      NODES[startNode].lng,
+      NODES[destNode].lat,
+      NODES[destNode].lng
+    );
+
+    while (openSet.length > 0) {
+      // Node in openSet with lowest fScore
+      let current = openSet[0];
+      let lowestF = fScore[current];
+      for (let i = 1; i < openSet.length; i++) {
+        if (fScore[openSet[i]] < lowestF) {
+          lowestF = fScore[openSet[i]];
+          current = openSet[i];
+        }
+      }
+
+      if (current === destNode) {
+        // Reconstruct path
+        const pathKeys = [current];
+        while (cameFrom[current]) {
+          current = cameFrom[current];
+          pathKeys.unshift(current);
         }
 
+        // Build continuous dense road polyline
+        const rawPoints = [];
+        rawPoints.push([origin.lat, origin.lng]);
+        pathKeys.forEach((k) => rawPoints.push([NODES[k].lat, NODES[k].lng]));
+        rawPoints.push([destination.lat, destination.lng]);
+
+        // Interpolate smooth road steps
+        const polyline = MapApiService.resamplePolyline(rawPoints, 42);
+
+        const distKm = +(gScore[destNode] + 0.6).toFixed(2);
+        const speedKmh = vehicleType === 'BIKE' ? 28 : 24;
+        const durMin = Math.max(3, Math.round((distKm / speedKmh) * 60));
+
         return {
-          distance_km: distanceKm,
-          duration_minutes: durationMinutes,
+          distance_km: distKm,
+          duration_minutes: durMin,
           polyline,
-          algorithm: 'HaversineRoadFactorEngine + GeoPolylineBuilder'
+          algorithm: 'A* Shortest Path Graph Engine (HCMC Road Network)'
         };
       }
-    );
+
+      openSet.splice(openSet.indexOf(current), 1);
+      (adj[current] || []).forEach((neighbor) => {
+        const tentativeG = gScore[current] + neighbor.dist;
+        if (tentativeG < gScore[neighbor.to]) {
+          cameFrom[neighbor.to] = current;
+          gScore[neighbor.to] = tentativeG;
+          fScore[neighbor.to] =
+            tentativeG +
+            MapApiService.haversineKm(
+              NODES[neighbor.to].lat,
+              NODES[neighbor.to].lng,
+              NODES[destNode].lat,
+              NODES[destNode].lng
+            );
+          if (!openSet.includes(neighbor.to)) {
+            openSet.push(neighbor.to);
+          }
+        }
+      });
+    }
+
+    // Direct fallback if no graph path found
+    return {
+      distance_km: MapApiService.haversineKm(origin.lat, origin.lng, destination.lat, destination.lng),
+      duration_minutes: 8,
+      polyline: [[origin.lat, origin.lng], [destination.lat, destination.lng]],
+      algorithm: 'Haversine Direct Connector'
+    };
+  }
+
+  // Unified calculateRoute: Real-time OSRM with A* Shortest Path Graph Fallback
+  async calculateRoute(origin, destination, vehicleType = 'BIKE') {
+    // 1. Try real-time OSRM OpenStreetMap routing first (Best road-accuracy)
+    const osrmRes = await MapApiService.fetchOsrmRoute(origin, destination, vehicleType);
+    if (osrmRes) return osrmRes;
+
+    // 2. Fall back to internal A* Shortest Path Graph Engine on HCMC street network
+    return MapApiService.aStarGraphRoute(origin, destination, vehicleType);
+  }
+
+  // Calculate real road approach route from driver to pickup location
+  async calculateApproachRoute(driverPos, pickup, vehicleType = 'BIKE') {
+    const route = await this.calculateRoute(driverPos, pickup, vehicleType);
+    if (route && route.polyline) {
+      return {
+        ...route,
+        polyline: MapApiService.resamplePolyline(route.polyline, 22)
+      };
+    }
+    return route;
+  }
+
+  // Legacy synchronous fallback helper
+  generateApproachRoute(driverPos, pickup, steps = 24) {
+    const poly = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      poly.push([
+        +(driverPos.lat + (pickup.lat - driverPos.lat) * t).toFixed(6),
+        +(driverPos.lng + (pickup.lng - driverPos.lng) * t).toFixed(6)
+      ]);
+    }
+    return poly;
   }
 }
 

@@ -758,30 +758,32 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
         if (prev >= 100) {
           clearInterval(interval);
           const driver = assignedDriverInfo || nearbyRadarDrivers[0] || {
-            lat: pickup.lat + 0.0035,
-            lng: pickup.lng + 0.0028,
+            lat: pickup.lat + 0.0020,
+            lng: pickup.lng + 0.0015,
             name: 'Trần Minh Tài',
             plate: '59-X3 888.99',
             vehicle: 'Honda SH 150i ABS',
             rating: 4.98
           };
-          const approach = apiRegistry.map.generateApproachRoute(
-            { lat: driver.lat, lng: driver.lng },
-            pickup,
-            24
-          );
-          setApproachPolyline(approach);
-          setApproachStep(0);
-          const initBearing = apiRegistry.map.constructor.calculateBearing(
-            driver.lat,
-            driver.lng,
-            pickup.lat,
-            pickup.lng
-          );
-          setDriverBearing(initBearing);
-          setCurrentSpeedKmh(28);
-          setRideStage('ARRIVING');
-          setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVING' } : curr));
+          apiRegistry.map
+            .calculateApproachRoute({ lat: driver.lat, lng: driver.lng }, pickup, selectedVehicleCode)
+            .then((res) => {
+              const poly = res?.polyline || [];
+              setApproachPolyline(poly);
+              setApproachStep(0);
+              if (poly.length > 1) {
+                const initBearing = apiRegistry.map.constructor.calculateBearing(
+                  poly[0][0],
+                  poly[0][1],
+                  poly[1][0],
+                  poly[1][1]
+                );
+                setDriverBearing(initBearing);
+              }
+              setCurrentSpeedKmh(28);
+              setRideStage('ARRIVING');
+              setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVING' } : curr));
+            });
           return 100;
         }
         return prev + 12;
@@ -789,7 +791,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
     }, 450);
 
     return () => clearInterval(interval);
-  }, [rideStage, activeRide, assignedDriverInfo, nearbyRadarDrivers, pickupId]);
+  }, [rideStage, activeRide, assignedDriverInfo, nearbyRadarDrivers, pickupId, selectedVehicleCode]);
 
   // Stage 2: ARRIVING Engine (Driver moving from initial location to pickup ~12s)
   useEffect(() => {
@@ -867,18 +869,31 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
 
     if (rideStage === 'SEARCHING') {
       const driver = assignedDriverInfo || nearbyRadarDrivers[0] || {
-        lat: pickup.lat + 0.0035,
-        lng: pickup.lng + 0.0028,
+        lat: pickup.lat + 0.0020,
+        lng: pickup.lng + 0.0015,
         name: 'Trần Minh Tài',
         plate: '59-X3 888.99',
         vehicle: 'Honda SH 150i ABS',
         rating: 4.98
       };
-      const approach = apiRegistry.map.generateApproachRoute({ lat: driver.lat, lng: driver.lng }, pickup, 24);
-      setApproachPolyline(approach);
-      setApproachStep(0);
-      setRideStage('ARRIVING');
-      setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVING' } : curr));
+      apiRegistry.map
+        .calculateApproachRoute({ lat: driver.lat, lng: driver.lng }, pickup, selectedVehicleCode)
+        .then((res) => {
+          const poly = res?.polyline || [];
+          setApproachPolyline(poly);
+          setApproachStep(0);
+          if (poly.length > 1) {
+            const initBearing = apiRegistry.map.constructor.calculateBearing(
+              poly[0][0],
+              poly[0][1],
+              poly[1][0],
+              poly[1][1]
+            );
+            setDriverBearing(initBearing);
+          }
+          setRideStage('ARRIVING');
+          setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVING' } : curr));
+        });
     } else if (rideStage === 'ARRIVING') {
       setRideStage('ARRIVED');
       setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVED' } : curr));
