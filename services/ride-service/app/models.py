@@ -150,3 +150,29 @@ class Ride(BaseORMModel, TimestampMixin):
             )
         self.status = RideStatus.CANCELLED.value
         self.cancel_reason = (reason or "Cancelled by user").strip()
+
+    def to_estimate_dto(self):
+        """Export ride route & pricing to standard RideEstimateDTO contract."""
+        from services.common.contracts.dtos import GeoCoordinateDTO, RideEstimateDTO
+        from services.common.contracts.enums import VehicleType
+
+        v_type = VehicleType.MOTORBIKE
+        if self.vehicle_type in VehicleType._value2member_map_:
+            v_type = VehicleType(self.vehicle_type)
+        elif self.vehicle_type == "car4":
+            v_type = VehicleType.CAR_4
+        elif self.vehicle_type == "car7":
+            v_type = VehicleType.CAR_7
+
+        return RideEstimateDTO(
+            origin=GeoCoordinateDTO(lat=self.pickup_lat, lng=self.pickup_lng, address=self.pickup_address),
+            destination=GeoCoordinateDTO(lat=self.dropoff_lat, lng=self.dropoff_lng, address=self.dropoff_address),
+            vehicle_type=v_type,
+            distance_km=self.distance_km,
+            duration_minutes=self.duration_minutes,
+            base_fare=self.estimated_price,
+            distance_fare=0.0,
+            time_fare=0.0,
+            surge_multiplier=1.0,
+            total_fare=self.final_price or self.estimated_price,
+        )

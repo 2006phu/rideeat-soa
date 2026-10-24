@@ -38,6 +38,7 @@ from services.common.contracts import (
     PaymentCompletedEventPayload,
 )
 from tests.test_auth_service import TestAuthServiceArchitecture
+from tests.test_domain_services import TestCoreDomainServices
 from services.common.messaging.interfaces import DomainEvent, IEventHandler, IEventPublisher
 from services.common.messaging.kafka_bus import InMemoryEventBus, KafkaEventBus
 from services.common.security.firebase_auth import (

@@ -182,3 +182,32 @@ class FoodOrder(BaseORMModel, TimestampMixin):
             )
         self.status = FoodOrderStatus.CANCELLED.value
         self.cancel_reason = (reason or "Cancelled by customer").strip()
+
+    def to_summary_dto(self, restaurant_name: str = ""):
+        """Export food order to standard FoodOrderSummaryDTO contract."""
+        from services.common.contracts.dtos import FoodOrderSummaryDTO
+        from services.common.contracts.enums import PaymentMethod, PaymentStatus
+
+        p_method = PaymentMethod.WALLET
+        if self.payment_method in PaymentMethod._value2member_map_:
+            p_method = PaymentMethod(self.payment_method)
+
+        p_status = PaymentStatus.SUCCESS if self.status == FoodOrderStatus.COMPLETED.value else PaymentStatus.PENDING
+
+        created_str = ""
+        if hasattr(self, "created_at") and self.created_at:
+            created_str = self.created_at.isoformat() if hasattr(self.created_at, "isoformat") else str(self.created_at)
+
+        return FoodOrderSummaryDTO(
+            order_id=self.id,
+            customer_id=self.customer_id,
+            restaurant_id=self.restaurant_id,
+            restaurant_name=restaurant_name or f"Restaurant-{self.restaurant_id[:6]}",
+            items_count=len(self.items),
+            subtotal=self.subtotal,
+            delivery_fee=self.delivery_fee,
+            total_amount=self.total_amount,
+            payment_method=p_method,
+            payment_status=p_status,
+            created_at=created_str or "2026-10-24T00:00:00Z",
+        )
