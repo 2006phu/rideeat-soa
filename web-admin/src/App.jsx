@@ -1,6 +1,59 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
+import {
+  Bike,
+  Car,
+  Compass,
+  Navigation,
+  Route,
+  MapPin,
+  Flag,
+  ArrowUpDown,
+  CloudRain,
+  Flame,
+  TicketPercent,
+  ShieldCheck,
+  Zap,
+  Wallet,
+  Banknote,
+  Send,
+  X,
+  FastForward,
+  Phone,
+  MessageSquare,
+  Share2,
+  Printer,
+  Search,
+  Radar,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Star,
+  User,
+  Store,
+  ShoppingBag,
+  Plus,
+  Minus,
+  Clock,
+  Activity,
+  Server,
+  Radio,
+  KeyRound,
+  Sparkles,
+  Award,
+  UtensilsCrossed,
+  LogIn,
+  LogOut,
+  Copy,
+  PlusCircle,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ChefHat,
+  Receipt,
+  Bot,
+  PartyPopper
+} from 'lucide-react';
 
 const HCMC_LOCATIONS = [
   { id: 'ben-thanh', name: 'Chợ Bến Thành, Quận 1', lat: 10.7726, lng: 106.6980 },
@@ -510,33 +563,39 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
     const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
     const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
 
-    // 1. Pickup Pin with High-End Badge
+    // 1. Pickup Pin with High-End SVG Badge
     const pickupHtml = `
-      <div class="custom-leaflet-marker">
-        <div class="pin-pickup-badge">🟢 ${pickup.name.split(',')[0]}</div>
+      <div class="leaflet-svg-pin-wrapper pickup">
+        <div class="leaflet-pin-dot">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <span>${pickup.name.split(',')[0]}</span>
       </div>
     `;
     const pickupIcon = window.L.divIcon({
       html: pickupHtml,
       className: '',
-      iconSize: [140, 32],
-      iconAnchor: [70, 16]
+      iconSize: [160, 36],
+      iconAnchor: [80, 18]
     });
     window.L.marker([pickup.lat, pickup.lng], { icon: pickupIcon })
       .addTo(layerGroup)
       .bindPopup(`<b>Điểm đón:</b> ${pickup.name}`);
 
-    // 2. Dropoff Pin with Checker Flag
+    // 2. Dropoff Pin with High-End SVG Flag
     const dropoffHtml = `
-      <div class="custom-leaflet-marker">
-        <div class="pin-dropoff-badge">🏁 ${dropoff.name.split(',')[0]}</div>
+      <div class="leaflet-svg-pin-wrapper dropoff">
+        <div class="leaflet-pin-dot">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        </div>
+        <span>${dropoff.name.split(',')[0]}</span>
       </div>
     `;
     const dropoffIcon = window.L.divIcon({
       html: dropoffHtml,
       className: '',
-      iconSize: [140, 32],
-      iconAnchor: [70, 16]
+      iconSize: [160, 36],
+      iconAnchor: [80, 18]
     });
     window.L.marker([dropoff.lat, dropoff.lng], { icon: dropoffIcon })
       .addTo(layerGroup)
@@ -555,15 +614,15 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
 
       nearbyRadarDrivers.forEach((ghost) => {
         const ghostHtml = `
-          <div class="custom-leaflet-marker">
-            <div class="pin-ghost-driver">🛵</div>
+          <div class="leaflet-ghost-driver-marker">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>
           </div>
         `;
         const ghostIcon = window.L.divIcon({
           html: ghostHtml,
           className: '',
-          iconSize: [28, 28],
-          iconAnchor: [14, 14]
+          iconSize: [34, 34],
+          iconAnchor: [17, 17]
         });
         window.L.marker([ghost.lat, ghost.lng], { icon: ghostIcon })
           .addTo(layerGroup)
@@ -583,10 +642,14 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
       }).addTo(layerGroup);
 
       const currentCoord = approachPolyline[approachStep] || approachPolyline[0];
-      const vehicleEmoji = selectedVehicleCode === 'BIKE' ? '🛵' : '🚗';
+      const isBike = selectedVehicleCode === 'BIKE';
+      const vehicleSvg = isBike
+        ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>`
+        : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`;
+
       const driverHtml = `
-        <div class="custom-leaflet-marker" style="transform: rotate(${driverBearing}deg);">
-          <div class="pin-driver-vehicle">${vehicleEmoji}</div>
+        <div class="leaflet-driver-vehicle-marker" style="transform: rotate(${driverBearing}deg);">
+          ${vehicleSvg}
         </div>
       `;
       const driverIcon = window.L.divIcon({
@@ -619,10 +682,14 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
           driverCoord = [dropoff.lat, dropoff.lng];
         }
 
-        const vehicleEmoji = selectedVehicleCode === 'BIKE' ? '🛵' : '🚗';
+        const isBike = selectedVehicleCode === 'BIKE';
+        const vehicleSvg = isBike
+          ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>`
+          : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`;
+
         const driverHtml = `
-          <div class="custom-leaflet-marker" style="transform: rotate(${driverBearing}deg);">
-            <div class="pin-driver-vehicle">${vehicleEmoji}</div>
+          <div class="leaflet-driver-vehicle-marker" style="transform: rotate(${driverBearing}deg);">
+            ${vehicleSvg}
           </div>
         `;
         const driverIcon = window.L.divIcon({
@@ -1021,7 +1088,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
       <div className="auth-page">
         <div className="auth-card">
           <div className="auth-brand">
-            <div className="auth-logo">🛵</div>
+            <div className="auth-logo"><Bike className="w-7 h-7 text-white" /></div>
             <h1 style={{ fontSize: '1.4rem', fontWeight: 800 }}>RideEat</h1>
             <p className="price-sub">Ứng dụng Đặt xe & Giao đồ ăn trực tuyến</p>
           </div>
@@ -1032,14 +1099,14 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               className={`nav-tab ${authMode === 'LOGIN' ? 'active' : ''}`}
               onClick={() => setAuthMode('LOGIN')}
             >
-              Đăng nhập
+              <LogIn className="w-4 h-4" /> Đăng nhập
             </button>
             <button
               type="button"
               className={`nav-tab ${authMode === 'REGISTER' ? 'active' : ''}`}
               onClick={() => setAuthMode('REGISTER')}
             >
-              Đăng ký
+              <PlusCircle className="w-4 h-4" /> Đăng ký
             </button>
           </div>
 
@@ -1052,8 +1119,12 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 className={`auth-role-item ${selectedPresetRole === acc.role ? 'active' : ''}`}
                 onClick={() => handleSelectRolePreset(acc.role)}
               >
-                <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>
-                  {acc.icon} {acc.roleLabel}
+                <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {acc.role === 'CUSTOMER' && <User className="w-4 h-4 text-emerald-600" />}
+                  {acc.role === 'DRIVER' && <Bike className="w-4 h-4 text-blue-600" />}
+                  {acc.role === 'RESTAURANT' && <Store className="w-4 h-4 text-amber-600" />}
+                  {acc.role === 'ADMIN' && <ShieldCheck className="w-4 h-4 text-purple-600" />}
+                  <span>{acc.roleLabel}</span>
                 </div>
                 <div className="price-sub">{acc.name}</div>
               </button>
@@ -1098,7 +1169,8 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             </div>
 
             <button type="submit" className="btn-primary">
-              {authMode === 'LOGIN' ? 'Đăng nhập vào RideEat' : 'Tạo tài khoản & Bắt đầu'}
+              <LogIn className="w-4 h-4" />
+              <span>{authMode === 'LOGIN' ? 'Đăng nhập vào RideEat' : 'Tạo tài khoản & Bắt đầu'}</span>
             </button>
           </form>
 
@@ -1110,13 +1182,16 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             onClick={handleGoogleSignIn}
             disabled={firebaseLoading}
           >
-            <span>🔥</span>
-            <span>{firebaseLoading ? 'Đang mở cửa sổ Google...' : 'Đăng nhập bằng Google (Firebase Auth)'}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+              <span>{firebaseLoading ? 'Đang mở cửa sổ Google...' : 'Đăng nhập bằng Google (Firebase Auth)'}</span>
+            </span>
           </button>
 
           {firebaseError && (
-            <div style={{ marginTop: '12px', fontSize: '13px', color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', textAlign: 'left', lineHeight: 1.4 }}>
-              ⚠️ {firebaseError}
+            <div style={{ marginTop: '12px', fontSize: '13px', color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', textAlign: 'left', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle className="w-4 h-4 text-rose-500" />
+              <span>{firebaseError}</span>
             </div>
           )}
         </div>
@@ -1132,7 +1207,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
       {/* HEADER */}
       <header className="top-header">
         <div className="brand-box">
-          <div className="brand-logo">🛵</div>
+          <div className="brand-logo"><Compass className="w-5 h-5 text-white" /></div>
           <div className="brand-title">
             <h1>
               RideEat
@@ -1146,11 +1221,13 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
 
         <div className="header-pills">
           <div className="wallet-pill">
-            <span>Số dư ví:</span>
+            <Wallet className="w-4 h-4 text-emerald-600" />
+            <span>Số dư:</span>
             <span className="wallet-amount">{walletBalance.toLocaleString('vi-VN')} đ</span>
           </div>
           <button type="button" className="btn-secondary" onClick={handleLogout}>
-            Đăng xuất
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Đăng xuất</span>
           </button>
         </div>
       </header>
@@ -1162,7 +1239,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             className={`nav-tab ${activeTab === 'RIDE' ? 'active' : ''}`}
             onClick={() => setActiveTab('RIDE')}
           >
-            🛵 Đặt xe
+            <Bike className="w-4 h-4" /> Đặt xe
           </button>
         )}
         {currentUser.allowedTabs.includes('FOOD') && (
@@ -1170,7 +1247,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             className={`nav-tab ${activeTab === 'FOOD' ? 'active' : ''}`}
             onClick={() => setActiveTab('FOOD')}
           >
-            🍔 Đặt đồ ăn
+            <UtensilsCrossed className="w-4 h-4" /> Đặt đồ ăn
           </button>
         )}
         {currentUser.allowedTabs.includes('PARTNER') && (
@@ -1178,7 +1255,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             className={`nav-tab ${activeTab === 'PARTNER' ? 'active' : ''}`}
             onClick={() => setActiveTab('PARTNER')}
           >
-            🛵 Nhận chuyến & Giao hàng
+            <Bike className="w-4 h-4" /> Cổng tài xế
           </button>
         )}
         {currentUser.allowedTabs.includes('MERCHANT') && (
@@ -1186,7 +1263,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             className={`nav-tab ${activeTab === 'MERCHANT' ? 'active' : ''}`}
             onClick={() => setActiveTab('MERCHANT')}
           >
-            🏪 Quản lý đơn & Thực đơn
+            <Store className="w-4 h-4" /> Quán ăn & Thực đơn
           </button>
         )}
         {currentUser.allowedTabs.includes('ADMIN') && (
@@ -1194,7 +1271,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             className={`nav-tab ${activeTab === 'ADMIN' ? 'active' : ''}`}
             onClick={() => setActiveTab('ADMIN')}
           >
-            📊 Quản trị hệ thống
+            <Activity className="w-4 h-4" /> Giám sát SOA
           </button>
         )}
         {currentUser.allowedTabs.includes('WALLET') && (
@@ -1202,7 +1279,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             className={`nav-tab ${activeTab === 'WALLET' ? 'active' : ''}`}
             onClick={() => setActiveTab('WALLET')}
           >
-            💳 Ví & Giao dịch
+            <Wallet className="w-4 h-4" /> Ví & Giao dịch
           </button>
         )}
         {currentUser.allowedTabs.includes('PROMO') && (
@@ -1210,7 +1287,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             className={`nav-tab ${activeTab === 'PROMO' ? 'active' : ''}`}
             onClick={() => setActiveTab('PROMO')}
           >
-            🎟️ Khuyến mãi & Loyalty
+            <TicketPercent className="w-4 h-4" /> Khuyến mãi
           </button>
         )}
         {currentUser.allowedTabs.includes('RATING') && (
@@ -1218,7 +1295,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             className={`nav-tab ${activeTab === 'RATING' ? 'active' : ''}`}
             onClick={() => setActiveTab('RATING')}
           >
-            ⭐ Đánh giá dịch vụ
+            <Star className="w-4 h-4" /> Đánh giá
           </button>
         )}
       </nav>
@@ -1231,7 +1308,8 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             <div className="card-header" style={{ marginBottom: '16px' }}>
               <div>
                 <div className="card-title" style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>🛵 Đặt chuyến xe</span>
+                  <Bike className="w-5 h-5 text-emerald-600" />
+                  <span>Đặt chuyến xe</span>
                   <span className="badge-soa" style={{ fontSize: '0.72rem' }}>Super-App Mobility</span>
                 </div>
                 <p className="brand-subtitle" style={{ marginTop: '2px' }}>
@@ -1251,8 +1329,9 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               <div className="location-stop-row">
                 <div className="stop-indicator pickup" />
                 <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#00b14f' }}>
-                    🟢 ĐIỂM ĐÓN KHÁCH
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#00b14f', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>ĐIỂM ĐÓN KHÁCH</span>
                   </label>
                   <select
                     className="form-select"
@@ -1272,24 +1351,12 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 0', zIndex: 3 }}>
                 <button
                   type="button"
+                  className="btn-swap-location"
                   onClick={handleSwapLocations}
                   disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
                   title="Đổi chiều điểm đón và điểm đến"
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '50%',
-                    width: '26px',
-                    height: '26px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    fontSize: '11px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}
                 >
-                  ⇅
+                  <ArrowUpDown className="w-3.5 h-3.5" />
                 </button>
               </div>
 
@@ -1297,8 +1364,9 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               <div className="location-stop-row">
                 <div className="stop-indicator dropoff" />
                 <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#e11d48' }}>
-                    🏁 ĐIỂM ĐẾN
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Flag className="w-3.5 h-3.5 text-rose-600" />
+                    <span>ĐIỂM ĐẾN</span>
                   </label>
                   <select
                     className="form-select"
@@ -1322,21 +1390,26 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 className={`chip-toggle ${weather === 'RAIN' ? 'active' : ''}`}
                 onClick={() => setWeather(weather === 'RAIN' ? 'CLEAR' : 'RAIN')}
               >
-                🌧️ Trời mưa (x1.25)
+                <CloudRain className="w-3.5 h-3.5" />
+                <span>Trời mưa (x1.25)</span>
               </button>
               <button
                 type="button"
                 className={`chip-toggle ${isPeakHour ? 'active' : ''}`}
                 onClick={() => setIsPeakHour(!isPeakHour)}
               >
-                🔥 Giờ cao điểm (x1.2)
+                <Flame className="w-3.5 h-3.5 text-amber-500" />
+                <span>Giờ cao điểm (x1.2)</span>
               </button>
             </div>
 
             {/* VOUCHER PICKER */}
             <div className="form-group" style={{ marginBottom: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label" style={{ marginBottom: '4px' }}>Ưu đãi & Voucher</label>
+                <label className="form-label" style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <TicketPercent className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Ưu đãi & Voucher</span>
+                </label>
                 {selectedVoucherCode && (
                   <span style={{ fontSize: '0.72rem', color: '#00b14f', fontWeight: 700 }}>
                     Đã áp mã {selectedVoucherCode}
@@ -1351,7 +1424,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 <option value="">Không dùng mã ưu đãi</option>
                 {vouchers.map((v) => (
                   <option key={v.code} value={v.code}>
-                    🎁 {v.code} — {v.title}
+                    {v.code} — {v.title}
                   </option>
                 ))}
               </select>
@@ -1370,7 +1443,12 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                     onClick={() => setSelectedVehicleCode(est.vehicleCode)}
                   >
                     <div className="vehicle-pro-left">
-                      <div className="vehicle-pro-icon-box">{est.icon}</div>
+                      <div className="vehicle-pro-icon-box">
+                        {est.vehicleCode === 'BIKE' && <Bike className="w-5 h-5 text-emerald-600" />}
+                        {est.vehicleCode === 'CAR_4' && <Car className="w-5 h-5 text-blue-600" />}
+                        {est.vehicleCode === 'CAR_7' && <Car className="w-5 h-5 text-indigo-600" />}
+                        {est.vehicleCode === 'LUXURY' && <Sparkles className="w-5 h-5 text-amber-500" />}
+                      </div>
                       <div className="vehicle-pro-info">
                         <h4>
                           {est.vehicleName}
@@ -1402,17 +1480,19 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                   type="button"
                   className={`chip-toggle ${paymentMethod === 'WALLET' ? 'active' : ''}`}
                   onClick={() => setPaymentMethod('WALLET')}
-                  style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                  style={{ padding: '4px 10px', fontSize: '0.75rem' }}
                 >
-                  Ví ({walletBalance.toLocaleString('vi-VN')}đ)
+                  <Wallet className="w-3.5 h-3.5" />
+                  <span>Ví ({walletBalance.toLocaleString('vi-VN')}đ)</span>
                 </button>
                 <button
                   type="button"
                   className={`chip-toggle ${paymentMethod === 'CASH' ? 'active' : ''}`}
                   onClick={() => setPaymentMethod('CASH')}
-                  style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                  style={{ padding: '4px 10px', fontSize: '0.75rem' }}
                 >
-                  Tiền mặt
+                  <Banknote className="w-3.5 h-3.5" />
+                  <span>Tiền mặt</span>
                 </button>
               </div>
             </div>
@@ -1421,9 +1501,10 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             {rideStage === 'IDLE' || rideStage === 'COMPLETED' ? (
               <button
                 className="btn-primary"
-                style={{ padding: '13px 18px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                style={{ padding: '13px 18px', fontSize: '1rem' }}
                 onClick={handleBookRide}
               >
+                <Send className="w-4 h-4" />
                 <span>Đặt xe ngay</span>
                 <span>•</span>
                 <span>{currentVehicleEstimate?.finalFare?.toLocaleString('vi-VN') || 0} đ</span>
@@ -1432,20 +1513,22 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   type="button"
-                  className="btn-secondary"
-                  style={{ flex: 1, padding: '11px', fontWeight: 600, color: '#dc2626' }}
+                  className="uiv-btn-danger"
+                  style={{ flex: 1 }}
                   onClick={handleCancelRide}
                 >
-                  ✕ Hủy chuyến
+                  <X className="w-4 h-4" />
+                  <span>Hủy chuyến</span>
                 </button>
                 <button
                   type="button"
-                  className="btn-secondary"
-                  style={{ flex: 1.2, padding: '11px', fontWeight: 600, background: '#eff6ff', borderColor: '#bfdbfe', color: '#1d4ed8' }}
+                  className="uiv-btn-forward"
+                  style={{ flex: 1.2 }}
                   onClick={handleManualSkipStage}
                   title="Tua nhanh sang bước kế tiếp để kiểm tra trải nghiệm"
                 >
-                  ⏩ Tua bước tiếp
+                  <FastForward className="w-4 h-4" />
+                  <span>Tua bước tiếp</span>
                 </button>
               </div>
             )}
@@ -1465,41 +1548,47 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 <div className="hud-top-row">
                   <div>
                     {rideStage === 'SEARCHING' && (
-                      <span className="hud-state-tag searching">
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
-                        Giai đoạn 1: Đang quét tìm tài xế gần bạn nhất...
+                      <span className="hud-state-tag searching" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Radar className="w-4 h-4 animate-spin text-blue-600" />
+                        <span>Giai đoạn 1: Đang quét tìm tài xế gần bạn nhất...</span>
                       </span>
                     )}
                     {rideStage === 'ARRIVING' && (
-                      <span className="hud-state-tag arriving">
-                        🚗 Giai đoạn 2: Tài xế đang đến điểm đón (~{Math.max(1, 25 - approachStep)}s)
+                      <span className="hud-state-tag arriving" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Bike className="w-4 h-4 text-amber-600" />
+                        <span>Giai đoạn 2: Tài xế đang đến điểm đón (~{Math.max(1, 22 - approachStep)}s)</span>
                       </span>
                     )}
                     {rideStage === 'ARRIVED' && (
-                      <span className="hud-state-tag arriving" style={{ background: '#ecfdf5', color: '#00b14f', borderColor: '#a7f3d0' }}>
-                        🟢 Giai đoạn 3: Tài xế đã đến điểm đón! Đưa mã OTP để lên xe
+                      <span className="hud-state-tag arriving" style={{ background: '#ecfdf5', color: '#00b14f', borderColor: '#a7f3d0', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Giai đoạn 3: Tài xế đã đến điểm đón! Đưa mã OTP để lên xe</span>
                       </span>
                     )}
                     {rideStage === 'IN_PROGRESS' && (
-                      <span className="hud-state-tag in-progress">
-                        🛵 Giai đoạn 4: Đang di chuyển đến điểm đến ({Math.round(((driverStepIndex + 1) / (routeInfo.polyline?.length || 64)) * 100)}%)
+                      <span className="hud-state-tag in-progress" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Route className="w-4 h-4 text-emerald-600 animate-pulse" />
+                        <span>Giai đoạn 4: Đang di chuyển đến điểm đến ({Math.round(((driverStepIndex + 1) / (routeInfo.polyline?.length || 42)) * 100)}%)</span>
                       </span>
                     )}
                     {rideStage === 'COMPLETED' && (
-                      <span className="hud-state-tag completed">
-                        🎉 Hoàn thành: Bạn đã đến nơi an toàn!
+                      <span className="hud-state-tag completed" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Award className="w-4 h-4 text-emerald-600" />
+                        <span>Hoàn thành: Bạn đã đến nơi an toàn!</span>
                       </span>
                     )}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {rideStage === 'IN_PROGRESS' && (
-                      <span className="metric-pill">
-                        ⚡ Tốc độ: <strong>{currentSpeedKmh} km/h</strong>
+                      <span className="metric-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Tốc độ: <strong>{currentSpeedKmh} km/h</strong></span>
                       </span>
                     )}
-                    <span className="metric-pill">
-                      🧭 Hướng: <strong>{driverBearing}°</strong>
+                    <span className="metric-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <Compass className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Hướng: <strong>{driverBearing}°</strong></span>
                     </span>
                   </div>
                 </div>
@@ -1528,13 +1617,17 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                   <div className="driver-sheet-card">
                     <div className="driver-sheet-left">
                       <div className="driver-avatar-circle">
-                        👨🏻‍✈️
-                        <div className="driver-verified-check">✓</div>
+                        <User className="w-5 h-5 text-slate-700" />
+                        <div className="driver-verified-check">
+                          <CheckCircle2 className="w-3 h-3 text-white" />
+                        </div>
                       </div>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>{assignedDriverInfo?.name || activeRide?.driver?.name || 'Trần Minh Tài'}</span>
-                          <span style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 600 }}>★ 4.98 (1.4k+)</span>
+                          <span style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> 4.98 (1.4k+)
+                          </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                           <span className="license-plate-vn">{assignedDriverInfo?.plate || activeRide?.driver?.license_plate || '59-X3 888.99'}</span>
@@ -1550,7 +1643,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                         onClick={() => alert(`Đang kết nối cuộc gọi thoại với tài xế ${assignedDriverInfo?.name || 'Trần Minh Tài'}...`)}
                         title="Gọi điện cho tài xế"
                       >
-                        📞
+                        <Phone className="w-4 h-4 text-emerald-600" />
                       </button>
                       <button
                         type="button"
@@ -1558,7 +1651,18 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                         onClick={() => handleSendAiChat(`Tài xế đang ở đâu rồi?`)}
                         title="Nhắn tin với tài xế"
                       >
-                        💬
+                        <MessageSquare className="w-4 h-4 text-blue-600" />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon-action"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(window.location.href);
+                          alert('Đã sao chép liên kết lộ trình di chuyển!');
+                        }}
+                        title="Chia sẻ lộ trình chuyến đi"
+                      >
+                        <Share2 className="w-4 h-4 text-slate-600" />
                       </button>
                     </div>
                   </div>
@@ -1568,10 +1672,11 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 {(rideStage === 'ARRIVING' || rideStage === 'ARRIVED') && activeRide?.otp_code && (
                   <div className="otp-display-box">
                     <div>
-                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        MÃ OTP XÁC NHẬN LÊN XE
+                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>MÃ OTP XÁC NHẬN LÊN XE</span>
                       </div>
-                      <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginTop: '2px' }}>
                         Cung cấp cho tài xế trước khi khởi hành
                       </div>
                     </div>
@@ -1598,7 +1703,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                     const isActive = currentStageIdx === idx;
                     return (
                       <div key={step.key} className={`stepper-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}>
-                        <div className="step-circle">{isDone ? '✓' : idx + 1}</div>
+                        <div className="step-circle">{isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : idx + 1}</div>
                         <span className="step-label">{step.label}</span>
                       </div>
                     );
@@ -1615,7 +1720,10 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
         <div className="grid-2">
           <div className="card">
             <div className="card-header">
-              <div className="card-title">Danh sách quán ăn</div>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Store className="w-5 h-5 text-emerald-600" />
+                <span>Danh sách quán ăn</span>
+              </div>
               <span className="oop-tag">{restaurants.length} quán</span>
             </div>
 
@@ -1627,7 +1735,11 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                   className={`chip-toggle ${selectedRestaurant?.id === rest.id ? 'active' : ''}`}
                   onClick={() => setSelectedRestaurant(rest)}
                 >
-                  {rest.name} ({rest.rating}★)
+                  <Store className="w-3.5 h-3.5" />
+                  <span>{rest.name}</span>
+                  <span style={{ color: '#f59e0b', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {rest.rating}
+                  </span>
                 </button>
               ))}
             </div>
@@ -1637,14 +1749,17 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 {selectedRestaurant.menu.map((dish) => (
                   <div key={dish.id} className="vehicle-item">
                     <div className="vehicle-left">
-                      <span className="vehicle-icon">{dish.image}</span>
+                      <div className="vehicle-pro-icon-box" style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <UtensilsCrossed className="w-5 h-5 text-emerald-600" />
+                      </div>
                       <div>
                         <div style={{ fontWeight: 600 }}>{dish.name}</div>
                         <div className="price-sub">{dish.price.toLocaleString('vi-VN')} đ</div>
                       </div>
                     </div>
                     <button className="btn-secondary" onClick={() => addToCart(dish)}>
-                      + Thêm
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm</span>
                     </button>
                   </div>
                 ))}
@@ -1654,28 +1769,36 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
 
           <div className="card">
             <div className="card-header">
-              <div className="card-title">Giỏ hàng của bạn</div>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShoppingBag className="w-5 h-5 text-emerald-600" />
+                <span>Giỏ hàng của bạn</span>
+              </div>
               <span className="oop-tag">{cart.length} món</span>
             </div>
 
             {cart.length === 0 ? (
-              <div className="price-sub" style={{ padding: '20px', textAlign: 'center' }}>
-                Giỏ hàng đang trống.
+              <div className="price-sub" style={{ padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <ShoppingBag className="w-8 h-8 text-slate-300" />
+                <span>Giỏ hàng đang trống. Hãy chọn món ăn từ thực đơn.</span>
               </div>
             ) : (
               <div className="vehicle-list">
                 {cart.map((item) => (
                   <div key={item.id} className="vehicle-item">
                     <div>
-                      <div style={{ fontWeight: 600 }}>{item.image} {item.name}</div>
+                      <div style={{ fontWeight: 600 }}>{item.name}</div>
                       <div className="price-sub">
                         {item.price.toLocaleString('vi-VN')}đ x {item.quantity}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button className="btn-secondary" onClick={() => updateCartQty(item.id, -1)}>-</button>
-                      <span style={{ fontWeight: 600 }}>{item.quantity}</span>
-                      <button className="btn-secondary" onClick={() => updateCartQty(item.id, 1)}>+</button>
+                      <button className="btn-secondary" style={{ padding: '4px 8px' }} onClick={() => updateCartQty(item.id, -1)}>
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span style={{ fontWeight: 700, minWidth: '18px', textAlign: 'center' }}>{item.quantity}</span>
+                      <button className="btn-secondary" style={{ padding: '4px 8px' }} onClick={() => updateCartQty(item.id, 1)}>
+                        <Plus className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -1702,18 +1825,27 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             </div>
 
             <button className="btn-primary" onClick={handlePlaceFoodOrder}>
-              Đặt món ngay • {foodFinalTotal.toLocaleString('vi-VN')} đ
+              <Send className="w-4 h-4" />
+              <span>Đặt món ngay • {foodFinalTotal.toLocaleString('vi-VN')} đ</span>
             </button>
 
             {activeFoodOrder && (
-              <div className="info-box">
+              <div className="info-box" style={{ marginTop: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <strong>Đơn hàng: {activeFoodOrder.order_id}</strong>
-                    <div className="price-sub">Tài xế giao: {activeFoodOrder.shipper.name}</div>
+                    <div className="price-sub">Tài xế giao: {activeFoodOrder.shipper?.name || 'Nguyễn Văn Minh'}</div>
                   </div>
                   <span className="oop-tag">
-                    {activeFoodOrder.state === 'DELIVERED' ? '✅ Hoàn tất' : '🛵 Tự động cập nhật...'}
+                    {activeFoodOrder.state === 'DELIVERED' ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#00b14f' }}>
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Đã giao xong
+                      </span>
+                    ) : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f59e0b' }}>
+                        <Bike className="w-3.5 h-3.5 animate-bounce" /> Đang giao hàng
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className="state-stepper">
@@ -1946,10 +2078,11 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                     <button
                       type="button"
                       className="btn-secondary"
-                      style={{ padding: '4px 8px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                      style={{ padding: '5px 10px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
                       onClick={() => handleViewInvoice(tx)}
                     >
-                      🧾 Hóa đơn VAT
+                      <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Hóa đơn VAT</span>
                     </button>
                   </div>
                 </div>
@@ -1973,7 +2106,9 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                   <div className="price-sub">Điểm Loyalty khả dụng</div>
                   <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#00b14f' }}>210 Điểm</div>
                 </div>
-                <div style={{ fontSize: '2.5rem' }}>🏅</div>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Award className="w-7 h-7 text-amber-500" />
+                </div>
               </div>
               <div style={{ marginTop: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>
@@ -1999,9 +2134,10 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               {vouchers.map((v) => (
                 <div key={v.code} className="vehicle-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <TicketPercent className="w-4 h-4 text-emerald-600" />
                       <span className="badge-soa" style={{ fontWeight: 700, letterSpacing: '0.5px' }}>{v.code}</span>
-                      <span style={{ fontWeight: 600, marginLeft: '8px' }}>{v.title}</span>
+                      <span style={{ fontWeight: 600 }}>{v.title}</span>
                     </div>
                     <button
                       type="button"
@@ -2047,15 +2183,15 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
 
             <div className="form-group">
               <label className="form-label">Chất lượng phục vụ ({ratingStars} sao)</label>
-              <div style={{ display: 'flex', gap: '8px', fontSize: '1.75rem', cursor: 'pointer', margin: '4px 0 12px' }}>
+              <div style={{ display: 'flex', gap: '8px', cursor: 'pointer', margin: '4px 0 12px' }}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <span
+                  <Star
                     key={star}
+                    className={`w-7 h-7 cursor-pointer transition-transform hover:scale-110 ${
+                      star <= ratingStars ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                    }`}
                     onClick={() => setRatingStars(star)}
-                    style={{ color: star <= ratingStars ? '#f59e0b' : '#cbd5e1', transition: '0.15s' }}
-                  >
-                    ★
-                  </span>
+                  />
                 ))}
               </div>
             </div>
@@ -2072,7 +2208,8 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             </div>
 
             <button type="button" className="btn-primary" onClick={handleSubmitRating}>
-              Gửi đánh giá & Nhận 5 điểm thưởng
+              <Star className="w-4 h-4 fill-white" />
+              <span>Gửi đánh giá & Nhận 5 điểm thưởng</span>
             </button>
           </div>
 
@@ -2086,7 +2223,9 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 <div key={rev.id} className="vehicle-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: 600 }}>{rev.reviewerName}</span>
-                    <span style={{ color: '#f59e0b', fontWeight: 700 }}>{'★'.repeat(rev.stars)}</span>
+                    <span style={{ color: '#f59e0b', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> {rev.stars}.0
+                    </span>
                   </div>
                   <div className="price-sub">{rev.comment}</div>
                   <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{rev.time} • Đơn #{rev.refId}</div>
@@ -2104,9 +2243,9 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
             {microservicesCatalog.map((svc) => (
               <div key={svc.id} className="card">
                 <div className="card-header">
-                  <div className="card-title">
-                    <span className="status-dot" />
-                    {svc.name}
+                  <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Server className="w-4 h-4 text-purple-600" />
+                    <span>{svc.name}</span>
                   </div>
                   <span className="oop-tag">:{svc.port}</span>
                 </div>
@@ -2117,7 +2256,10 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
 
           <div className="card">
             <div className="card-header">
-              <div className="card-title">Nhật ký hoạt động hệ thống</div>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Radio className="w-4 h-4 text-emerald-500 animate-pulse" />
+                <span>Nhật ký hoạt động hệ thống</span>
+              </div>
             </div>
             <div className="event-log">
               {eventLogs.length === 0 ? (
@@ -2139,13 +2281,17 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
 
       {/* FLOATING AI CHAT WIDGET */}
       <button className="ai-fab" onClick={() => setAiOpen(!aiOpen)}>
-        🤖 {aiOpen ? 'Đóng Trợ lý AI' : 'Trợ lý AI RideEat'}
+        <Bot className="w-5 h-5 text-emerald-400" />
+        <span>{aiOpen ? 'Đóng Trợ lý AI' : 'Trợ lý AI RideEat'}</span>
       </button>
 
       {aiOpen && (
         <div className="ai-chat-panel">
           <div className="ai-chat-header">
-            <span>🤖 Trợ lý AI RideEat</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Bot className="w-4 h-4 text-emerald-400" />
+              <span>Trợ lý AI RideEat</span>
+            </span>
             <button
               type="button"
               style={{
@@ -2155,11 +2301,14 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 padding: '2px 8px',
                 borderRadius: '6px',
                 fontSize: '0.8rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
               onClick={() => setAiOpen(false)}
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -2179,21 +2328,24 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                 className="chip-toggle"
                 onClick={() => handleSendAiChat('Tư vấn giá xe cho lộ trình hiện tại')}
               >
-                💰 Hỏi giá xe
+                <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Hỏi giá xe</span>
               </button>
               <button
                 type="button"
                 className="chip-toggle"
                 onClick={() => handleSendAiChat('Hôm nay ăn món gì ngon và rẻ?')}
               >
-                🍜 Gợi ý món ăn
+                <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />
+                <span>Gợi ý món ăn</span>
               </button>
               <button
                 type="button"
                 className="chip-toggle"
                 onClick={() => handleSendAiChat('Có mã giảm giá nào đang dùng được?')}
               >
-                🎟️ Hỏi mã giảm giá
+                <TicketPercent className="w-3.5 h-3.5 text-blue-600" />
+                <span>Hỏi mã giảm giá</span>
               </button>
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -2206,10 +2358,11 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
               />
               <button
                 className="btn-primary"
-                style={{ width: '76px' }}
+                style={{ width: '84px' }}
                 onClick={() => handleSendAiChat()}
               >
-                Gửi
+                <Send className="w-3.5 h-3.5" />
+                <span>Gửi</span>
               </button>
             </div>
           </div>
@@ -2221,22 +2374,26 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
         <div className="modal-backdrop" onClick={() => setShowRatingModal(false)}>
           <div className="modal-card" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ textAlign: 'center', marginBottom: '14px' }}>
-              <div style={{ fontSize: '36px', marginBottom: '6px' }}>🎉</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <PartyPopper className="w-8 h-8 text-emerald-600" />
+                </div>
+              </div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Chuyến đi đã hoàn thành!</h3>
               <p className="price-sub" style={{ marginTop: '2px' }}>
                 Bạn cảm thấy chuyến đi với tài xế <strong>{assignedDriverInfo?.name || 'Trần Minh Tài'}</strong> thế nào?
               </p>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', margin: '14px 0', fontSize: '28px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', margin: '14px 0', cursor: 'pointer' }}>
               {[1, 2, 3, 4, 5].map((star) => (
-                <span
+                <Star
                   key={star}
+                  className={`w-8 h-8 cursor-pointer transition-transform hover:scale-125 ${
+                    star <= ratingStars ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                  }`}
                   onClick={() => setRatingStars(star)}
-                  style={{ color: star <= ratingStars ? '#f59e0b' : '#cbd5e1', transition: '0.15s' }}
-                >
-                  ★
-                </span>
+                />
               ))}
             </div>
 
@@ -2249,7 +2406,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                   style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   onClick={() => setRatingComment((prev) => (prev ? `${prev}, ${tag.toLowerCase()}` : tag))}
                 >
-                  + {tag}
+                  <Plus className="w-3 h-3 text-emerald-600" /> {tag}
                 </button>
               ))}
             </div>
@@ -2274,7 +2431,8 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                   if (latestTx) handleViewInvoice(latestTx);
                 }}
               >
-                🧾 Xem hóa đơn VAT
+                <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                <span>Xem hóa đơn VAT</span>
               </button>
               <button
                 type="button"
@@ -2285,7 +2443,7 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                   setShowRatingModal(false);
                 }}
               >
-                Gửi (+5.000đ vào ví)
+                <span>Gửi (+5.000đ vào ví)</span>
               </button>
             </div>
           </div>
@@ -2349,7 +2507,8 @@ Lưu ý: Nếu khách nói KHÔNG muốn ăn món nào (ví dụ "không muốn 
                   window.print();
                 }}
               >
-                🖨️ In hóa đơn
+                <Printer className="w-4 h-4 text-slate-700" />
+                <span>In hóa đơn</span>
               </button>
               <button
                 type="button"

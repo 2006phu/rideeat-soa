@@ -250,7 +250,7 @@ code, pre, .mono {
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.2);
 }
 
-/* Navigation Tabs */
+/* Navigation Tabs (Uiverse Segmented Floating Bar) */
 .nav-tabs {
   display: flex;
   gap: 8px;
@@ -258,35 +258,49 @@ code, pre, .mono {
   overflow-x: auto;
   background: var(--bg-card);
   padding: 6px;
-  border-radius: var(--radius-md);
+  border-radius: 9999px;
   border: 1px solid var(--border-color);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+  scrollbar-width: none;
 }
 
 .nav-tab {
   flex: 1;
   min-width: 140px;
-  padding: 10px 14px;
+  padding: 9px 16px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 9999px;
   color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.88rem;
   cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .nav-tab:hover {
   background: var(--bg-subtle);
   color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.nav-tab:active {
+  transform: scale(0.97);
 }
 
 .nav-tab.active {
-  background: var(--primary);
+  background: linear-gradient(135deg, #00b14f 0%, #009341 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 177, 79, 0.35);
+  transform: scale(1.02);
+}
+
+.nav-tab.active svg {
   color: #ffffff;
 }
 
@@ -450,37 +464,86 @@ code, pre, .mono {
   color: var(--text-secondary);
 }
 
-/* Buttons */
+/* Buttons (Uiverse Shimmer & Animate-UI Spring Physics) */
 .btn-primary {
   width: 100%;
-  padding: 11px 16px;
+  padding: 12px 18px;
   border: none;
-  border-radius: 10px;
-  background: var(--primary);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00b14f 0%, #009341 100%);
   color: #ffffff;
-  font-weight: 600;
-  font-size: 0.92rem;
+  font-weight: 700;
+  font-size: 0.94rem;
   cursor: pointer;
-  transition: 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 177, 79, 0.35);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s ease,
+              filter 0.2s ease;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transform: skewX(-20deg);
+  transition: none;
 }
 
 .btn-primary:hover {
-  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 177, 79, 0.45);
+  filter: brightness(1.03);
+}
+
+.btn-primary:hover::after {
+  left: 150%;
+  transition: left 0.75s ease-in-out;
+}
+
+.btn-primary:active {
+  transform: scale(0.975);
+  box-shadow: 0 2px 6px rgba(0, 177, 79, 0.25);
 }
 
 .btn-secondary {
-  padding: 7px 12px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   background: #ffffff;
   color: var(--text-primary);
-  font-weight: 500;
-  font-size: 0.82rem;
+  font-weight: 600;
+  font-size: 0.84rem;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.18s ease,
+              border-color 0.18s ease,
+              box-shadow 0.18s ease;
 }
 
 .btn-secondary:hover {
   background: var(--bg-subtle);
+  border-color: #cbd5e1;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.btn-secondary:active {
+  transform: scale(0.97);
 }
 
 /* Map */
@@ -1221,23 +1284,206 @@ code, pre, .mono {
 }
 
 .btn-icon-action {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: 1px solid var(--border-color);
-  background: #f8fafc;
-  display: flex;
+  background: #ffffff;
+  color: #475569;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
   cursor: pointer;
-  transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease;
 }
 
 .btn-icon-action:hover {
   background: #ecfdf5;
   border-color: #a7f3d0;
-  transform: scale(1.05);
+  color: #00b14f;
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 4px 12px rgba(0, 177, 79, 0.2);
+}
+
+.btn-icon-action:active {
+  transform: scale(0.95);
+}
+
+/* Location Swap Button (180deg Spring Rotation) */
+.btn-swap-location {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.2s ease,
+              border-color 0.2s ease,
+              box-shadow 0.2s ease;
+}
+
+.btn-swap-location:hover {
+  color: #00b14f;
+  border-color: #00b14f;
+  transform: rotate(180deg) scale(1.08);
+  box-shadow: 0 2px 8px rgba(0, 177, 79, 0.2);
+}
+
+.btn-swap-location:active {
+  transform: rotate(180deg) scale(0.95);
+}
+
+/* Uiverse Button Variants */
+.uiv-btn-danger {
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  color: #e11d48;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(225, 29, 72, 0.08);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.18s ease,
+              border-color 0.18s ease,
+              box-shadow 0.18s ease;
+}
+
+.uiv-btn-danger:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.15);
+}
+
+.uiv-btn-danger:active {
+  transform: scale(0.97);
+}
+
+.uiv-btn-forward {
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1d4ed8;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s ease;
+}
+
+.uiv-btn-forward:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
+}
+
+.uiv-btn-forward:active {
+  transform: scale(0.97);
+}
+
+/* Leaflet Vector SVG Markers & Map Interaction */
+.leaflet-svg-pin-wrapper {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 9999px;
+  padding: 4px 12px 4px 6px;
+  border: 2px solid #00b14f;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  animation: pin-spring-drop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.leaflet-svg-pin-wrapper.dropoff {
+  border-color: #e11d48;
+}
+
+.leaflet-pin-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #00b14f;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 177, 79, 0.4);
+}
+
+.leaflet-svg-pin-wrapper.dropoff .leaflet-pin-dot {
+  background: #e11d48;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
+}
+
+.leaflet-driver-vehicle-marker {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00b14f 0%, #059669 100%);
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 177, 79, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition: transform 0.25s linear;
+}
+
+.leaflet-ghost-driver-marker {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #00b14f;
+  box-shadow: 0 4px 12px rgba(0, 177, 79, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00b14f;
+  animation: pulse-ghost 1.6s infinite alternate ease-in-out;
+}
+
+@keyframes pin-spring-drop {
+  0% { transform: translateY(-18px) scale(0.8); opacity: 0; }
+  60% { transform: translateY(2px) scale(1.05); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes spring-pop {
+  0% { transform: scale(0.92); opacity: 0; }
+  60% { transform: scale(1.03); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-card {
+  animation: spring-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* OTP Glow Display */
