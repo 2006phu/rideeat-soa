@@ -61,17 +61,22 @@ code, pre, .mono {
 
 /* Header */
 .top-header {
+  position: sticky;
+  top: 10px;
+  z-index: 990;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   padding: 14px 20px;
-  background: var(--bg-card);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
 }
 
 .brand-box {
@@ -2025,6 +2030,7 @@ code, pre, .mono {
 
   /* Mobile Header */
   .top-header {
+    top: 6px;
     padding: 10px 14px;
     border-radius: 14px;
     margin-bottom: 12px;
@@ -2388,7 +2394,6 @@ code, pre, .mono {
 
 [data-theme="dark"] .card,
 [data-theme="dark"] .card-soa,
-[data-theme="dark"] .top-header,
 [data-theme="dark"] .nav-tabs,
 [data-theme="dark"] .uiv-restaurant-banner,
 [data-theme="dark"] .uiv-dish-card,
@@ -2400,6 +2405,13 @@ code, pre, .mono {
   background: var(--bg-card);
   border-color: var(--border-color);
   color: var(--text-primary);
+}
+
+[data-theme="dark"] .top-header {
+  background: rgba(21, 28, 44, 0.94);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
 
 [data-theme="dark"] .form-input,

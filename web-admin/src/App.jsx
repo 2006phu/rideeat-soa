@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useMotionValueEvent } from 'motion/react';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
@@ -400,6 +401,19 @@ export default function App() {
   const driverMapContainerRef = useRef(null);
   const driverLeafletMapRef = useRef(null);
   const driverLayerGroupRef = useRef(null);
+
+  // Motion Scroll Hide / Reveal Header State
+  const { scrollY } = useScroll();
+  const [headerHidden, setHeaderHidden] = useState(false);
+
+  useMotionValueEvent(scrollY, 'change', (current) => {
+    const previous = scrollY.getPrevious() ?? 0;
+    if (current > previous && current > 120) {
+      setHeaderHidden(true);
+    } else {
+      setHeaderHidden(false);
+    }
+  });
 
   // Theme Mode (Light / Dark) with Persistent LocalStorage
   const [themeMode, setThemeMode] = useState(() => {
@@ -2413,8 +2427,15 @@ Quy tắc giao tiếp:
   // ============================================================================
   return (
     <div className="app-shell">
-      {/* HEADER */}
-      <header className="top-header">
+      {/* SCROLL-HIDE HEADER WITH MOTION */}
+      <motion.header
+        className="top-header"
+        animate={{
+          y: headerHidden ? -140 : 0,
+          opacity: headerHidden ? 0 : 1,
+        }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
         <div className="brand-box">
           <div className="brand-logo"><Compass className="w-5 h-5 text-white" /></div>
           <div className="brand-title">
@@ -2457,7 +2478,7 @@ Quy tắc giao tiếp:
             <span>Đăng xuất</span>
           </button>
         </div>
-      </header>
+      </motion.header>
 
       {/* NAVIGATION TABS (HIỂN THỊ ĐÚNG CHỨC NĂNG CỦA TỪNG VAI TRÒ) */}
       <nav className="nav-tabs">
