@@ -5,6 +5,7 @@ import MotionSwitch from './components/MotionSwitch.jsx';
 import Loader from './components/Loader.jsx';
 import WaveInput from './components/WaveInput.jsx';
 import StarRating from './components/StarRating.jsx';
+import LoginForm from './components/LoginForm.jsx';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
@@ -2063,368 +2064,49 @@ Quy tắc giao tiếp:
   if (!currentUser) {
     return (
       <ClickSpark sparkColor={themeMode === 'dark' ? '#34d399' : '#00b14f'} sparkCount={9} sparkRadius={22}>
-        <div className="auth-page">
-          <div className="auth-card">
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                {themeMode === 'light' ? 'Chế độ Sáng' : 'Chế độ Tối'}
-              </span>
-              <MotionSwitch
-                isOn={themeMode === 'dark'}
-                onToggle={toggleTheme}
-                activeColor="#3b82f6"
-                inactiveColor="#cbd5e1"
-                leftIcon={<Sun className="w-3.5 h-3.5 text-amber-500" />}
-                rightIcon={<Moon className="w-3.5 h-3.5 text-slate-800" />}
-                size="sm"
-                title="Chuyển đổi giao diện Sáng / Tối"
-              />
-            </div>
-            <div className="auth-brand">
-            <div className="auth-logo"><Bike className="w-7 h-7 text-white" /></div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 800 }}>RideEat</h1>
-            <p className="price-sub">Ứng dụng Đặt xe & Giao đồ ăn trực tuyến</p>
-          </div>
-
-          <div className="nav-tabs" style={{ marginBottom: '16px' }}>
-            <button
-              type="button"
-              className={`nav-tab ${authMode === 'LOGIN' ? 'active' : ''}`}
-              onClick={() => setAuthMode('LOGIN')}
-            >
-              <LogIn className="w-4 h-4" /> Đăng nhập
-            </button>
-            <button
-              type="button"
-              className={`nav-tab ${authMode === 'REGISTER' ? 'active' : ''}`}
-              onClick={() => setAuthMode('REGISTER')}
-            >
-              <PlusCircle className="w-4 h-4" /> Đăng ký
-            </button>
-          </div>
-
-          <div className="form-label">
-            {authMode === 'LOGIN' ? 'Chọn vai trò đăng nhập nhanh' : 'Chọn loại tài khoản bạn muốn đăng ký'}
-          </div>
-          <div className="auth-role-grid">
-            {Object.values(DEMO_ACCOUNTS)
-              .filter((acc) => authMode === 'LOGIN' || acc.role !== 'ADMIN')
-              .map((acc) => (
-                <button
-                  key={acc.role}
-                  type="button"
-                  className={`auth-role-item ${selectedPresetRole === acc.role ? 'active' : ''}`}
-                  onClick={() => handleSelectRolePreset(acc.role)}
-                >
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {acc.role === 'CUSTOMER' && <User className="w-4 h-4 text-emerald-600" />}
-                    {acc.role === 'DRIVER' && <Bike className="w-4 h-4 text-blue-600" />}
-                    {acc.role === 'RESTAURANT' && <Store className="w-4 h-4 text-amber-600" />}
-                    {acc.role === 'ADMIN' && <ShieldCheck className="w-4 h-4 text-purple-600" />}
-                    <span>{acc.roleLabel}</span>
-                  </div>
-                  <div className="price-sub">
-                    {authMode === 'LOGIN'
-                      ? acc.name
-                      : acc.role === 'CUSTOMER'
-                      ? 'Đặt xe & giao đồ ăn'
-                      : acc.role === 'DRIVER'
-                      ? 'Bật app nhận cuốc xe'
-                      : 'Mở quán bán món ăn'}
-                  </div>
-                </button>
-              ))}
-          </div>
-
-          <form onSubmit={handleAuthSubmit}>
-            {/* 1. ONBOARDING: KHÁCH HÀNG (CUSTOMER) */}
-            {authMode === 'REGISTER' && selectedPresetRole === 'CUSTOMER' && (
-              <>
-                <div className="form-group">
-                  <label className="form-label">Họ và tên khách hàng</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Nguyễn Văn A"
-                    value={registerName}
-                    onChange={(e) => setRegisterName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Số điện thoại di động</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    placeholder="0901234567"
-                    value={registerPhone}
-                    onChange={(e) => setRegisterPhone(e.target.value)}
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            {/* 2. ONBOARDING: TÀI XẾ ĐỐI TÁC (DRIVER - GRABDRIVER) */}
-            {authMode === 'REGISTER' && selectedPresetRole === 'DRIVER' && (
-              <>
-                <div className="info-box" style={{ background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: '14px' }}>
-                  <div style={{ fontWeight: 700, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Bike className="w-4 h-4" /> Hồ sơ Đối tác Tài xế RideEat (GrabDriver)
-                  </div>
-                  <div className="price-sub" style={{ marginTop: '3px' }}>
-                    Nhập thông tin phương tiện và bằng lái để kích hoạt quyền nhận cuốc trực tuyến.
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Họ và tên tài xế</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Trần Minh Tài"
-                    value={registerName}
-                    onChange={(e) => setRegisterName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Số điện thoại liên hệ</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    placeholder="0988123456"
-                    value={registerPhone}
-                    onChange={(e) => setRegisterPhone(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid-2" style={{ gap: '10px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Số CCCD / CMND</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="079201009876"
-                      value={driverCccd}
-                      onChange={(e) => setDriverCccd(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Loại xe hoạt động</label>
-                    <select
-                      className="form-select"
-                      value={driverVehicleType}
-                      onChange={(e) => setDriverVehicleType(e.target.value)}
-                    >
-                      <option value="BIKE">Xe máy (RideBike)</option>
-                      <option value="CAR">Ô tô 4 chỗ (RideCar)</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid-2" style={{ gap: '10px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Biển số đăng ký xe</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="59-X3 888.99"
-                      value={driverLicensePlate}
-                      onChange={(e) => setDriverLicensePlate(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Số giấy phép lái xe (GPLX)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="GPLX-790123456"
-                      value={driverLicenseNumber}
-                      onChange={(e) => setDriverLicenseNumber(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* 3. ONBOARDING: CHỦ QUÁN ĂN (RESTAURANT - GRABMERCHANT) */}
-            {authMode === 'REGISTER' && selectedPresetRole === 'RESTAURANT' && (
-              <>
-                <div className="info-box" style={{ background: '#fffbeb', borderColor: '#fde68a', marginBottom: '14px' }}>
-                  <div style={{ fontWeight: 700, color: '#b45309', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Store className="w-4 h-4" /> Đăng ký Gian hàng Quán ăn (GrabMerchant)
-                  </div>
-                  <div className="price-sub" style={{ marginTop: '3px' }}>
-                    Cung cấp địa chỉ kinh doanh và tài khoản nhận thanh toán doanh thu hàng ngày.
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Tên quán ăn / Nhà hàng</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Cơm Tấm Ba Ghiền - Sài Gòn"
-                    value={merchantStoreName}
-                    onChange={(e) => setMerchantStoreName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Địa chỉ kinh doanh (Điểm shipper lấy món)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="84 Đặng Văn Ngữ, P.10, Phú Nhuận, TP.HCM"
-                    value={merchantAddress}
-                    onChange={(e) => setMerchantAddress(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid-2" style={{ gap: '10px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Danh mục ẩm thực chính</label>
-                    <select
-                      className="form-select"
-                      value={merchantCuisine}
-                      onChange={(e) => setMerchantCuisine(e.target.value)}
-                    >
-                      {FOOD_CATEGORIES.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Khung giờ mở cửa</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="06:30 - 22:30"
-                      value={merchantOpenHours}
-                      onChange={(e) => setMerchantOpenHours(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-label" style={{ marginTop: '10px', color: '#0f172a' }}>
-                  Tài khoản ngân hàng nhận tiền quyết toán (Settlement)
-                </div>
-                <div className="grid-3" style={{ gap: '8px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Ngân hàng</label>
-                    <select
-                      className="form-select"
-                      value={merchantBankName}
-                      onChange={(e) => setMerchantBankName(e.target.value)}
-                    >
-                      <option value="Vietcombank">Vietcombank</option>
-                      <option value="Techcombank">Techcombank</option>
-                      <option value="MBBank">MB Bank</option>
-                      <option value="ACB">ACB</option>
-                      <option value="BIDV">BIDV</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Số tài khoản</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="0071009988776"
-                      value={merchantBankAccount}
-                      onChange={(e) => setMerchantBankAccount(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Chủ tài khoản</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="NGUYEN VAN A"
-                      value={merchantBankOwner}
-                      onChange={(e) => setMerchantBankOwner(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            <WaveInput
-              type="email"
-              value={loginEmail}
-              onChange={(e) => setLoginEmail(e.target.value)}
-              label={
-                authMode === 'REGISTER' && selectedPresetRole === 'RESTAURANT'
-                  ? 'Email quán ăn'
-                  : authMode === 'REGISTER' && selectedPresetRole === 'DRIVER'
-                  ? 'Email tài xế'
-                  : 'Email / Tên đăng nhập'
-              }
-              required
-              autoComplete="username"
-              accentColor="#00b14f"
-            />
-
-            <WaveInput
-              type="password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              label="Mật khẩu"
-              required
-              autoComplete="current-password"
-              accentColor="#00b14f"
-              style={{ marginBottom: '22px' }}
-            />
-
-            <button type="submit" className="btn-primary">
-              <LogIn className="w-4 h-4" />
-              <span>
-                {authMode === 'LOGIN'
-                  ? `Đăng nhập vào RideEat (${DEMO_ACCOUNTS[selectedPresetRole]?.roleLabel || 'Người dùng'})`
-                  : selectedPresetRole === 'DRIVER'
-                  ? 'Đăng ký làm Đối tác Tài xế (GrabDriver)'
-                  : selectedPresetRole === 'RESTAURANT'
-                  ? 'Đăng ký mở Gian hàng (GrabMerchant)'
-                  : 'Đăng ký Tài khoản Khách hàng'}
-              </span>
-            </button>
-          </form>
-
-          <div className="auth-divider">hoặc xác thực qua Firebase</div>
-
-          <button
-            type="button"
-            className="btn-firebase"
-            onClick={handleGoogleSignIn}
-            disabled={firebaseLoading}
-          >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-              <span>{firebaseLoading ? 'Đang mở cửa sổ Google...' : 'Đăng nhập bằng Google (Firebase Auth)'}</span>
-            </span>
-          </button>
-
-          {firebaseLoading && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
-              <Loader text="loading" />
-            </div>
-          )}
-
-          {firebaseError && (
-            <div style={{ marginTop: '12px', fontSize: '13px', color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', textAlign: 'left', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle className="w-4 h-4 text-rose-500" />
-              <span>{firebaseError}</span>
-            </div>
-          )}
-        </div>
-      </div>
+        <LoginForm
+          authMode={authMode}
+          setAuthMode={setAuthMode}
+          themeMode={themeMode}
+          toggleTheme={toggleTheme}
+          selectedPresetRole={selectedPresetRole}
+          handleSelectRolePreset={handleSelectRolePreset}
+          DEMO_ACCOUNTS={DEMO_ACCOUNTS}
+          loginEmail={loginEmail}
+          setLoginEmail={setLoginEmail}
+          loginPassword={loginPassword}
+          setLoginPassword={setLoginPassword}
+          registerName={registerName}
+          setRegisterName={setRegisterName}
+          registerPhone={registerPhone}
+          setRegisterPhone={setRegisterPhone}
+          driverCccd={driverCccd}
+          setDriverCccd={setDriverCccd}
+          driverVehicleType={driverVehicleType}
+          setDriverVehicleType={setDriverVehicleType}
+          driverLicensePlate={driverLicensePlate}
+          setDriverLicensePlate={setDriverLicensePlate}
+          driverLicenseNumber={driverLicenseNumber}
+          setDriverLicenseNumber={setDriverLicenseNumber}
+          merchantStoreName={merchantStoreName}
+          setMerchantStoreName={setMerchantStoreName}
+          merchantPhone={merchantPhone}
+          setMerchantPhone={setMerchantPhone}
+          merchantAddress={merchantAddress}
+          setMerchantAddress={setMerchantAddress}
+          merchantOpenHours={merchantOpenHours}
+          setMerchantOpenHours={setMerchantOpenHours}
+          merchantBankName={merchantBankName}
+          setMerchantBankName={setMerchantBankName}
+          merchantBankAccount={merchantBankAccount}
+          setMerchantBankAccount={setMerchantBankAccount}
+          merchantBankOwner={merchantBankOwner}
+          setMerchantBankOwner={setMerchantBankOwner}
+          handleAuthSubmit={handleAuthSubmit}
+          handleGoogleSignIn={handleGoogleSignIn}
+          firebaseLoading={firebaseLoading}
+          firebaseError={firebaseError}
+        />
       </ClickSpark>
     );
   }
