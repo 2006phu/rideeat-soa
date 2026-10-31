@@ -476,6 +476,7 @@ export default function App() {
   const [merchantTodayRevenue, setMerchantTodayRevenue] = useState(680000);
   const [merchantCompletedOrdersCount, setMerchantCompletedOrdersCount] = useState(8);
   const [menuStockStatus, setMenuStockStatus] = useState({}); // { [dishId]: boolean }
+  const [merchantFilterStatus, setMerchantFilterStatus] = useState('ALL'); // ALL | CONFIRMED | PREPARING | READY | DELIVERED
   const [merchantOrders, setMerchantOrders] = useState([
     {
       orderId: 'ORD-882194',
@@ -3045,7 +3046,7 @@ Quy tắc giao tiếp:
             )}
           </div>
 
-          <div className="card">
+          <div className="card" id="customer-cart-section">
             <div className="card-header">
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ShoppingBag className="w-5 h-5 text-emerald-600" />
@@ -3174,6 +3175,36 @@ Quy tắc giao tiếp:
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE FLOATING CART BAR (FOOD ORDERING) */}
+      {activeTab === 'FOOD' && cart.length > 0 && (
+        <div
+          className="mobile-floating-cart-bar"
+          onClick={() => {
+            const el = document.getElementById('customer-cart-section');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="mobile-cart-badge">
+              <ShoppingBag className="w-4 h-4 text-white" />
+              <span className="mobile-cart-count">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.94rem' }}>
+                {foodFinalTotal.toLocaleString('vi-VN')} đ
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#a7f3d0' }}>
+                {cart.length} món ăn • Nhấn để xem giỏ & thanh toán
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ffffff', fontWeight: 700, fontSize: '0.86rem' }}>
+            <span>Thanh toán</span>
+            <ArrowUpRight className="w-4 h-4 text-emerald-400" />
           </div>
         </div>
       )}
@@ -3770,123 +3801,156 @@ Quy tắc giao tiếp:
                 <span className="badge-soa">Thời gian thực</span>
               </div>
 
-              {merchantOrders.length === 0 ? (
-                <div className="price-sub" style={{ padding: '30px', textAlign: 'center' }}>
-                  Hiện chưa có đơn đặt món nào. Hãy click "Mô phỏng đơn hàng mới" để thử nghiệm!
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {merchantOrders.map((ord) => {
-                    const isConfirmed = ord.status === 'CONFIRMED' || ord.status === 'PENDING';
-                    const isPreparing = ord.status === 'PREPARING';
-                    const isReady = ord.status === 'READY' || ord.status === 'READY_FOR_PICKUP';
-                    const isDelivered = ord.status === 'DELIVERED';
+              {/* Mobile / Responsive Filter Chips */}
+              <div className="uiv-category-scroll" style={{ marginBottom: '12px', marginTop: '0' }}>
+                {[
+                  { key: 'ALL', label: `Tất cả (${merchantOrders.length})` },
+                  { key: 'CONFIRMED', label: `Đơn mới (${merchantOrders.filter((o) => o.status === 'CONFIRMED' || o.status === 'PENDING').length})` },
+                  { key: 'PREPARING', label: `Bếp nấu (${merchantOrders.filter((o) => o.status === 'PREPARING').length})` },
+                  { key: 'READY', label: `Chờ shipper (${merchantOrders.filter((o) => o.status === 'READY' || o.status === 'READY_FOR_PICKUP').length})` },
+                  { key: 'DELIVERED', label: `Đã giao (${merchantOrders.filter((o) => o.status === 'DELIVERED').length})` }
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    className={`uiv-category-chip ${merchantFilterStatus === f.key ? 'active' : ''}`}
+                    onClick={() => setMerchantFilterStatus(f.key)}
+                  >
+                    <span>{f.label}</span>
+                  </button>
+                ))}
+              </div>
 
-                    return (
-                      <div
-                        key={ord.orderId}
-                        style={{
-                          background: isDelivered ? '#f8fafc' : '#ffffff',
-                          border: `1px solid ${isConfirmed ? '#f59e0b' : isPreparing ? '#3b82f6' : isReady ? '#10b981' : '#e2e8f0'}`,
-                          borderRadius: '12px',
-                          padding: '14px',
-                          boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <div>
-                            <span style={{ fontWeight: 800, fontSize: '0.94rem', color: '#0f172a' }}>
-                              #{ord.orderId}
-                            </span>
-                            <span className="price-sub" style={{ marginLeft: '8px' }}>
-                              ({ord.orderTime || 'Vừa xong'})
-                            </span>
-                          </div>
-                          <span
-                            className="badge-soa"
-                            style={{
-                              background: isConfirmed ? '#fef3c7' : isPreparing ? '#eff6ff' : isReady ? '#ecfdf5' : '#f1f5f9',
-                              color: isConfirmed ? '#b45309' : isPreparing ? '#1d4ed8' : isReady ? '#047857' : '#64748b',
-                              borderColor: isConfirmed ? '#fde68a' : isPreparing ? '#bfdbfe' : isReady ? '#a7f3d0' : '#cbd5e1'
-                            }}
-                          >
-                            {isConfirmed ? '🔔 Đơn mới cần nhận' : isPreparing ? '🍳 Bếp đang nấu' : isReady ? '🛵 Chờ shipper lấy' : '✓ Đã hoàn thành'}
-                          </span>
-                        </div>
+              {(() => {
+                const displayedOrders = merchantOrders.filter((o) => {
+                  if (merchantFilterStatus === 'ALL') return true;
+                  if (merchantFilterStatus === 'CONFIRMED') return o.status === 'CONFIRMED' || o.status === 'PENDING';
+                  if (merchantFilterStatus === 'READY') return o.status === 'READY' || o.status === 'READY_FOR_PICKUP';
+                  return o.status === merchantFilterStatus;
+                });
 
-                        <div className="price-sub" style={{ marginBottom: '6px' }}>
-                          Khách hàng: <strong>{ord.customerName}</strong> ({ord.customerPhone})
-                        </div>
+                if (displayedOrders.length === 0) {
+                  return (
+                    <div className="price-sub" style={{ padding: '28px', textAlign: 'center' }}>
+                      Không có đơn hàng nào trong trạng thái này.
+                    </div>
+                  );
+                }
 
-                        {/* Items list */}
-                        <div style={{ background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', marginBottom: '10px' }}>
-                          {ord.items.map((it, idx) => (
-                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '2px 0' }}>
-                              <span>
-                                {it.qty}x {it.name}
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {displayedOrders.map((ord) => {
+                      const isConfirmed = ord.status === 'CONFIRMED' || ord.status === 'PENDING';
+                      const isPreparing = ord.status === 'PREPARING';
+                      const isReady = ord.status === 'READY' || ord.status === 'READY_FOR_PICKUP';
+                      const isDelivered = ord.status === 'DELIVERED';
+
+                      return (
+                        <div
+                          key={ord.orderId}
+                          style={{
+                            background: isDelivered ? '#f8fafc' : '#ffffff',
+                            border: `1px solid ${isConfirmed ? '#f59e0b' : isPreparing ? '#3b82f6' : isReady ? '#10b981' : '#e2e8f0'}`,
+                            borderRadius: '12px',
+                            padding: '14px',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <div>
+                              <span style={{ fontWeight: 800, fontSize: '0.94rem', color: '#0f172a' }}>
+                                #{ord.orderId}
                               </span>
-                              <span style={{ fontWeight: 600 }}>{(it.price * it.qty).toLocaleString('vi-VN')} đ</span>
+                              <span className="price-sub" style={{ marginLeft: '8px' }}>
+                                ({ord.orderTime || 'Vừa xong'})
+                              </span>
                             </div>
-                          ))}
-                          <div style={{ borderTop: '1px solid #e2e8f0', marginTop: '6px', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
-                            <span>Tổng đơn thu khách:</span>
-                            <span style={{ color: '#00b14f' }}>{ord.total.toLocaleString('vi-VN')} đ</span>
+                            <span
+                              className="badge-soa"
+                              style={{
+                                background: isConfirmed ? '#fef3c7' : isPreparing ? '#eff6ff' : isReady ? '#ecfdf5' : '#f1f5f9',
+                                color: isConfirmed ? '#b45309' : isPreparing ? '#1d4ed8' : isReady ? '#047857' : '#64748b',
+                                borderColor: isConfirmed ? '#fde68a' : isPreparing ? '#bfdbfe' : isReady ? '#a7f3d0' : '#cbd5e1'
+                              }}
+                            >
+                              {isConfirmed ? '🔔 Đơn mới cần nhận' : isPreparing ? '🍳 Bếp đang nấu' : isReady ? '🛵 Chờ shipper lấy' : '✓ Đã hoàn thành'}
+                            </span>
+                          </div>
+
+                          <div className="price-sub" style={{ marginBottom: '6px' }}>
+                            Khách hàng: <strong>{ord.customerName}</strong> ({ord.customerPhone})
+                          </div>
+
+                          {/* Items list */}
+                          <div style={{ background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', marginBottom: '10px' }}>
+                            {ord.items.map((it, idx) => (
+                              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '2px 0' }}>
+                                <span>
+                                  {it.qty}x {it.name}
+                                </span>
+                                <span style={{ fontWeight: 600 }}>{(it.price * it.qty).toLocaleString('vi-VN')} đ</span>
+                              </div>
+                            ))}
+                            <div style={{ borderTop: '1px solid #e2e8f0', marginTop: '6px', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
+                              <span>Tổng đơn thu khách:</span>
+                              <span style={{ color: '#00b14f' }}>{ord.total.toLocaleString('vi-VN')} đ</span>
+                            </div>
+                          </div>
+
+                          {/* Shipper & Pickup Pin */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#64748b', marginBottom: '10px' }}>
+                            <span>
+                              Shipper: <strong>{ord.shipper?.name || 'Trần Minh Tài'}</strong> ({ord.shipper?.plate || '59-X3 888.99'})
+                            </span>
+                            <span style={{ fontWeight: 700, color: '#1d4ed8' }}>
+                              Mã PIN lấy món: {ord.pickupPin || '5812'}
+                            </span>
+                          </div>
+
+                          {/* Kanban Action Buttons */}
+                          <div>
+                            {isConfirmed && (
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ width: '100%', padding: '8px', background: '#f59e0b', borderColor: '#f59e0b' }}
+                                onClick={() => handleUpdateOrderStatus(ord.orderId, 'PREPARING')}
+                              >
+                                🍳 Nhận đơn & Báo bếp nấu món
+                              </button>
+                            )}
+                            {isPreparing && (
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ width: '100%', padding: '8px', background: '#3b82f6', borderColor: '#3b82f6' }}
+                                onClick={() => handleUpdateOrderStatus(ord.orderId, 'READY')}
+                              >
+                                🍽️ Món đã nấu xong &rarr; Gọi Shipper vào lấy
+                              </button>
+                            )}
+                            {isReady && (
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ width: '100%', padding: '8px', background: '#00b14f', borderColor: '#00b14f' }}
+                                onClick={() => handleUpdateOrderStatus(ord.orderId, 'DELIVERED')}
+                              >
+                                📦 Đã bàn giao cho Shipper &rarr; Hoàn tất đơn
+                              </button>
+                            )}
+                            {isDelivered && (
+                              <div style={{ textAlign: 'center', fontSize: '0.82rem', color: '#059669', fontWeight: 600 }}>
+                                ✓ Đơn hàng đã giao thành công và tiền đã cộng vào ví quán.
+                              </div>
+                            )}
                           </div>
                         </div>
-
-                        {/* Shipper & Pickup Pin */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#64748b', marginBottom: '10px' }}>
-                          <span>
-                            Shipper: <strong>{ord.shipper?.name || 'Trần Minh Tài'}</strong> ({ord.shipper?.plate || '59-X3 888.99'})
-                          </span>
-                          <span style={{ fontWeight: 700, color: '#1d4ed8' }}>
-                            Mã PIN lấy món: {ord.pickupPin || '5812'}
-                          </span>
-                        </div>
-
-                        {/* Kanban Action Buttons */}
-                        <div>
-                          {isConfirmed && (
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              style={{ width: '100%', padding: '8px', background: '#f59e0b', borderColor: '#f59e0b' }}
-                              onClick={() => handleUpdateOrderStatus(ord.orderId, 'PREPARING')}
-                            >
-                              🍳 Nhận đơn & Báo bếp nấu món
-                            </button>
-                          )}
-                          {isPreparing && (
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              style={{ width: '100%', padding: '8px', background: '#3b82f6', borderColor: '#3b82f6' }}
-                              onClick={() => handleUpdateOrderStatus(ord.orderId, 'READY')}
-                            >
-                              🍽️ Món đã nấu xong &rarr; Gọi Shipper vào lấy
-                            </button>
-                          )}
-                          {isReady && (
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              style={{ width: '100%', padding: '8px', background: '#00b14f', borderColor: '#00b14f' }}
-                              onClick={() => handleUpdateOrderStatus(ord.orderId, 'DELIVERED')}
-                            >
-                              📦 Đã bàn giao cho Shipper &rarr; Hoàn tất đơn
-                            </button>
-                          )}
-                          {isDelivered && (
-                            <div style={{ textAlign: 'center', fontSize: '0.82rem', color: '#059669', fontWeight: 600 }}>
-                              ✓ Đơn hàng đã giao thành công và tiền đã cộng vào ví quán.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* CỘT PHẢI: QUẢN LÝ THỰC ĐƠN & BẬT/TẮT TÌNH TRẠNG CÒN MÓN */}
