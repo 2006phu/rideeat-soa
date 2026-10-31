@@ -506,7 +506,8 @@ export default function App() {
   const [driverLicenseNumber, setDriverLicenseNumber] = useState('GPLX-790123456');
   // Merchant Specific Fields
   const [merchantStoreName, setMerchantStoreName] = useState('Cơm Tấm Ba Ghiền - Sài Gòn');
-  const [merchantAddress, setMerchantAddress] = useState('84 Đặng Văn Ngữ, Phú Nhuận, TP.HCM');
+  const [merchantPhone, setMerchantPhone] = useState('0909123456');
+    const [merchantAddress, setMerchantAddress] = useState('84 Đặng Văn Ngữ, Phú Nhuận, TP.HCM');
   const [merchantCuisine, setMerchantCuisine] = useState('RICE');
   const [merchantBankName, setMerchantBankName] = useState('Vietcombank');
   const [merchantBankAccount, setMerchantBankAccount] = useState('0071009988776');
