@@ -393,6 +393,21 @@ export default function App() {
   const leafletMapRef = useRef(null);
   const leafletLayerGroupRef = useRef(null);
 
+  // Driver Map Refs (GrabDriver Live GPS HUD)
+  const driverMapContainerRef = useRef(null);
+  const driverLeafletMapRef = useRef(null);
+  const driverLayerGroupRef = useRef(null);
+
+  // Merchant Add Dish Modal States
+  const [showAddDishModal, setShowAddDishModal] = useState(false);
+  const [newDishName, setNewDishName] = useState('');
+  const [newDishPrice, setNewDishPrice] = useState('65000');
+  const [newDishCalories, setNewDishCalories] = useState('520');
+  const [newDishPrepTime, setNewDishPrepTime] = useState('15');
+  const [newDishDesc, setNewDishDesc] = useState('');
+  const [newDishIconCode, setNewDishIconCode] = useState('cooking-pot');
+  const [newDishBadge, setNewDishBadge] = useState('MỚI');
+
   // Food State
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
@@ -674,6 +689,67 @@ export default function App() {
       ...prev,
       [dishId]: prev[dishId] === false ? true : false
     }));
+  };
+
+  // Merchant Add New Dish to Menu
+  const handleAddNewDish = (e) => {
+    e.preventDefault();
+    if (!newDishName.trim()) {
+      alert('Vui lòng nhập tên món ăn!');
+      return;
+    }
+    const priceNum = parseInt(newDishPrice, 10);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      alert('Đơn giá món ăn phải lớn hơn 0đ!');
+      return;
+    }
+
+    const newDishId = `dish-custom-${Date.now().toString().slice(-6)}`;
+    const createdDish = {
+      id: newDishId,
+      name: newDishName.trim(),
+      price: priceNum,
+      calories: parseInt(newDishCalories, 10) || 450,
+      prepTime: parseInt(newDishPrepTime, 10) || 12,
+      desc: newDishDesc.trim() || 'Món ăn đặc sản thơm ngon chế biến từ nguyên liệu tươi trong ngày',
+      iconCode: newDishIconCode || 'cooking-pot',
+      badge: newDishBadge === 'NONE' ? null : newDishBadge
+    };
+
+    // Update restaurants list & selected restaurant
+    setRestaurants((prev) =>
+      prev.map((r) => {
+        if (r.id === selectedRestaurant?.id) {
+          return {
+            ...r,
+            menu: [createdDish, ...r.menu]
+          };
+        }
+        return r;
+      })
+    );
+
+    setSelectedRestaurant((prev) =>
+      prev ? { ...prev, menu: [createdDish, ...prev.menu] } : prev
+    );
+
+    // Default stock status: in-stock
+    setMenuStockStatus((prev) => ({
+      ...prev,
+      [newDishId]: true
+    }));
+
+    // Reset fields & close modal
+    setNewDishName('');
+    setNewDishPrice('65000');
+    setNewDishCalories('520');
+    setNewDishPrepTime('15');
+    setNewDishDesc('');
+    setNewDishIconCode('cooking-pot');
+    setNewDishBadge('MỚI');
+    setShowAddDishModal(false);
+
+    alert(`✅ Đã thêm món "${createdDish.name}" vào thực đơn thành công! Khách hàng có thể đặt món ngay bây giờ.`);
   };
 
   // Admin Logs
@@ -1365,6 +1441,175 @@ Quy tắc giao tiếp:
       leafletMapRef.current.remove();
       leafletMapRef.current = null;
       leafletLayerGroupRef.current = null;
+    }
+  }, [currentUser, activeTab]);
+
+  // Render Driver Leaflet Map (GrabDriver Live GPS HUD & Dispatch Navigation)
+  useEffect(() => {
+    if (!currentUser || activeTab !== 'PARTNER' || !driverMapContainerRef.current || !window.L) return;
+
+    if (!driverLeafletMapRef.current) {
+      const map = window.L.map(driverMapContainerRef.current, {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([10.774, 106.699], 14);
+
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      driverLeafletMapRef.current = map;
+      driverLayerGroupRef.current = window.L.layerGroup().addTo(map);
+    }
+
+    const map = driverLeafletMapRef.current;
+    const layerGroup = driverLayerGroupRef.current;
+    layerGroup.clearLayers();
+
+    // Default Driver Location: District 1 Central HCMC
+    const defaultDriverCoord = [10.7735, 106.6990];
+    const pickupLoc = HCMC_LOCATIONS.find((l) => l.name.includes(activeRide?.pickupName || '')) || HCMC_LOCATIONS[0];
+    const dropoffLoc = HCMC_LOCATIONS.find((l) => l.name.includes(activeRide?.dropoffName || '')) || HCMC_LOCATIONS[1];
+
+    let currentCoord = defaultDriverCoord;
+
+    if (activeRide) {
+      if (activeRide.state === 'ARRIVING') {
+        if (approachPolyline.length > 0) {
+          const idx = Math.min(approachStep, approachPolyline.length - 1);
+          currentCoord = approachPolyline[idx] || [pickupLoc.lat + 0.002, pickupLoc.lng + 0.002];
+        } else {
+          currentCoord = [pickupLoc.lat + 0.002, pickupLoc.lng + 0.002];
+        }
+      } else if (activeRide.state === 'ARRIVED') {
+        currentCoord = [pickupLoc.lat, pickupLoc.lng];
+      } else if (activeRide.state === 'IN_PROGRESS') {
+        if (routeInfo.polyline && routeInfo.polyline.length > 0) {
+          const idx = Math.min(driverStepIndex, routeInfo.polyline.length - 1);
+          currentCoord = routeInfo.polyline[idx] || [pickupLoc.lat, pickupLoc.lng];
+        }
+      } else if (activeRide.state === 'COMPLETED') {
+        currentCoord = [dropoffLoc.lat, dropoffLoc.lng];
+      }
+    }
+
+    // 1. Vehicle Marker (Rotating with bearing)
+    const isBike = (currentUser?.vehicleType || driverVehicleType) === 'BIKE';
+    const vehicleSvg = isBike
+      ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>`
+      : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`;
+
+    const driverMarkerHtml = `
+      <div class="leaflet-driver-vehicle-marker" style="transform: rotate(${driverBearing}deg); background: ${driverOnline ? '#00b14f' : '#64748b'}; border: 2.5px solid #ffffff; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
+        ${vehicleSvg}
+      </div>
+    `;
+    const driverIcon = window.L.divIcon({
+      html: driverMarkerHtml,
+      className: '',
+      iconSize: [44, 44],
+      iconAnchor: [22, 22]
+    });
+
+    window.L.marker(currentCoord, { icon: driverIcon, zIndexOffset: 1000 })
+      .addTo(layerGroup)
+      .bindPopup(`<b>${currentUser.name} (Tài xế)</b><br>${driverOnline ? '🟢 Đang trực tuyến' : '🔴 Đang tạm nghỉ'}`);
+
+    // 2. If Driver is Online & Idle: Show Radar Scanning Boundary + HCMC Hotspots
+    if (driverOnline && !activeRide) {
+      window.L.circle(currentCoord, {
+        radius: 1200,
+        color: '#00b14f',
+        fillColor: '#a7f3d0',
+        fillOpacity: 0.12,
+        weight: 1.5,
+        dashArray: '6, 6'
+      }).addTo(layerGroup);
+
+      const hotspots = [
+        { name: 'Chợ Bến Thành (Nhiều khách 🔥)', lat: 10.7726, lng: 106.6980 },
+        { name: 'Phố đi bộ Nguyễn Huệ (Cao điểm 🔥)', lat: 10.7743, lng: 106.7038 },
+        { name: 'Vinhomes Landmark 81 (Nhu cầu cao 🔥)', lat: 10.7950, lng: 106.7218 }
+      ];
+
+      hotspots.forEach((hs) => {
+        const hsHtml = `
+          <div style="background: #ef4444; color: #ffffff; font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 99px; box-shadow: 0 2px 8px rgba(239,68,68,0.4); white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+            <span>🔥</span><span>${hs.name.split('(')[0]}</span>
+          </div>
+        `;
+        const hsIcon = window.L.divIcon({
+          html: hsHtml,
+          className: '',
+          iconSize: [120, 26],
+          iconAnchor: [60, 13]
+        });
+        window.L.marker([hs.lat, hs.lng], { icon: hsIcon }).addTo(layerGroup);
+      });
+
+      map.panTo(currentCoord, { animate: true });
+    }
+
+    // 3. If Active Ride Exists: Draw route and pins
+    if (activeRide) {
+      const pHtml = `
+        <div class="leaflet-svg-pin-wrapper pickup">
+          <div class="leaflet-pin-dot">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <span>ĐÓN: ${(activeRide.pickupName || pickupLoc.name).split(',')[0]}</span>
+        </div>
+      `;
+      const pIcon = window.L.divIcon({ html: pHtml, className: '', iconSize: [160, 36], iconAnchor: [80, 18] });
+      window.L.marker([pickupLoc.lat, pickupLoc.lng], { icon: pIcon }).addTo(layerGroup);
+
+      const dHtml = `
+        <div class="leaflet-svg-pin-wrapper dropoff">
+          <div class="leaflet-pin-dot">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </div>
+          <span>TRẢ: ${(activeRide.dropoffName || dropoffLoc.name).split(',')[0]}</span>
+        </div>
+      `;
+      const dIcon = window.L.divIcon({ html: dHtml, className: '', iconSize: [160, 36], iconAnchor: [80, 18] });
+      window.L.marker([dropoffLoc.lat, dropoffLoc.lng], { icon: dIcon }).addTo(layerGroup);
+
+      if (activeRide.state === 'ARRIVING' && approachPolyline.length > 1) {
+        const approachLine = window.L.polyline(approachPolyline, {
+          color: '#3b82f6',
+          weight: 5,
+          dashArray: '8, 8',
+          opacity: 0.9
+        }).addTo(layerGroup);
+        map.fitBounds(approachLine.getBounds(), { padding: [50, 50] });
+      } else if (activeRide.state === 'IN_PROGRESS' && routeInfo.polyline && routeInfo.polyline.length > 1) {
+        window.L.polyline(routeInfo.polyline, {
+          color: '#00b14f',
+          weight: 6,
+          opacity: 0.95
+        }).addTo(layerGroup);
+        map.panTo(currentCoord, { animate: true, duration: 0.4 });
+      }
+    }
+  }, [
+    currentUser,
+    activeTab,
+    driverOnline,
+    activeRide,
+    approachStep,
+    driverStepIndex,
+    driverBearing,
+    currentSpeedKmh,
+    approachPolyline,
+    routeInfo,
+    driverVehicleType
+  ]);
+
+  useEffect(() => {
+    if ((!currentUser || activeTab !== 'PARTNER') && driverLeafletMapRef.current) {
+      driverLeafletMapRef.current.remove();
+      driverLeafletMapRef.current = null;
+      driverLayerGroupRef.current = null;
     }
   }, [currentUser, activeTab]);
 
@@ -3064,6 +3309,72 @@ Quy tắc giao tiếp:
             </div>
           </div>
 
+          {/* DRIVER LIVE NAVIGATION MAP (GRABDRIVER HUD) */}
+          <div className="card" style={{ padding: '18px' }}>
+            <div className="card-header" style={{ marginBottom: '12px' }}>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Compass className="w-5 h-5 text-emerald-600 animate-spin" style={{ animationDuration: '6s' }} />
+                <span>Bản đồ Điều hướng GPS Trực tuyến (GrabDriver Live HUD)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  className="badge-soa"
+                  style={{
+                    background: driverOnline ? '#ecfdf5' : '#f1f5f9',
+                    color: driverOnline ? '#047857' : '#64748b',
+                    borderColor: driverOnline ? '#a7f3d0' : '#cbd5e1'
+                  }}
+                >
+                  {driverOnline ? '🟢 GPS: Tín hiệu mạnh (±3m)' : '🔴 GPS: Tạm dừng'}
+                </span>
+                <span className="oop-tag" style={{ color: '#2563eb' }}>
+                  🧭 {driverBearing}° | ⚡ {currentSpeedKmh || 0} km/h
+                </span>
+              </div>
+            </div>
+
+            {/* Map Canvas */}
+            <div
+              style={{
+                height: '360px',
+                width: '100%',
+                borderRadius: '14px',
+                overflow: 'hidden',
+                border: '1px solid #e2e8f0',
+                position: 'relative'
+              }}
+            >
+              <div ref={driverMapContainerRef} style={{ height: '100%', width: '100%' }} />
+            </div>
+
+            <div
+              style={{
+                marginTop: '10px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px',
+                fontSize: '0.8rem',
+                color: '#64748b'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Radar className="w-3.5 h-3.5 text-emerald-600" />
+                <span>
+                  {activeRide
+                    ? `Đang điều hướng theo lộ trình: ${activeRide.pickupName || 'Điểm đón'} &rarr; ${activeRide.dropoffName || 'Điểm trả'}`
+                    : driverOnline
+                    ? 'Vùng xanh: Bán kính trực tuyến 1.2km quanh xe. Các điểm 🔥 là khu vực tập trung nhu cầu cao.'
+                    : 'Bản đồ đang ở trạng thái nghỉ. Bật Trực tuyến để bắt đầu quét khách.'}
+                </span>
+              </div>
+              <div style={{ fontWeight: 600, color: '#0f172a' }}>
+                Phương tiện: {currentUser.vehicle || 'Honda SH 150i (59-X3 888.99)'}
+              </div>
+            </div>
+          </div>
+
           {/* 3. INCOMING RIDE OFFER CARD (15s COUNTDOWN ALERT) */}
           {incomingRideOffer && (
             <div
@@ -3583,9 +3894,26 @@ Quy tắc giao tiếp:
               <div className="card-header" style={{ marginBottom: '14px' }}>
                 <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Utensils className="w-5 h-5 text-emerald-600" />
-                  <span>Quản lý tình trạng Còn món / Hết món</span>
+                  <span>Quản lý thực đơn ({selectedRestaurant?.menu?.length || 0} món)</span>
                 </div>
-                <span className="oop-tag">Bán hàng tức thì</span>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{
+                    fontSize: '0.82rem',
+                    padding: '6px 14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    width: 'auto',
+                    background: '#00b14f',
+                    borderColor: '#00b14f'
+                  }}
+                  onClick={() => setShowAddDishModal(true)}
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Thêm món mới</span>
+                </button>
               </div>
               <div className="price-sub" style={{ marginBottom: '14px' }}>
                 Bật/Tắt trạng thái từng món ăn. Khi gạt sang "Tạm hết hôm nay", khách hàng sẽ không thể đặt món đó.
@@ -4389,6 +4717,152 @@ Quy tắc giao tiếp:
                 Đóng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL THÊM MÓN ĂN MỚI CHO QUÁN (GRABMERCHANT DISH CREATOR) */}
+      {showAddDishModal && (
+        <div className="modal-backdrop" onClick={() => setShowAddDishModal(false)}>
+          <div className="modal-card" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CookingPot className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Thêm món ăn mới vào thực đơn</h3>
+                  <p className="price-sub" style={{ margin: 0, fontSize: '0.78rem' }}>
+                    Quán: <strong>{selectedRestaurant?.name || 'Gian hàng ẩm thực'}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                onClick={() => setShowAddDishModal(false)}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddNewDish}>
+              <div className="form-group">
+                <label className="form-label">Tên món ăn <span style={{ color: '#ef4444' }}>*</span></label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ví dụ: Cơm Tấm Sườn Cọng Nướng Muối Ớt..."
+                  value={newDishName}
+                  onChange={(e) => setNewDishName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grid-2" style={{ gap: '10px' }}>
+                <div className="form-group">
+                  <label className="form-label">Đơn giá bán (VNĐ) <span style={{ color: '#ef4444' }}>*</span></label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="75000"
+                    value={newDishPrice}
+                    onChange={(e) => setNewDishPrice(e.target.value)}
+                    min="1000"
+                    step="1000"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Biểu tượng món (Icon)</label>
+                  <select
+                    className="form-select"
+                    value={newDishIconCode}
+                    onChange={(e) => setNewDishIconCode(e.target.value)}
+                  >
+                    <option value="cooking-pot">🍲 Món nấu / Cơm đặc sản (Cooking Pot)</option>
+                    <option value="soup">🍜 Phở / Món nước / Hủ tiếu (Soup)</option>
+                    <option value="drumstick">🍗 Gà rán / Gà nướng (Drumstick)</option>
+                    <option value="beef">🥩 Bò bít tết / Bò tái lăn (Beef)</option>
+                    <option value="fish">🐟 Cá / Hải sản tươi (Fish)</option>
+                    <option value="sandwich">🥪 Bánh mì / Burger (Sandwich)</option>
+                    <option value="salad">🥗 Salad healthy / Món chay (Salad)</option>
+                    <option value="coffee">☕ Cà phê / Thức uống đậm đà (Coffee)</option>
+                    <option value="cup-soda">🥤 Trà sữa / Nước giải khát (Soda)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid-3" style={{ gap: '10px' }}>
+                <div className="form-group">
+                  <label className="form-label">Chuẩn bị (phút)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={newDishPrepTime}
+                    onChange={(e) => setNewDishPrepTime(e.target.value)}
+                    min="1"
+                    max="60"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Lượng calo (kcal)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={newDishCalories}
+                    onChange={(e) => setNewDishCalories(e.target.value)}
+                    min="10"
+                    max="2000"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Nhãn nổi bật (Badge)</label>
+                  <select
+                    className="form-select"
+                    value={newDishBadge}
+                    onChange={(e) => setNewDishBadge(e.target.value)}
+                  >
+                    <option value="MỚI">✨ MỚI</option>
+                    <option value="BESTSELLER">🔥 BESTSELLER</option>
+                    <option value="THANH NHIỆT">❄️ THANH NHIỆT</option>
+                    <option value="ĐẶC BIỆT">⭐ ĐẶC BIỆT</option>
+                    <option value="GIẢM 20%">🏷️ GIẢM 20%</option>
+                    <option value="NONE">(Không có nhãn)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label">Mô tả hương vị / Thành phần món ăn</label>
+                <textarea
+                  className="form-input"
+                  rows="2"
+                  placeholder="Thịt nướng than hoa thơm lừng ăn kèm nước mắm gia truyền..."
+                  value={newDishDesc}
+                  onChange={(e) => setNewDishDesc(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ flex: 1 }}
+                  onClick={() => setShowAddDishModal(false)}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ flex: 1.5, background: '#00b14f', borderColor: '#00b14f' }}
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Lưu & Mở bán món ăn ngay</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
