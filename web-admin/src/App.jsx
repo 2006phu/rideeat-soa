@@ -80,7 +80,10 @@ import {
   Check,
   Truck,
   Building2,
-  CreditCard
+  CreditCard,
+  Sun,
+  Moon,
+  Image as ImageIcon
 } from 'lucide-react';
 
 // Web Audio API Synthesizer for Lifelike App Chimes (Zero external file dependencies)
@@ -398,6 +401,28 @@ export default function App() {
   const driverLeafletMapRef = useRef(null);
   const driverLayerGroupRef = useRef(null);
 
+  // Theme Mode (Light / Dark) with Persistent LocalStorage
+  const [themeMode, setThemeMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('RIDEEAT_THEME');
+      if (saved) return saved;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-theme', themeMode);
+      localStorage.setItem('RIDEEAT_THEME', themeMode);
+    } catch (e) {}
+  }, [themeMode]);
+
+  const toggleTheme = () => {
+    setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
   // Merchant Add Dish Modal States
   const [showAddDishModal, setShowAddDishModal] = useState(false);
   const [newDishName, setNewDishName] = useState('');
@@ -407,12 +432,20 @@ export default function App() {
   const [newDishDesc, setNewDishDesc] = useState('');
   const [newDishIconCode, setNewDishIconCode] = useState('cooking-pot');
   const [newDishBadge, setNewDishBadge] = useState('MỚI');
+  const [newDishImage, setNewDishImage] = useState('');
 
   // Food State
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [cart, setCart] = useState([
-    { id: 'f-01', name: 'Phở Bò Tái Lăn Đặc Biệt', price: 65000, quantity: 1, image: '🍜' }
+    {
+      id: 'f-01',
+      name: 'Phở Bò Tái Lăn Đặc Biệt',
+      price: 65000,
+      quantity: 1,
+      image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80',
+      iconCode: 'soup'
+    }
   ]);
   const [activeFoodOrder, setActiveFoodOrder] = useState(null);
 
@@ -706,6 +739,19 @@ export default function App() {
     }
 
     const newDishId = `dish-custom-${Date.now().toString().slice(-6)}`;
+    const defaultImgMap = {
+      'cooking-pot': 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
+      'soup': 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80',
+      'drumstick': 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=600&q=80',
+      'beef': 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?auto=format&fit=crop&w=600&q=80',
+      'fish': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80',
+      'sandwich': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
+      'salad': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80',
+      'coffee': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
+      'cup-soda': 'https://images.unsplash.com/photo-1558857563-b37df2dd4364?auto=format&fit=crop&w=600&q=80'
+    };
+    const dishImageUrl = newDishImage.trim() || defaultImgMap[newDishIconCode] || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80';
+
     const createdDish = {
       id: newDishId,
       name: newDishName.trim(),
@@ -714,7 +760,8 @@ export default function App() {
       prepTime: parseInt(newDishPrepTime, 10) || 12,
       desc: newDishDesc.trim() || 'Món ăn đặc sản thơm ngon chế biến từ nguyên liệu tươi trong ngày',
       iconCode: newDishIconCode || 'cooking-pot',
-      badge: newDishBadge === 'NONE' ? null : newDishBadge
+      badge: newDishBadge === 'NONE' ? null : newDishBadge,
+      image: dishImageUrl
     };
 
     // Update restaurants list & selected restaurant
@@ -748,6 +795,7 @@ export default function App() {
     setNewDishDesc('');
     setNewDishIconCode('cooking-pot');
     setNewDishBadge('MỚI');
+    setNewDishImage('');
     setShowAddDishModal(false);
 
     alert(`✅ Đã thêm món "${createdDish.name}" vào thực đơn thành công! Khách hàng có thể đặt món ngay bây giờ.`);
@@ -1997,6 +2045,26 @@ Quy tắc giao tiếp:
     return (
       <div className="auth-page">
         <div className="auth-card">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              title="Chuyển đổi giao diện Sáng / Tối"
+            >
+              {themeMode === 'light' ? (
+                <>
+                  <Moon className="w-3.5 h-3.5" />
+                  <span>Tối</span>
+                </>
+              ) : (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Sáng</span>
+                </>
+              )}
+            </button>
+          </div>
           <div className="auth-brand">
             <div className="auth-logo"><Bike className="w-7 h-7 text-white" /></div>
             <h1 style={{ fontSize: '1.4rem', fontWeight: 800 }}>RideEat</h1>
@@ -2361,6 +2429,24 @@ Quy tắc giao tiếp:
         </div>
 
         <div className="header-pills">
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={themeMode === 'light' ? 'Chuyển sang Chế độ Ban Đêm (Dark Mode)' : 'Chuyển sang Chế độ Ban Ngày (Light Mode)'}
+          >
+            {themeMode === 'light' ? (
+              <>
+                <Moon className="w-4 h-4 text-slate-700" />
+                <span>Tối</span>
+              </>
+            ) : (
+              <>
+                <Sun className="w-4 h-4 text-amber-400" />
+                <span>Sáng</span>
+              </>
+            )}
+          </button>
           <div className="wallet-pill">
             <Wallet className="w-4 h-4 text-emerald-600" />
             <span>Số dư:</span>
@@ -2973,11 +3059,30 @@ Quy tắc giao tiếp:
                       style={!isDishAvailable ? { opacity: 0.65, filter: 'grayscale(0.3)' } : {}}
                     >
                       <div className="uiv-dish-main">
-                        <div
-                          className="uiv-dish-icon-box"
-                          style={{ background: bg, borderColor: border }}
-                        >
-                          {icon}
+                        <div className="uiv-dish-media-wrapper">
+                          {dish.image ? (
+                            <img
+                              src={dish.image}
+                              alt={dish.name}
+                              className="uiv-dish-photo-img"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const fb = e.currentTarget.parentElement?.querySelector('.fallback-icon-box');
+                                if (fb) fb.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className={`uiv-dish-icon-box ${dish.image ? 'fallback-icon-box' : ''}`}
+                            style={{
+                              background: bg,
+                              borderColor: border,
+                              display: dish.image ? 'none' : 'flex'
+                            }}
+                          >
+                            {icon}
+                          </div>
                         </div>
                         <div className="uiv-dish-info">
                           <div className="uiv-dish-title-row">
@@ -3067,22 +3172,36 @@ Quy tắc giao tiếp:
                   return (
                     <div key={item.id} className="uiv-dish-card" style={{ padding: '10px 12px', marginBottom: '4px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            width: '38px',
-                            height: '38px',
-                            borderRadius: '10px',
-                            background: bg,
-                            borderColor: border,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}
-                        >
-                          {icon}
+                        <div className="cart-item-thumb-box">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="cart-item-photo"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const fb = e.currentTarget.nextElementSibling;
+                                if (fb) fb.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '10px',
+                              background: bg,
+                              borderColor: border,
+                              borderWidth: '1px',
+                              borderStyle: 'solid',
+                              display: item.image ? 'none' : 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}
+                          >
+                            {icon}
+                          </div>
                         </div>
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                           <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -3997,17 +4116,27 @@ Quy tắc giao tiếp:
                           justifyContent: 'space-between',
                           padding: '12px 14px',
                           borderRadius: '12px',
-                          border: '1px solid #e2e8f0',
-                          background: isAvailable ? '#ffffff' : '#f8fafc',
+                          border: '1px solid var(--border-color)',
+                          background: isAvailable ? 'var(--bg-card)' : 'var(--bg-subtle)',
                           opacity: isAvailable ? 1 : 0.75
                         }}
                       >
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>
-                            {dish.name}
-                          </div>
-                          <div className="price-sub" style={{ marginTop: '2px' }}>
-                            Giá bán: <strong>{dish.price.toLocaleString('vi-VN')} đ</strong> • Chuẩn bị: {dish.prepTime || 12}p
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {dish.image ? (
+                            <img
+                              src={dish.image}
+                              alt={dish.name}
+                              style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          ) : null}
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
+                              {dish.name}
+                            </div>
+                            <div className="price-sub" style={{ marginTop: '2px' }}>
+                              Giá bán: <strong>{dish.price.toLocaleString('vi-VN')} đ</strong> • Chuẩn bị: {dish.prepTime || 12}p
+                            </div>
                           </div>
                         </div>
 
@@ -4894,6 +5023,62 @@ Quy tắc giao tiếp:
                     <option value="GIẢM 20%">🏷️ GIẢM 20%</option>
                     <option value="NONE">(Không có nhãn)</option>
                   </select>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Hình ảnh món ăn thực tế (URL hoặc chọn mẫu ảnh gợi ý)</span>
+                </label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="url"
+                    className="form-input"
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={newDishImage}
+                    onChange={(e) => setNewDishImage(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  {newDishImage && (
+                    <img
+                      src={newDishImage}
+                      alt="Preview"
+                      style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border-color)' }}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', alignSelf: 'center' }}>Gợi ý mẫu:</span>
+                  {[
+                    { label: '🍜 Phở bò', url: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80', icon: 'soup' },
+                    { label: '🥩 Cơm sườn', url: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?auto=format&fit=crop&w=600&q=80', icon: 'beef' },
+                    { label: '🍗 Gà rán', url: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=600&q=80', icon: 'drumstick' },
+                    { label: '🍔 Burger', url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80', icon: 'sandwich' },
+                    { label: '🥗 Salad', url: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80', icon: 'salad' },
+                    { label: '🥤 Trà sữa', url: 'https://images.unsplash.com/photo-1558857563-b37df2dd4364?auto=format&fit=crop&w=600&q=80', icon: 'cup-soda' },
+                    { label: '🥐 Bánh tươi', url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80', icon: 'cake' }
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      className="badge-soa"
+                      style={{
+                        cursor: 'pointer',
+                        background: newDishImage === preset.url ? 'var(--primary-light)' : 'var(--bg-subtle)',
+                        color: newDishImage === preset.url ? 'var(--primary)' : 'var(--text-primary)',
+                        borderColor: newDishImage === preset.url ? 'var(--primary)' : 'var(--border-color)',
+                        fontSize: '0.72rem'
+                      }}
+                      onClick={() => {
+                        setNewDishImage(preset.url);
+                        setNewDishIconCode(preset.icon);
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

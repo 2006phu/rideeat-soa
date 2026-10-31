@@ -13,6 +13,25 @@
   --danger: #e11d48;
   --radius-lg: 14px;
   --radius-md: 10px;
+  --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --input-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg-page: #0b0f19;
+  --bg-card: #151c2c;
+  --bg-subtle: #1e293b;
+  --border-color: #283548;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --primary: #00b14f;
+  --primary-hover: #00c95a;
+  --primary-light: rgba(0, 177, 79, 0.15);
+  --blue: #3b82f6;
+  --blue-light: rgba(59, 130, 246, 0.15);
+  --danger: #f43f5e;
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  --input-bg: #1a2234;
 }
 
 * {
@@ -27,6 +46,7 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 code, pre, .mono {
@@ -116,6 +136,31 @@ code, pre, .mono {
   color: var(--text-primary);
 }
 
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--border-color);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
 .wallet-amount {
   color: var(--primary);
   font-weight: 700;
@@ -134,7 +179,7 @@ code, pre, .mono {
 .auth-card {
   width: 100%;
   max-width: 440px;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 18px;
   padding: 28px 24px;
@@ -241,7 +286,8 @@ code, pre, .mono {
 }
 
 .modal-card {
-  background: #ffffff;
+  background: var(--bg-card);
+  color: var(--text-primary);
   border-radius: 16px;
   border: 1px solid var(--border-color);
   width: 100%;
@@ -377,7 +423,7 @@ code, pre, .mono {
 .form-select, .form-input {
   width: 100%;
   padding: 9px 12px;
-  background: #ffffff;
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   color: var(--text-primary);
@@ -1587,8 +1633,8 @@ code, pre, .mono {
    ========================================================================== */
 
 .uiv-restaurant-banner {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 14px;
   padding: 14px 16px;
   margin-bottom: 16px;
@@ -1597,7 +1643,8 @@ code, pre, .mono {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  box-shadow: var(--card-shadow);
+  transition: all 0.25s ease;
 }
 
 .uiv-restaurant-banner-left {
@@ -1688,8 +1735,8 @@ code, pre, .mono {
 
 /* Uiverse Modern Dish Card */
 .uiv-dish-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 14px;
   padding: 14px;
   display: flex;
@@ -1698,25 +1745,49 @@ code, pre, .mono {
   gap: 14px;
   margin-bottom: 10px;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  box-shadow: var(--card-shadow);
 }
 
 .uiv-dish-card:hover {
   border-color: #a7f3d0;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.16), 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 
 .uiv-dish-main {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   flex: 1;
 }
 
+.uiv-dish-media-wrapper {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+}
+
+.uiv-dish-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uiv-dish-card:hover .uiv-dish-photo-img {
+  transform: scale(1.08);
+}
+
 .uiv-dish-icon-box {
-  width: 52px;
-  height: 52px;
+  width: 100%;
+  height: 100%;
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -1724,6 +1795,24 @@ code, pre, .mono {
   flex-shrink: 0;
   border: 1px solid transparent;
   transition: transform 0.2s ease;
+}
+
+.cart-item-thumb-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+}
+
+.cart-item-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .uiv-dish-card:hover .uiv-dish-icon-box {
@@ -1746,12 +1835,12 @@ code, pre, .mono {
 .uiv-dish-title {
   font-weight: 700;
   font-size: 0.94rem;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .uiv-dish-desc {
   font-size: 0.76rem;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -2267,6 +2356,237 @@ code, pre, .mono {
   .uiv-stepper-btn {
     width: 24px;
     height: 24px;
+  }
+}
+
+/* ==========================================================================
+   Comprehensive Dark Mode Overrides & High-Contrast Night Themes
+   ========================================================================== */
+
+[data-theme="dark"] .auth-page {
+  background: radial-gradient(circle at top right, #111a2e 0%, #0b0f19 65%, #060911 100%);
+}
+
+[data-theme="dark"] .auth-card {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="dark"] .auth-role-item {
+  background: var(--bg-subtle);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .auth-role-item:hover {
+  background: #1c2638;
+  border-color: #3b82f6;
+}
+
+[data-theme="dark"] .auth-role-item.active {
+  background: rgba(0, 177, 79, 0.15);
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .card-soa,
+[data-theme="dark"] .top-header,
+[data-theme="dark"] .nav-tabs,
+[data-theme="dark"] .uiv-restaurant-banner,
+[data-theme="dark"] .uiv-dish-card,
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .partner-hud-card,
+[data-theme="dark"] .partner-metric-card,
+[data-theme="dark"] .merchant-order-card,
+[data-theme="dark"] .receipt-box {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] textarea.form-input {
+  background: var(--input-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] textarea.form-input:focus {
+  border-color: var(--primary);
+  background: #202b3f;
+}
+
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .btn-firebase {
+  background: var(--bg-subtle);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-secondary:hover,
+[data-theme="dark"] .btn-firebase:hover {
+  background: #222d42;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .chip-toggle {
+  background: var(--bg-subtle);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .chip-toggle:hover {
+  background: #222d42;
+}
+
+[data-theme="dark"] .chip-toggle.active {
+  background: rgba(0, 177, 79, 0.2);
+  border-color: var(--primary);
+  color: #34d399;
+}
+
+[data-theme="dark"] .uiv-category-chip {
+  background: var(--bg-subtle);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .uiv-category-chip:hover {
+  background: #222d42;
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .uiv-category-chip.active {
+  background: #1e293b;
+  border-color: #475569;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .uiv-stepper {
+  background: var(--bg-subtle);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .uiv-stepper-btn {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .uiv-stepper-btn:hover {
+  background: #222d42;
+}
+
+[data-theme="dark"] .uiv-stepper-count {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .history-table,
+[data-theme="dark"] .logs-table {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .history-table th,
+[data-theme="dark"] .logs-table th {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .history-table td,
+[data-theme="dark"] .logs-table td {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .history-table tr:hover,
+[data-theme="dark"] .logs-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="dark"] .mobile-bottom-nav {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .mobile-nav-btn {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .mobile-nav-btn.active {
+  color: #34d399;
+}
+
+[data-theme="dark"] .price-sub,
+[data-theme="dark"] .brand-subtitle,
+[data-theme="dark"] .uiv-dish-desc {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .uiv-dish-title,
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .brand-title h1 {
+  color: var(--text-primary);
+}
+
+/* Dark Mode Leaflet Map Tiles & Popups */
+[data-theme="dark"] .leaflet-container {
+  background: #0b0f19 !important;
+}
+
+[data-theme="dark"] .leaflet-tile {
+  filter: brightness(0.65) invert(1) contrast(2.8) hue-rotate(200deg) saturate(0.3) brightness(0.7) !important;
+}
+
+[data-theme="dark"] .leaflet-popup-content-wrapper,
+[data-theme="dark"] .leaflet-popup-tip {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ==========================================================================
+   Fluid 60FPS Micro-interactions & Animations
+   ========================================================================== */
+
+@keyframes tabEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-content,
+.partner-portal,
+.merchant-portal {
+  animation: tabEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cartBadgeBounce {
+  0% { transform: scale(0.7); }
+  50% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+.uiv-count-pill,
+.mobile-cart-count {
+  animation: cartBadgeBounce 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Responsive Dish Thumbnail sizes */
+@media (max-width: 640px) {
+  .uiv-dish-media-wrapper {
+    width: 68px;
+    height: 68px;
+    border-radius: 12px;
+  }
+
+  .uiv-dish-main {
+    gap: 10px;
   }
 }
 
