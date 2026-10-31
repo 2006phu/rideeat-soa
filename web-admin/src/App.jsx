@@ -4,6 +4,7 @@ import ClickSpark from './components/ClickSpark.jsx';
 import MotionSwitch from './components/MotionSwitch.jsx';
 import Loader from './components/Loader.jsx';
 import WaveInput from './components/WaveInput.jsx';
+import StarRating from './components/StarRating.jsx';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
@@ -4380,16 +4381,13 @@ Quy tắc giao tiếp:
 
             <div className="form-group">
               <label className="form-label">Chất lượng phục vụ ({ratingStars} sao)</label>
-              <div style={{ display: 'flex', gap: '8px', cursor: 'pointer', margin: '4px 0 12px' }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={`w-7 h-7 cursor-pointer transition-transform hover:scale-110 ${
-                      star <= ratingStars ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-                    }`}
-                    onClick={() => setRatingStars(star)}
-                  />
-                ))}
+              <div style={{ margin: '8px 0 14px' }}>
+                <StarRating
+                  value={ratingStars}
+                  onChange={setRatingStars}
+                  name="service-tab-rating"
+                  size="2.2rem"
+                />
               </div>
             </div>
 
@@ -4809,16 +4807,13 @@ Quy tắc giao tiếp:
               </p>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', margin: '14px 0', cursor: 'pointer' }}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`w-8 h-8 cursor-pointer transition-transform hover:scale-125 ${
-                    star <= ratingStars ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-                  }`}
-                  onClick={() => setRatingStars(star)}
-                />
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '14px 0' }}>
+              <StarRating
+                value={ratingStars}
+                onChange={setRatingStars}
+                name="trip-completed-rating"
+                size="2.4rem"
+              />
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px', justifyContent: 'center' }}>
