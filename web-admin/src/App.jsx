@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useMotionValueEvent } from 'motion/react';
 import ClickSpark from './components/ClickSpark.jsx';
 import MotionSwitch from './components/MotionSwitch.jsx';
+import Loader from './components/Loader.jsx';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
@@ -2409,6 +2410,12 @@ Quy tắc giao tiếp:
             </span>
           </button>
 
+          {firebaseLoading && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+              <Loader text="loading" />
+            </div>
+          )}
+
           {firebaseError && (
             <div style={{ marginTop: '12px', fontSize: '13px', color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', textAlign: 'left', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <AlertTriangle className="w-4 h-4 text-rose-500" />
@@ -2826,21 +2833,26 @@ Quy tắc giao tiếp:
                   </div>
                 </div>
 
-                {/* PROGRESS BAR FOR SEARCHING OR TRAVEL */}
+                {/* PROGRESS BAR & LOADER FOR SEARCHING */}
                 {rideStage === 'SEARCHING' && (
-                  <div>
-                    <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', marginTop: '4px' }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          width: `${searchProgress}%`,
-                          background: 'linear-gradient(90deg, #3b82f6, #00b14f)',
-                          transition: 'width 0.4s ease'
-                        }}
-                      />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
+                    <div style={{ flex: 1, minWidth: '220px' }}>
+                      <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${searchProgress}%`,
+                            background: 'linear-gradient(90deg, #3b82f6, #00b14f)',
+                            transition: 'width 0.4s ease'
+                          }}
+                        />
+                      </div>
+                      <div className="price-sub" style={{ marginTop: '4px' }}>
+                        Đang quét 4 tài xế trong bán kính 1km xung quanh {(HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]).name.split(',')[0]}...
+                      </div>
                     </div>
-                    <div className="price-sub" style={{ marginTop: '4px', textAlign: 'center' }}>
-                      Đang quét 4 tài xế trong bán kính 1km xung quanh {(HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]).name.split(',')[0]}...
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Loader text="searching" />
                     </div>
                   </div>
                 )}
@@ -3275,17 +3287,22 @@ Quy tắc giao tiếp:
                     <strong>Đơn hàng: {activeFoodOrder.order_id}</strong>
                     <div className="price-sub">Tài xế giao: {activeFoodOrder.shipper?.name || 'Nguyễn Văn Minh'}</div>
                   </div>
-                  <span className="oop-tag">
-                    {activeFoodOrder.state === 'DELIVERED' ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#00b14f' }}>
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Đã giao xong
-                      </span>
-                    ) : (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f59e0b' }}>
-                        <Bike className="w-3.5 h-3.5 animate-bounce" /> Đang giao hàng
-                      </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {activeFoodOrder.state !== 'DELIVERED' && (
+                      <Loader text="cooking" />
                     )}
-                  </span>
+                    <span className="oop-tag">
+                      {activeFoodOrder.state === 'DELIVERED' ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#00b14f' }}>
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Đã giao xong
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f59e0b' }}>
+                          <Bike className="w-3.5 h-3.5 animate-bounce" /> Đang giao hàng
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 </div>
                 <div className="state-stepper">
                   {FOOD_STATES.map((st, idx) => {
@@ -4708,9 +4725,14 @@ Quy tắc giao tiếp:
               );
             })}
             {aiLoading && (
-              <div className="ai-msg bot" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Bot className="w-4 h-4 text-emerald-500 animate-spin" />
-                <span>Trợ lý Gemini đang soạn câu trả lời...</span>
+              <div className="ai-msg bot" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Bot className="w-4 h-4 text-emerald-500 animate-spin" />
+                  <span>Trợ lý Gemini đang soạn câu trả lời...</span>
+                </div>
+                <div style={{ padding: '2px 0 4px 6px' }}>
+                  <Loader text="thinking" />
+                </div>
               </div>
             )}
           </div>
