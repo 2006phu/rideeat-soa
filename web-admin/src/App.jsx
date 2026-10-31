@@ -6,9 +6,11 @@ import Loader from './components/Loader.jsx';
 import WaveInput from './components/WaveInput.jsx';
 import StarRating from './components/StarRating.jsx';
 import LoginForm from './components/LoginForm.jsx';
+import CustomerHome3D from './components/CustomerHome3D.jsx';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
+  ArrowLeft,
   Bike,
   Car,
   Compass,
@@ -182,8 +184,8 @@ const DEMO_ACCOUNTS = {
     icon: '👤',
     name: 'Nguyễn Văn A',
     email: 'customer@rideeat.vn',
-    defaultTab: 'RIDE',
-    allowedTabs: ['RIDE', 'FOOD', 'WALLET', 'PROMO']
+    defaultTab: 'HOME',
+    allowedTabs: ['HOME', 'RIDE', 'FOOD', 'WALLET', 'PROMO', 'RATING']
   },
   DRIVER: {
     id: 'drv-partner-001',
@@ -218,7 +220,7 @@ const DEMO_ACCOUNTS = {
     name: 'Quản trị viên RideEat',
     email: 'admin@rideeat.vn',
     defaultTab: 'ADMIN',
-    allowedTabs: ['ADMIN', 'RIDE', 'FOOD', 'WALLET', 'PROMO']
+    allowedTabs: ['ADMIN', 'HOME', 'RIDE', 'FOOD', 'WALLET', 'PROMO', 'RATING']
   }
 };
 
@@ -354,7 +356,7 @@ export default function App() {
   const [registerName, setRegisterName] = useState('');
   const [firebaseLoading, setFirebaseLoading] = useState(false);
   const [firebaseError, setFirebaseError] = useState('');
-  const [activeTab, setActiveTab] = useState('RIDE');
+  const [activeTab, setActiveTab] = useState('HOME');
   const [foodCategoryFilter, setFoodCategoryFilter] = useState('ALL');
 
   // Shared User & Wallet State
@@ -995,12 +997,12 @@ export default function App() {
         email: loginEmail.trim(),
         name: registerName.trim() || 'Khách hàng mới',
         phone: registerPhone.trim(),
-        allowedTabs: ['RIDE', 'FOOD', 'WALLET', 'PROMO'],
-        defaultTab: 'RIDE',
+        allowedTabs: ['HOME', 'RIDE', 'FOOD', 'WALLET', 'PROMO', 'RATING'],
+        defaultTab: 'HOME',
         authProvider: 'Customer Registration'
       };
       setCurrentUser(userObj);
-      setActiveTab('RIDE');
+      setActiveTab('HOME');
       return;
     }
 
@@ -2127,7 +2129,12 @@ Quy tắc giao tiếp:
         }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
-        <div className="brand-box">
+        <div
+          className="brand-box"
+          onClick={() => (currentUser.role === 'CUSTOMER' || currentUser.role === 'ADMIN') && setActiveTab('HOME')}
+          style={{ cursor: (currentUser.role === 'CUSTOMER' || currentUser.role === 'ADMIN') ? 'pointer' : 'default' }}
+          title="Nhấn để quay về Màn hình chính 3D"
+        >
           <div className="brand-logo"><Compass className="w-5 h-5 text-white" /></div>
           <div className="brand-title">
             <h1>
@@ -2168,61 +2175,88 @@ Quy tắc giao tiếp:
         </div>
       </motion.header>
 
-      {/* KHỐI NGHIỆP VỤ BIỂU TƯỢNG (GRAB SUPER-APP SERVICE ICONS HUB) */}
-      <div className="grab-services-hub">
-        {[
-          // Dịch vụ Khách hàng
-          { id: 'RIDE', name: 'Đặt xe', sub: 'GrabBike & Car', icon: <Bike className="w-6 h-6" />, color: '#00b14f', bg: '#ecfdf5', badge: 'Di chuyển' },
-          { id: 'FOOD', name: 'Đặt đồ ăn', sub: 'GrabFood 15p', icon: <UtensilsCrossed className="w-6 h-6" />, color: '#ea580c', bg: '#fff7ed', badge: 'Món ngon' },
-          { id: 'WALLET', name: 'Ví & Thẻ', sub: 'Nạp / Rút tiền', icon: <Wallet className="w-6 h-6" />, color: '#2563eb', bg: '#eff6ff', badge: 'Thanh toán' },
-          { id: 'PROMO', name: 'Khuyến mãi', sub: 'Mã giảm đến 50%', icon: <TicketPercent className="w-6 h-6" />, color: '#d97706', bg: '#fef3c7', badge: 'Ưu đãi' },
-          { id: 'RATING', name: 'Đánh giá', sub: 'Sao & Feedback', icon: <Star className="w-6 h-6" />, color: '#9333ea', bg: '#faf5ff', badge: 'Chất lượng' },
+      {/* 1. MÀN HÌNH CHÍNH 3D TINH GỌN (CHO KHÁCH HÀNG & ADMIN) */}
+      {activeTab === 'HOME' && (
+        <CustomerHome3D
+          currentUser={currentUser}
+          walletBalance={walletBalance}
+          setActiveTab={setActiveTab}
+          setShowAiChatModal={setShowAiChatModal}
+          rideStage={rideStage}
+          pickupLocation={pickupLocation}
+          dropoffLocation={dropoffLocation}
+          foodCart={foodCart}
+          themeMode={themeMode}
+        />
+      )}
 
-          // Nghiệp vụ Đối tác Tài xế
-          { id: 'PARTNER', name: 'Cổng tài xế', sub: 'GPS HUD & Cuốc xe', icon: <Bike className="w-6 h-6" />, color: '#00b14f', bg: '#ecfdf5', badge: 'Trực tuyến' },
+      {/* 2. THANH ĐIỀU HƯỚNG QUAY LẠI TRANG CHỦ & CHUYỂN NHANH KHI ĐANG Ở TRONG TRANG NGHIỆP VỤ */}
+      {activeTab !== 'HOME' && (currentUser.role === 'CUSTOMER' || currentUser.role === 'ADMIN') && ['RIDE', 'FOOD', 'WALLET', 'PROMO', 'RATING'].includes(activeTab) && (
+        <div className="service-page-header-bar">
+          <div className="service-header-left">
+            <button
+              type="button"
+              className="btn-back-home-3d"
+              onClick={() => setActiveTab('HOME')}
+              title="Quay lại Màn hình chính 3D"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Quay lại Trang chủ 3D</span>
+            </button>
+            <div className="service-breadcrumb">
+              <span className="breadcrumb-link" onClick={() => setActiveTab('HOME')}>Trang chủ</span>
+              <span className="breadcrumb-sep">/</span>
+              <span className="breadcrumb-current">
+                {activeTab === 'RIDE' && '🚗 Đặt xe di chuyển'}
+                {activeTab === 'FOOD' && '🍜 Đặt đồ ăn đối tác'}
+                {activeTab === 'WALLET' && '💳 Ví RidePay & Thẻ'}
+                {activeTab === 'PROMO' && '🎟️ Ưu đãi & Khuyến mãi'}
+                {activeTab === 'RATING' && '⭐ Đánh giá & Góp ý'}
+              </span>
+            </div>
+          </div>
 
-          // Nghiệp vụ Đối tác Quán ăn
-          { id: 'MERCHANT', name: 'Quán ăn & Bếp', sub: 'Kanban & Thực đơn', icon: <Store className="w-6 h-6" />, color: '#ea580c', bg: '#fff7ed', badge: 'Gian hàng' },
-
-          // Nghiệp vụ Quản trị Hệ thống
-          { id: 'ADMIN', name: 'Giám sát SOA', sub: '6 Microservices & Logs', icon: <Activity className="w-6 h-6" />, color: '#7c3aed', bg: '#f5f3ff', badge: 'Hệ thống' }
-        ]
-          .filter((srv) => currentUser.allowedTabs.includes(srv.id))
-          .map((srv) => {
-            const isActive = activeTab === srv.id;
-            return (
-              <motion.button
-                key={srv.id}
-                type="button"
-                className={`grab-service-icon-card ${isActive ? 'active' : ''}`}
-                onClick={() => setActiveTab(srv.id)}
-                whileHover={{ scale: 1.05, y: -4 }}
-                whileTap={{ scale: 0.94 }}
-                transition={{ type: 'spring', visualDuration: 0.2, bounce: 0.2 }}
-              >
-                <div
-                  className="grab-service-icon-box"
-                  style={{
-                    background: isActive ? srv.color : srv.bg,
-                    color: isActive ? '#ffffff' : srv.color
-                  }}
+          <div className="service-quick-tabs">
+            {[
+              { id: 'RIDE', label: 'Đặt xe', icon: <Bike className="w-3.5 h-3.5" /> },
+              { id: 'FOOD', label: 'Đặt đồ ăn', icon: <UtensilsCrossed className="w-3.5 h-3.5" /> },
+              { id: 'WALLET', label: 'Ví & Thẻ', icon: <Wallet className="w-3.5 h-3.5" /> },
+              { id: 'PROMO', label: 'Khuyến mãi', icon: <TicketPercent className="w-3.5 h-3.5" /> },
+              { id: 'RATING', label: 'Đánh giá', icon: <Star className="w-3.5 h-3.5" /> },
+            ]
+              .filter((srv) => currentUser.allowedTabs.includes(srv.id))
+              .map((srv) => (
+                <button
+                  key={srv.id}
+                  type="button"
+                  className={`service-quick-tab-btn ${activeTab === srv.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(srv.id)}
                 >
                   {srv.icon}
-                </div>
-                <div className="grab-service-title">{srv.name}</div>
-                <div className="grab-service-subtitle">{srv.sub}</div>
-                {srv.badge && <span className="grab-service-badge">{srv.badge}</span>}
-                {isActive && (
-                  <motion.div
-                    className="grab-service-active-bar"
-                    layoutId="activeServiceTabIndicator"
-                    transition={{ type: 'spring', visualDuration: 0.2, bounce: 0.2 }}
-                  />
-                )}
-              </motion.button>
-            );
-          })}
-      </div>
+                  <span>{srv.label}</span>
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. CỔNG NGHIỆP VỤ TÀI XẾ & QUÁN ĂN */}
+      {(currentUser.role === 'DRIVER' || currentUser.role === 'RESTAURANT') && (
+        <div className="nav-tabs" style={{ marginBottom: '18px' }}>
+          {currentUser.allowedTabs.map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={`nav-tab ${activeTab === t ? 'active' : ''}`}
+              onClick={() => setActiveTab(t)}
+            >
+              {t === 'PARTNER' && <><Bike className="w-4 h-4" /> Cổng tài xế (HUD)</>}
+              {t === 'MERCHANT' && <><Store className="w-4 h-4" /> Quán ăn & Bếp (Kanban)</>}
+              {t === 'WALLET' && <><Wallet className="w-4 h-4" /> Ví tài xế / Quán</>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* MÀN HÌNH KHÁCH HÀNG: ĐẶT XE (GRAB/UBER SUPER-APP HERO DESIGN) */}
       {activeTab === 'RIDE' && (
