@@ -3,6 +3,7 @@ import { motion, useScroll, useMotionValueEvent } from 'motion/react';
 import ClickSpark from './components/ClickSpark.jsx';
 import MotionSwitch from './components/MotionSwitch.jsx';
 import Loader from './components/Loader.jsx';
+import WaveInput from './components/WaveInput.jsx';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
@@ -2354,33 +2355,32 @@ Quy tắc giao tiếp:
               </>
             )}
 
-            <div className="form-group">
-              <label className="form-label">
-                {authMode === 'REGISTER' && selectedPresetRole === 'RESTAURANT'
-                  ? 'Email quản trị quán ăn'
+            <WaveInput
+              type="email"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              label={
+                authMode === 'REGISTER' && selectedPresetRole === 'RESTAURANT'
+                  ? 'Email quán ăn'
                   : authMode === 'REGISTER' && selectedPresetRole === 'DRIVER'
-                  ? 'Email tài xế đăng nhập'
-                  : 'Email'}
-              </label>
-              <input
-                type="email"
-                className="form-input"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                required
-              />
-            </div>
+                  ? 'Email tài xế'
+                  : 'Email / Tên đăng nhập'
+              }
+              required
+              autoComplete="username"
+              accentColor="#00b14f"
+            />
 
-            <div className="form-group" style={{ marginBottom: '18px' }}>
-              <label className="form-label">Mật khẩu</label>
-              <input
-                type="password"
-                className="form-input"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                required
-              />
-            </div>
+            <WaveInput
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              label="Mật khẩu"
+              required
+              autoComplete="current-password"
+              accentColor="#00b14f"
+              style={{ marginBottom: '22px' }}
+            />
 
             <button type="submit" className="btn-primary">
               <LogIn className="w-4 h-4" />
