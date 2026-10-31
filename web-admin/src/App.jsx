@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useMotionValueEvent } from 'motion/react';
+import ClickSpark from './components/ClickSpark.jsx';
+import MotionSwitch from './components/MotionSwitch.jsx';
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
@@ -2057,29 +2059,25 @@ Quy tắc giao tiếp:
   // ============================================================================
   if (!currentUser) {
     return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-            <button
-              type="button"
-              className="theme-toggle-btn"
-              onClick={toggleTheme}
-              title="Chuyển đổi giao diện Sáng / Tối"
-            >
-              {themeMode === 'light' ? (
-                <>
-                  <Moon className="w-3.5 h-3.5" />
-                  <span>Tối</span>
-                </>
-              ) : (
-                <>
-                  <Sun className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Sáng</span>
-                </>
-              )}
-            </button>
-          </div>
-          <div className="auth-brand">
+      <ClickSpark sparkColor={themeMode === 'dark' ? '#34d399' : '#00b14f'} sparkCount={9} sparkRadius={22}>
+        <div className="auth-page">
+          <div className="auth-card">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                {themeMode === 'light' ? 'Chế độ Sáng' : 'Chế độ Tối'}
+              </span>
+              <MotionSwitch
+                isOn={themeMode === 'dark'}
+                onToggle={toggleTheme}
+                activeColor="#3b82f6"
+                inactiveColor="#cbd5e1"
+                leftIcon={<Sun className="w-3.5 h-3.5 text-amber-500" />}
+                rightIcon={<Moon className="w-3.5 h-3.5 text-slate-800" />}
+                size="sm"
+                title="Chuyển đổi giao diện Sáng / Tối"
+              />
+            </div>
+            <div className="auth-brand">
             <div className="auth-logo"><Bike className="w-7 h-7 text-white" /></div>
             <h1 style={{ fontSize: '1.4rem', fontWeight: 800 }}>RideEat</h1>
             <p className="price-sub">Ứng dụng Đặt xe & Giao đồ ăn trực tuyến</p>
@@ -2419,6 +2417,7 @@ Quy tắc giao tiếp:
           )}
         </div>
       </div>
+      </ClickSpark>
     );
   }
 
@@ -2426,8 +2425,9 @@ Quy tắc giao tiếp:
   // 2. GIAO DIỆN CHÍNH SAU KHI ĐĂNG NHẬP (THEO ĐÚNG VAI TRÒ CỦA USER)
   // ============================================================================
   return (
-    <div className="app-shell">
-      {/* SCROLL-HIDE HEADER WITH MOTION */}
+    <ClickSpark sparkColor={themeMode === 'dark' ? '#34d399' : '#00b14f'} sparkCount={9} sparkRadius={22}>
+      <div className="app-shell">
+        {/* SCROLL-HIDE HEADER WITH MOTION */}
       <motion.header
         className="top-header"
         animate={{
@@ -2450,24 +2450,21 @@ Quy tắc giao tiếp:
         </div>
 
         <div className="header-pills">
-          <button
-            type="button"
-            className="theme-toggle-btn"
-            onClick={toggleTheme}
-            title={themeMode === 'light' ? 'Chuyển sang Chế độ Ban Đêm (Dark Mode)' : 'Chuyển sang Chế độ Ban Ngày (Light Mode)'}
-          >
-            {themeMode === 'light' ? (
-              <>
-                <Moon className="w-4 h-4 text-slate-700" />
-                <span>Tối</span>
-              </>
-            ) : (
-              <>
-                <Sun className="w-4 h-4 text-amber-400" />
-                <span>Sáng</span>
-              </>
-            )}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              {themeMode === 'light' ? 'Sáng' : 'Tối'}
+            </span>
+            <MotionSwitch
+              isOn={themeMode === 'dark'}
+              onToggle={toggleTheme}
+              activeColor="#3b82f6"
+              inactiveColor="#cbd5e1"
+              leftIcon={<Sun className="w-3.5 h-3.5 text-amber-500" />}
+              rightIcon={<Moon className="w-3.5 h-3.5 text-slate-800" />}
+              size="sm"
+              title="Chuyển đổi giao diện Sáng / Tối"
+            />
+          </div>
           <div className="wallet-pill">
             <Wallet className="w-4 h-4 text-emerald-600" />
             <span>Số dư:</span>
@@ -2480,73 +2477,61 @@ Quy tắc giao tiếp:
         </div>
       </motion.header>
 
-      {/* NAVIGATION TABS (HIỂN THỊ ĐÚNG CHỨC NĂNG CỦA TỪNG VAI TRÒ) */}
-      <nav className="nav-tabs">
-        {currentUser.allowedTabs.includes('RIDE') && (
-          <button
-            className={`nav-tab ${activeTab === 'RIDE' ? 'active' : ''}`}
-            onClick={() => setActiveTab('RIDE')}
-          >
-            <Bike className="w-4 h-4" /> Đặt xe
-          </button>
-        )}
-        {currentUser.allowedTabs.includes('FOOD') && (
-          <button
-            className={`nav-tab ${activeTab === 'FOOD' ? 'active' : ''}`}
-            onClick={() => setActiveTab('FOOD')}
-          >
-            <UtensilsCrossed className="w-4 h-4" /> Đặt đồ ăn
-          </button>
-        )}
-        {currentUser.allowedTabs.includes('PARTNER') && (
-          <button
-            className={`nav-tab ${activeTab === 'PARTNER' ? 'active' : ''}`}
-            onClick={() => setActiveTab('PARTNER')}
-          >
-            <Bike className="w-4 h-4" /> Cổng tài xế
-          </button>
-        )}
-        {currentUser.allowedTabs.includes('MERCHANT') && (
-          <button
-            className={`nav-tab ${activeTab === 'MERCHANT' ? 'active' : ''}`}
-            onClick={() => setActiveTab('MERCHANT')}
-          >
-            <Store className="w-4 h-4" /> Quán ăn & Thực đơn
-          </button>
-        )}
-        {currentUser.allowedTabs.includes('ADMIN') && (
-          <button
-            className={`nav-tab ${activeTab === 'ADMIN' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ADMIN')}
-          >
-            <Activity className="w-4 h-4" /> Giám sát SOA
-          </button>
-        )}
-        {currentUser.allowedTabs.includes('WALLET') && (
-          <button
-            className={`nav-tab ${activeTab === 'WALLET' ? 'active' : ''}`}
-            onClick={() => setActiveTab('WALLET')}
-          >
-            <Wallet className="w-4 h-4" /> Ví & Giao dịch
-          </button>
-        )}
-        {currentUser.allowedTabs.includes('PROMO') && (
-          <button
-            className={`nav-tab ${activeTab === 'PROMO' ? 'active' : ''}`}
-            onClick={() => setActiveTab('PROMO')}
-          >
-            <TicketPercent className="w-4 h-4" /> Khuyến mãi
-          </button>
-        )}
-        {currentUser.allowedTabs.includes('RATING') && (
-          <button
-            className={`nav-tab ${activeTab === 'RATING' ? 'active' : ''}`}
-            onClick={() => setActiveTab('RATING')}
-          >
-            <Star className="w-4 h-4" /> Đánh giá
-          </button>
-        )}
-      </nav>
+      {/* KHỐI NGHIỆP VỤ BIỂU TƯỢNG (GRAB SUPER-APP SERVICE ICONS HUB) */}
+      <div className="grab-services-hub">
+        {[
+          // Dịch vụ Khách hàng
+          { id: 'RIDE', name: 'Đặt xe', sub: 'GrabBike & Car', icon: <Bike className="w-6 h-6" />, color: '#00b14f', bg: '#ecfdf5', badge: 'Di chuyển' },
+          { id: 'FOOD', name: 'Đặt đồ ăn', sub: 'GrabFood 15p', icon: <UtensilsCrossed className="w-6 h-6" />, color: '#ea580c', bg: '#fff7ed', badge: 'Món ngon' },
+          { id: 'WALLET', name: 'Ví & Thẻ', sub: 'Nạp / Rút tiền', icon: <Wallet className="w-6 h-6" />, color: '#2563eb', bg: '#eff6ff', badge: 'Thanh toán' },
+          { id: 'PROMO', name: 'Khuyến mãi', sub: 'Mã giảm đến 50%', icon: <TicketPercent className="w-6 h-6" />, color: '#d97706', bg: '#fef3c7', badge: 'Ưu đãi' },
+          { id: 'RATING', name: 'Đánh giá', sub: 'Sao & Feedback', icon: <Star className="w-6 h-6" />, color: '#9333ea', bg: '#faf5ff', badge: 'Chất lượng' },
+
+          // Nghiệp vụ Đối tác Tài xế
+          { id: 'PARTNER', name: 'Cổng tài xế', sub: 'GPS HUD & Cuốc xe', icon: <Bike className="w-6 h-6" />, color: '#00b14f', bg: '#ecfdf5', badge: 'Trực tuyến' },
+
+          // Nghiệp vụ Đối tác Quán ăn
+          { id: 'MERCHANT', name: 'Quán ăn & Bếp', sub: 'Kanban & Thực đơn', icon: <Store className="w-6 h-6" />, color: '#ea580c', bg: '#fff7ed', badge: 'Gian hàng' },
+
+          // Nghiệp vụ Quản trị Hệ thống
+          { id: 'ADMIN', name: 'Giám sát SOA', sub: '6 Microservices & Logs', icon: <Activity className="w-6 h-6" />, color: '#7c3aed', bg: '#f5f3ff', badge: 'Hệ thống' }
+        ]
+          .filter((srv) => currentUser.allowedTabs.includes(srv.id))
+          .map((srv) => {
+            const isActive = activeTab === srv.id;
+            return (
+              <motion.button
+                key={srv.id}
+                type="button"
+                className={`grab-service-icon-card ${isActive ? 'active' : ''}`}
+                onClick={() => setActiveTab(srv.id)}
+                whileHover={{ scale: 1.05, y: -4 }}
+                whileTap={{ scale: 0.94 }}
+                transition={{ type: 'spring', visualDuration: 0.2, bounce: 0.2 }}
+              >
+                <div
+                  className="grab-service-icon-box"
+                  style={{
+                    background: isActive ? srv.color : srv.bg,
+                    color: isActive ? '#ffffff' : srv.color
+                  }}
+                >
+                  {srv.icon}
+                </div>
+                <div className="grab-service-title">{srv.name}</div>
+                <div className="grab-service-subtitle">{srv.sub}</div>
+                {srv.badge && <span className="grab-service-badge">{srv.badge}</span>}
+                {isActive && (
+                  <motion.div
+                    className="grab-service-active-bar"
+                    layoutId="activeServiceTabIndicator"
+                    transition={{ type: 'spring', visualDuration: 0.2, bounce: 0.2 }}
+                  />
+                )}
+              </motion.button>
+            );
+          })}
+      </div>
 
       {/* MÀN HÌNH KHÁCH HÀNG: ĐẶT XE (GRAB/UBER SUPER-APP HERO DESIGN) */}
       {activeTab === 'RIDE' && (
@@ -3399,29 +3384,31 @@ Quy tắc giao tiếp:
                   <span>Chuông: {driverSoundEnabled ? 'Bật' : 'Tắt'}</span>
                 </button>
 
-                <button
-                  type="button"
-                  className={driverOnline ? 'btn-primary' : 'btn-secondary'}
-                  onClick={() => {
-                    setDriverOnline(!driverOnline);
-                    if (!driverOnline && driverSoundEnabled) {
-                      playSoundChime('DRIVER');
-                    }
-                  }}
-                  style={{
-                    background: driverOnline ? '#00b14f' : '#64748b',
-                    borderColor: driverOnline ? '#00b14f' : '#64748b',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    padding: '10px 18px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <Power className="w-4 h-4" />
-                  <span>{driverOnline ? '🟢 ĐANG TRỰC TUYẾN' : '🔴 ĐANG TẠM NGHỈ'}</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.88rem', color: driverOnline ? '#00b14f' : '#ef4444' }}>
+                      {driverOnline ? 'ĐANG TRỰC TUYẾN' : 'ĐANG TẠM NGHỈ'}
+                    </div>
+                    <div className="price-sub" style={{ fontSize: '0.72rem' }}>
+                      {driverOnline ? 'Sẵn sàng nhận cuốc trong 3km' : 'Tạm dừng nhận chuyến'}
+                    </div>
+                  </div>
+                  <MotionSwitch
+                    isOn={driverOnline}
+                    onToggle={() => {
+                      const next = !driverOnline;
+                      setDriverOnline(next);
+                      if (next && driverSoundEnabled) {
+                        playSoundChime('DRIVER');
+                      }
+                    }}
+                    activeColor="#00b14f"
+                    inactiveColor="#94a3b8"
+                    leftIcon={<Power className="w-4 h-4 text-slate-500" />}
+                    rightIcon={<Zap className="w-4 h-4 text-emerald-600" />}
+                    title="Gạt công tắc để Bật / Tắt trạng thái nhận cuốc"
+                  />
+                </div>
               </div>
             </div>
 
@@ -3848,29 +3835,31 @@ Quy tắc giao tiếp:
                   <span>Chuông: {merchantSoundEnabled ? 'Bật' : 'Tắt'}</span>
                 </button>
 
-                <button
-                  type="button"
-                  className={merchantOnline ? 'btn-primary' : 'btn-secondary'}
-                  onClick={() => {
-                    setMerchantOnline(!merchantOnline);
-                    if (!merchantOnline && merchantSoundEnabled) {
-                      playSoundChime('MERCHANT');
-                    }
-                  }}
-                  style={{
-                    background: merchantOnline ? '#00b14f' : '#dc2626',
-                    borderColor: merchantOnline ? '#00b14f' : '#dc2626',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    padding: '10px 18px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <Power className="w-4 h-4" />
-                  <span>{merchantOnline ? '🟢 QUÁN ĐANG MỞ CỬA' : '🔴 TẠM ĐÓNG CỬA'}</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.88rem', color: merchantOnline ? '#00b14f' : '#dc2626' }}>
+                      {merchantOnline ? 'QUÁN ĐANG MỞ CỬA' : 'QUÁN TẠM ĐÓNG CỬA'}
+                    </div>
+                    <div className="price-sub" style={{ fontSize: '0.72rem' }}>
+                      {merchantOnline ? 'Sẵn sàng phục vụ khách' : 'Tạm ngưng nhận món'}
+                    </div>
+                  </div>
+                  <MotionSwitch
+                    isOn={merchantOnline}
+                    onToggle={() => {
+                      const next = !merchantOnline;
+                      setMerchantOnline(next);
+                      if (next && merchantSoundEnabled) {
+                        playSoundChime('MERCHANT');
+                      }
+                    }}
+                    activeColor="#00b14f"
+                    inactiveColor="#94a3b8"
+                    leftIcon={<Power className="w-4 h-4 text-slate-500" />}
+                    rightIcon={<Store className="w-4 h-4 text-emerald-600" />}
+                    title="Gạt công tắc để Mở / Đóng cửa quán ăn"
+                  />
+                </div>
               </div>
             </div>
 
@@ -5136,6 +5125,7 @@ Quy tắc giao tiếp:
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ClickSpark>
   );
 }

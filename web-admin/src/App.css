@@ -355,6 +355,94 @@ code, pre, .mono {
   color: #ffffff;
 }
 
+/* Grab Super-App Services Icon Hub */
+.grab-services-hub {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.grab-service-icon-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 18px;
+  padding: 16px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: var(--card-shadow);
+  user-select: none;
+  outline: none;
+  overflow: hidden;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grab-service-icon-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 8px 24px -4px rgba(0, 177, 79, 0.16);
+}
+
+.grab-service-icon-card.active {
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 8px 24px -4px rgba(0, 177, 79, 0.22), 0 0 0 1.5px var(--primary);
+}
+
+.grab-service-icon-box {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.grab-service-icon-card:hover .grab-service-icon-box {
+  transform: scale(1.08);
+}
+
+.grab-service-title {
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.grab-service-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.grab-service-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(0, 177, 79, 0.3);
+  margin-top: 2px;
+}
+
+.grab-service-active-bar {
+  position: absolute;
+  bottom: 0;
+  left: 24%;
+  right: 24%;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--primary);
+}
+
 /* Grid & Cards */
 .grid-2 {
   display: grid;
@@ -2601,5 +2689,78 @@ code, pre, .mono {
     gap: 10px;
   }
 }
+
+/* Grab Super-App Services Icon Hub Dark Mode */
+[data-theme="dark"] .grab-service-icon-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .grab-service-icon-card:hover {
+  border-color: #34d399;
+  box-shadow: 0 8px 24px -4px rgba(52, 211, 153, 0.2);
+}
+
+[data-theme="dark"] .grab-service-icon-card.active {
+  background: #111e2e;
+  border-color: #34d399;
+  box-shadow: 0 8px 24px -4px rgba(52, 211, 153, 0.25), 0 0 0 1.5px #34d399;
+}
+
+[data-theme="dark"] .grab-service-title {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .grab-service-subtitle {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .grab-service-badge {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+[data-theme="dark"] .grab-service-active-bar {
+  background: #34d399;
+}
+
+/* Grab Services Hub Mobile Scrollable Strip */
+@media (max-width: 640px) {
+  .grab-services-hub {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 10px;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .grab-services-hub::-webkit-scrollbar {
+    display: none;
+  }
+  .grab-service-icon-card {
+    flex: 0 0 108px;
+    scroll-snap-align: start;
+    padding: 12px 8px 10px;
+  }
+  .grab-service-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+  .grab-service-icon-box svg {
+    width: 20px;
+    height: 20px;
+  }
+  .grab-service-title {
+    font-size: 0.8rem;
+  }
+  .grab-service-subtitle {
+    font-size: 0.65rem;
+  }
+}
+
 
 
