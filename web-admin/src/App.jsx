@@ -2181,11 +2181,11 @@ Quy tắc giao tiếp:
           currentUser={currentUser}
           walletBalance={walletBalance}
           setActiveTab={setActiveTab}
-          setShowAiChatModal={setShowAiChatModal}
+          setShowAiChatModal={setAiOpen}
           rideStage={rideStage}
-          pickupLocation={pickupLocation}
-          dropoffLocation={dropoffLocation}
-          foodCart={foodCart}
+          pickupLocation={HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]}
+          dropoffLocation={HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1]}
+          foodCart={cart}
           themeMode={themeMode}
         />
       )}
