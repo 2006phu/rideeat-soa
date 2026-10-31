@@ -3,29 +3,36 @@ import styled from 'styled-components';
 import { motion } from 'motion/react';
 import {
   Bike,
-  Car,
-  UtensilsCrossed,
   Wallet,
-  TicketPercent,
-  Star,
-  Sparkles,
   ArrowRight,
-  ShieldCheck,
-  Clock,
-  Flame,
-  Gift,
-  Compass,
   ChevronRight,
-  CreditCard,
   Award,
-  Zap,
-  MapPin
+  MapPin,
+  Gift,
+  Flame,
+  Sparkles
 } from 'lucide-react';
+
+// Import authentic 3D icons (matching Grab Super-App)
+import iconBike from '../assets/icons3d/bike.png';
+import iconCar from '../assets/icons3d/car.png';
+import iconFood from '../assets/icons3d/food.png';
+import iconMart from '../assets/icons3d/mart.png';
+import iconMall from '../assets/icons3d/mall.png';
+import iconCoin from '../assets/icons3d/coin.png';
+import iconExpress from '../assets/icons3d/express.png';
+import iconDineOut from '../assets/icons3d/dineout.png';
+import iconRideLater from '../assets/icons3d/ridelater.png';
+import iconMap from '../assets/icons3d/map.png';
+import iconVoucher from '../assets/icons3d/voucher.png';
+import iconAi from '../assets/icons3d/ai.png';
 
 const CustomerHome3D = ({
   currentUser,
   walletBalance,
   setActiveTab,
+  setSelectedVehicleCode,
+  setFoodCategoryFilter,
   setShowAiChatModal,
   rideStage,
   pickupLocation,
@@ -36,95 +43,145 @@ const CustomerHome3D = ({
   const isOngoingRide = rideStage && rideStage !== 'IDLE' && rideStage !== 'COMPLETED' && rideStage !== 'CANCELLED';
 
   const services = [
+    // HÀNG 1 (TOP ROW IN USER IMAGE)
     {
-      id: 'RIDE',
-      name: 'Đặt xe',
-      category: 'GrabBike & GrabCar',
-      badge: 'Có xe trong 3p',
+      id: 'bike',
+      name: 'Bike',
+      sub: 'Xe máy GrabBike',
+      badge: 'Nhanh 3p',
       badgeColor: '#00b14f',
-      desc: 'Định tuyến bản đồ OpenStreetMap & GPS trực tiếp, giá cước chuẩn xác tối ưu.',
-      icon: <Bike className="w-9 h-9 text-white" />,
-      subIcon: <Car className="w-5 h-5 text-emerald-100" />,
-      gradient: 'linear-gradient(135deg, #10b981 0%, #00b14f 60%, #047857 100%)',
-      bevelColor: '#065f46',
-      shadow3d: '#059669',
-      glowColor: 'rgba(0, 177, 79, 0.35)',
-      action: () => setActiveTab('RIDE')
+      img: iconBike,
+      action: () => {
+        setSelectedVehicleCode?.('BIKE');
+        setActiveTab('RIDE');
+      }
     },
     {
-      id: 'FOOD',
-      name: 'Đặt đồ ăn',
-      category: 'GrabFood 15 phút',
-      badge: 'Nóng hổi 15p',
+      id: 'car',
+      name: 'Car',
+      sub: 'Ô tô GrabCar',
+      badge: '4-7 chỗ',
+      badgeColor: '#00b14f',
+      img: iconCar,
+      action: () => {
+        setSelectedVehicleCode?.('CAR');
+        setActiveTab('RIDE');
+      }
+    },
+    {
+      id: 'mart',
+      name: 'Mart',
+      sub: 'Đi chợ siêu thị',
+      badge: 'Tươi sống',
+      badgeColor: '#10b981',
+      img: iconMart,
+      action: () => {
+        setFoodCategoryFilter?.('HEALTHY');
+        setActiveTab('FOOD');
+      }
+    },
+    {
+      id: 'mall',
+      name: 'Mall',
+      sub: 'GrabMall chính hãng',
+      badge: 'Chính hãng',
+      badgeColor: '#ec4899',
+      img: iconMall,
+      action: () => {
+        setFoodCategoryFilter?.('ALL');
+        setActiveTab('FOOD');
+      }
+    },
+    {
+      id: 'coins',
+      name: 'GrabCoins',
+      sub: 'Ví RidePay & Thẻ',
+      badge: 'Ưu đãi',
+      badgeColor: '#f59e0b',
+      img: iconCoin,
+      action: () => {
+        setActiveTab('WALLET');
+      }
+    },
+    {
+      id: 'voucher',
+      name: 'Voucher',
+      sub: 'Mã giảm tới 50%',
+      badge: 'Giảm 50%',
+      badgeColor: '#ef4444',
+      img: iconVoucher,
+      action: () => {
+        setActiveTab('PROMO');
+      }
+    },
+
+    // HÀNG 2 (BOTTOM ROW IN USER IMAGE)
+    {
+      id: 'food',
+      name: 'Food',
+      sub: 'Đồ ăn GrabFood',
+      badge: 'Hot 15p',
       badgeColor: '#ea580c',
-      desc: '6 nhà hàng đối tác đặc sản: Phở Thìn, Cơm Tấm, Bún Bò Huế, Katinat...',
-      icon: <UtensilsCrossed className="w-9 h-9 text-white" />,
-      subIcon: <Flame className="w-5 h-5 text-amber-100" />,
-      gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 60%, #c2410c 100%)',
-      bevelColor: '#9a3412',
-      shadow3d: '#ea580c',
-      glowColor: 'rgba(234, 88, 12, 0.35)',
-      action: () => setActiveTab('FOOD')
+      img: iconFood,
+      action: () => {
+        setActiveTab('FOOD');
+      }
     },
     {
-      id: 'WALLET',
-      name: 'Ví RidePay',
-      category: 'Thanh toán & Số dư',
-      badge: 'Miễn phí nạp rút',
-      badgeColor: '#2563eb',
-      desc: 'Nạp / rút tiền siêu tốc, quản lý thẻ ngân hàng và sổ cái giao dịch tài chính.',
-      icon: <Wallet className="w-9 h-9 text-white" />,
-      subIcon: <CreditCard className="w-5 h-5 text-blue-100" />,
-      gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 60%, #1d4ed8 100%)',
-      bevelColor: '#1e40af',
-      shadow3d: '#2563eb',
-      glowColor: 'rgba(37, 99, 235, 0.35)',
-      action: () => setActiveTab('WALLET')
+      id: 'express',
+      name: 'Express',
+      sub: 'Giao hàng siêu tốc',
+      badge: 'Giao 30p',
+      badgeColor: '#f97316',
+      img: iconExpress,
+      action: () => {
+        setSelectedVehicleCode?.('BIKE');
+        setActiveTab('RIDE');
+      }
     },
     {
-      id: 'PROMO',
-      name: 'Khuyến mãi',
-      category: 'Voucher & Giảm giá',
-      badge: 'Giảm tới 50%',
-      badgeColor: '#d97706',
-      desc: 'Mã giảm giá RIDEEAT50, FREESHIP15K và đặc quyền tích điểm Hạng Vàng VIP.',
-      icon: <TicketPercent className="w-9 h-9 text-white" />,
-      subIcon: <Gift className="w-5 h-5 text-amber-100" />,
-      gradient: 'linear-gradient(135deg, #fbbf24 0%, #d97706 60%, #b45309 100%)',
-      bevelColor: '#92400e',
-      shadow3d: '#d97706',
-      glowColor: 'rgba(217, 119, 6, 0.35)',
-      action: () => setActiveTab('PROMO')
+      id: 'dineout',
+      name: 'Dine Out',
+      sub: 'Ăn tại nhà hàng',
+      badge: 'Đặt bàn',
+      badgeColor: '#f59e0b',
+      img: iconDineOut,
+      action: () => {
+        setActiveTab('FOOD');
+      }
     },
     {
-      id: 'RATING',
-      name: 'Đánh giá',
-      category: 'Chấm sao & Góp ý',
-      badge: 'Nhận điểm thưởng',
-      badgeColor: '#9333ea',
-      desc: 'Đánh giá chuyến đi & món ăn với hoạt ảnh sao Yippee để nhận điểm thăng hạng.',
-      icon: <Star className="w-9 h-9 text-white" />,
-      subIcon: <Award className="w-5 h-5 text-purple-100" />,
-      gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 60%, #7e22ce 100%)',
-      bevelColor: '#6b21a8',
-      shadow3d: '#9333ea',
-      glowColor: 'rgba(147, 51, 234, 0.35)',
-      action: () => setActiveTab('RATING')
+      id: 'ridelater',
+      name: 'Ride later',
+      sub: 'Đặt trước lịch xe',
+      badge: 'Đúng giờ',
+      badgeColor: '#3b82f6',
+      img: iconRideLater,
+      action: () => {
+        setActiveTab('RIDE');
+      }
     },
     {
-      id: 'AI',
+      id: 'map',
+      name: 'Map',
+      sub: 'Bản đồ định tuyến',
+      badge: 'Live GPS',
+      badgeColor: '#ef4444',
+      img: iconMap,
+      action: () => {
+        setActiveTab('RIDE');
+      }
+    },
+    {
+      id: 'ai',
       name: 'Trợ lý AI',
-      category: 'Gemini 2.5 Assistant',
-      badge: 'Thông minh 24/7',
-      badgeColor: '#0891b2',
-      desc: 'Tư vấn món ăn ngon, tính toán ước lượng giá cước và giải đáp ưu đãi tự động.',
-      icon: <Sparkles className="w-9 h-9 text-white" />,
-      subIcon: <Zap className="w-5 h-5 text-cyan-100" />,
-      gradient: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 60%, #0e7490 100%)',
-      bevelColor: '#155e75',
-      shadow3d: '#0891b2',
-      glowColor: 'rgba(8, 145, 178, 0.35)',
-      action: () => setShowAiChatModal(true)
+      sub: 'Google Gemini 2.5',
+      badge: 'AI 24/7',
+      badgeColor: '#06b6d4',
+      img: iconAi,
+      action: () => {
+        setShowAiChatModal?.(true);
+      }
     }
   ];
 
@@ -135,7 +192,7 @@ const CustomerHome3D = ({
         className="hero-welcome-card"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
+        transition={{ duration: 0.3 }}
       >
         <div className="hero-left">
           <div className="badge-welcome">
@@ -146,7 +203,7 @@ const CustomerHome3D = ({
             Xin chào, <strong>{currentUser?.name || 'Khách hàng'}</strong> 👋
           </h2>
           <p className="hero-subtext">
-            Bạn muốn di chuyển siêu tốc hay thưởng thức món ngon nóng hổi hôm nay?
+            Chạm vào biểu tượng 3D để mở ngay nghiệp vụ bạn cần
           </p>
 
           <div className="hero-chips">
@@ -204,73 +261,66 @@ const CustomerHome3D = ({
         </motion.div>
       )}
 
-      {/* 3. SECTION TITLE */}
+      {/* 3. SECTION HEADER */}
       <div className="section-header">
         <div>
-          <h3 className="section-title">Danh mục Nghiệp vụ & Dịch vụ</h3>
-          <p className="section-subtitle">Chạm vào icon 3D để mở màn hình chuyên biệt cho nghiệp vụ đó</p>
+          <h3 className="section-title">Dịch vụ Siêu ứng dụng</h3>
+          <p className="section-subtitle">Chạm vào icon 3D để chuyển đến màn hình nghiệp vụ tương ứng</p>
         </div>
         <div className="quick-guide-tag">
           <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Giao diện 3D Tinh gọn</span>
+          <span>Interactive 3D Grid</span>
         </div>
       </div>
 
-      {/* 4. 3D ICONS GRID */}
-      <div className="hub-3d-grid">
-        {services.map((srv, idx) => (
-          <motion.div
-            key={srv.id}
-            className="card-3d"
-            style={{
-              '--bevel-color': srv.bevelColor,
-              '--shadow-3d': srv.shadow3d,
-              '--glow-color': srv.glowColor
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: idx * 0.05 }}
-            whileHover={{ y: -8, scale: 1.02 }}
-            whileTap={{ y: 2, scale: 0.98 }}
-            onClick={srv.action}
-          >
-            {/* Top Badge & Sub-Icon */}
-            <div className="card-top-row">
-              <span className="card-badge" style={{ backgroundColor: srv.glowColor, color: srv.badgeColor, borderColor: srv.badgeColor }}>
-                {srv.badge}
-              </span>
-              <div className="card-subicon-box" style={{ background: srv.gradient }}>
-                {srv.subIcon}
-              </div>
-            </div>
+      {/* 4. AUTHENTIC 3D ICONS GRID (MATCHING USER SCREENSHOT) */}
+      <div className="grab-3d-grid-container">
+        <div className="grab-3d-grid">
+          {services.map((srv, idx) => (
+            <motion.div
+              key={srv.id}
+              className="grab-3d-item"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: idx * 0.03 }}
+              whileHover={{ y: -8, scale: 1.08 }}
+              whileTap={{ y: 2, scale: 0.94 }}
+              onClick={srv.action}
+              title={`Mở dịch vụ: ${srv.name}`}
+            >
+              {/* Badge (e.g. Hot, 3p, Giảm 50%) */}
+              {srv.badge && (
+                <span
+                  className="grab-3d-badge"
+                  style={{
+                    backgroundColor: srv.badgeColor,
+                    boxShadow: `0 2px 6px ${srv.badgeColor}55`
+                  }}
+                >
+                  {srv.badge}
+                </span>
+              )}
 
-            {/* Central 3D Tactile Icon Box */}
-            <div className="icon-3d-stage">
-              <div className="icon-3d-box" style={{ background: srv.gradient }}>
-                <div className="icon-3d-shine" />
-                {srv.icon}
+              {/* 3D Icon Image Stage */}
+              <div className="grab-3d-stage">
+                <img
+                  src={srv.img}
+                  alt={srv.name}
+                  className="grab-3d-img"
+                  draggable={false}
+                />
+                <div className="grab-3d-shadow" />
               </div>
-            </div>
 
-            {/* Card Content */}
-            <div className="card-info">
-              <div className="card-category">{srv.category}</div>
-              <h4 className="card-title">{srv.name}</h4>
-              <p className="card-desc">{srv.desc}</p>
-            </div>
-
-            {/* Bottom Action Footer */}
-            <div className="card-footer">
-              <span className="card-action-text">Mở nghiệp vụ</span>
-              <div className="card-arrow-circle">
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </div>
-          </motion.div>
-        ))}
+              {/* Label */}
+              <div className="grab-3d-label">{srv.name}</div>
+              <div className="grab-3d-sub">{srv.sub}</div>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
-      {/* 5. BOTTOM QUICK VOUCHER BANNER */}
+      {/* 5. BOTTOM PROMO BANNERS */}
       <div className="bottom-promos-row">
         <div className="promo-banner-card" onClick={() => setActiveTab('PROMO')}>
           <div className="banner-icon-box bg-emerald-50 text-emerald-600">
@@ -515,18 +565,19 @@ const StyledWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
+    padding: 0 4px;
   }
 
   .section-title {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 800;
     color: var(--text-primary, #0f172a);
     margin: 0 0 4px 0;
   }
 
   .section-subtitle {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     color: var(--text-secondary, #64748b);
     margin: 0;
   }
@@ -535,184 +586,135 @@ const StyledWrapper = styled.div`
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 700;
     color: #00b14f;
     background: rgba(0, 177, 79, 0.08);
-    padding: 4px 10px;
-    border-radius: 8px;
+    padding: 5px 12px;
+    border-radius: 10px;
   }
 
-  /* 4. 3D ICONS GRID */
-  .hub-3d-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 28px;
-  }
-
-  @media (max-width: 900px) {
-    .hub-3d-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 600px) {
-    .hub-3d-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* 3D TACTILE CARD */
-  .card-3d {
+  /* 4. AUTHENTIC 3D ICONS GRID (MATCHING USER SCREENSHOT) */
+  .grab-3d-grid-container {
     background: var(--bg-card, #ffffff);
-    border: 2px solid var(--border-color, #e2e8f0);
-    border-radius: 24px;
-    padding: 20px 20px 18px;
+    border: 1.5px solid var(--border-color, #e2e8f0);
+    border-radius: 26px;
+    padding: 24px 18px 20px;
+    margin-bottom: 26px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
+  }
+
+  .grab-3d-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px 14px;
+    align-items: start;
+  }
+
+  @media (max-width: 992px) {
+    .grab-3d-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px 12px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .grab-3d-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px 8px;
+    }
+  }
+
+  .grab-3d-item {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px 6px 12px;
+    border-radius: 20px;
     cursor: pointer;
     position: relative;
     user-select: none;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05), 0 5px 0 var(--shadow-3d);
-    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-                border-color 0.2s ease;
-    perspective: 1000px;
+    transition: background 0.18s ease;
   }
 
-  .card-3d:hover {
-    border-color: var(--shadow-3d);
-    box-shadow: 0 18px 30px var(--glow-color), 0 8px 0 var(--shadow-3d);
+  .grab-3d-item:hover {
+    background: var(--bg-hover, #f8fafc);
   }
 
-  .card-top-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-
-  .card-badge {
-    font-size: 10px;
+  /* Badge in top right corner of item */
+  .grab-3d-badge {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    color: white;
+    font-size: 9.5px;
     font-weight: 800;
-    padding: 3px 8px;
-    border-radius: 8px;
-    border: 1px solid;
-    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 99px;
     letter-spacing: 0.3px;
+    z-index: 2;
   }
 
-  .card-subicon-box {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
-  }
-
-  /* 3D Elevated Icon Stage */
-  .icon-3d-stage {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 12px 0 16px;
-  }
-
-  .icon-3d-box {
-    width: 76px;
+  /* 3D Stage & Shadow */
+  .grab-3d-stage {
+    width: 82px;
     height: 76px;
-    border-radius: 22px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     position: relative;
-    box-shadow: 0 12px 24px var(--glow-color),
-                inset 0 2px 4px rgba(255, 255, 255, 0.6),
-                inset 0 -3px 6px rgba(0, 0, 0, 0.2),
-                0 6px 0 var(--bevel-color);
-    transition: transform 0.25s ease;
+    margin-bottom: 6px;
   }
 
-  .card-3d:hover .icon-3d-box {
-    transform: translateY(-4px) scale(1.06);
+  .grab-3d-img {
+    max-width: 76px;
+    max-height: 68px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.12));
+    transition: filter 0.22s ease, transform 0.22s ease;
+    user-select: none;
+    -webkit-user-drag: none;
   }
 
-  .icon-3d-shine {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 48%;
-    border-top-left-radius: 22px;
-    border-top-right-radius: 22px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.02) 100%);
-    pointer-events: none;
+  .grab-3d-item:hover .grab-3d-img {
+    filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.2));
   }
 
-  /* Card Info */
-  .card-info {
-    text-align: center;
-    margin-bottom: 16px;
-  }
-
-  .card-category {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-secondary, #64748b);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-  }
-
-  .card-title {
-    font-size: 1.22rem;
-    font-weight: 800;
-    color: var(--text-primary, #0f172a);
-    margin: 0 0 6px 0;
-  }
-
-  .card-desc {
-    font-size: 0.8rem;
-    color: var(--text-secondary, #64748b);
-    line-height: 1.45;
-    margin: 0;
-  }
-
-  /* Card Footer */
-  .card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 12px;
-    border-top: 1px dashed var(--border-color, #e2e8f0);
-  }
-
-  .card-action-text {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-primary, #0f172a);
-  }
-
-  .card-arrow-circle {
-    width: 28px;
-    height: 28px;
+  .grab-3d-shadow {
+    width: 54px;
+    height: 8px;
     border-radius: 50%;
-    background: var(--bg-hover, #f1f5f9);
-    color: var(--text-primary, #0f172a);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 70%);
+    position: absolute;
+    bottom: -2px;
+    transition: transform 0.22s ease, opacity 0.22s ease;
   }
 
-  .card-3d:hover .card-arrow-circle {
-    background: var(--shadow-3d);
-    color: white;
-    transform: translateX(3px);
+  .grab-3d-item:hover .grab-3d-shadow {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+
+  /* Labels */
+  .grab-3d-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    text-align: center;
+    line-height: 1.25;
+    margin-top: 4px;
+  }
+
+  .grab-3d-sub {
+    font-size: 0.72rem;
+    color: var(--text-secondary, #64748b);
+    text-align: center;
+    line-height: 1.2;
+    margin-top: 2px;
   }
 
   /* 5. Bottom Promos Row */

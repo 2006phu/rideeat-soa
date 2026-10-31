@@ -2181,6 +2181,8 @@ Quy tắc giao tiếp:
           currentUser={currentUser}
           walletBalance={walletBalance}
           setActiveTab={setActiveTab}
+          setSelectedVehicleCode={setSelectedVehicleCode}
+          setFoodCategoryFilter={setFoodCategoryFilter}
           setShowAiChatModal={setAiOpen}
           rideStage={rideStage}
           pickupLocation={HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]}
