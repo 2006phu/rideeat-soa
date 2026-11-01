@@ -21,6 +21,11 @@ import iconCar from '../assets/icons3d/car.png';
 import iconFood from '../assets/icons3d/food.png';
 import iconExpress from '../assets/icons3d/express.png';
 import iconRideLater from '../assets/icons3d/ridelater.png';
+import iconCrown3D from '../assets/icons3d/crown3d.png';
+import iconWallet3D from '../assets/icons3d/wallet3d.png';
+import iconGift3D from '../assets/icons3d/gift3d.png';
+import iconStar3D from '../assets/icons3d/star3d.png';
+import iconAi3D from '../assets/icons3d/ai.png';
 
 const CustomerHome3D = ({
   currentUser,
@@ -132,11 +137,11 @@ const CustomerHome3D = ({
 
           <div className="hero-chips">
             <div className="loyalty-pill">
-              <Award className="w-4 h-4 text-amber-500" />
+              <img src={iconCrown3D} alt="VIP" style={{ width: 20, height: 20, objectFit: 'contain' }} />
               <span>Hạng Vàng VIP (210 / 500 điểm)</span>
             </div>
             <div className="wallet-pill-hero" onClick={() => setActiveTab('WALLET')}>
-              <Wallet className="w-4 h-4 text-emerald-500" />
+              <img src={iconWallet3D} alt="Wallet" style={{ width: 20, height: 20, objectFit: 'contain' }} />
               <span>Số dư: <strong>{walletBalance?.toLocaleString('vi-VN')} đ</strong></span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
             </div>
@@ -153,7 +158,7 @@ const CustomerHome3D = ({
               className="btn-use-promo"
               onClick={() => setActiveTab('PROMO')}
             >
-              <Gift className="w-3.5 h-3.5" />
+              <img src={iconGift3D} alt="Gift" style={{ width: 18, height: 18, objectFit: 'contain' }} />
               <span>Kho ưu đãi</span>
             </button>
           </div>
@@ -196,7 +201,7 @@ const CustomerHome3D = ({
           <p className="section-sub-title">Chọn dịch vụ di chuyển, ẩm thực hoặc giao hàng nhanh chóng</p>
         </div>
         <div className="ai-helper-btn" onClick={() => setShowAiChatModal?.(true)}>
-          <Sparkles className="w-4 h-4 text-emerald-500 animate-spin" style={{ animationDuration: '6s' }} />
+          <img src={iconAi3D} alt="AI" style={{ width: 20, height: 20, objectFit: 'contain' }} />
           <span>Hỏi Trợ lý AI</span>
         </div>
       </div>
@@ -251,8 +256,8 @@ const CustomerHome3D = ({
       {/* 5. FAST SHORTCUTS FOOTER */}
       <div className="dashboard-shortcuts-row">
         <div className="shortcut-card" onClick={() => setActiveTab('WALLET')}>
-          <div className="shortcut-icon wallet">
-            <Wallet className="w-5 h-5" />
+          <div className="shortcut-icon wallet" style={{ background: 'transparent' }}>
+            <img src={iconWallet3D} alt="Wallet" style={{ width: 34, height: 34, objectFit: 'contain' }} />
           </div>
           <div className="shortcut-info">
             <span className="shortcut-label">Ví & Thẻ RidePay</span>
@@ -262,8 +267,8 @@ const CustomerHome3D = ({
         </div>
 
         <div className="shortcut-card" onClick={() => setActiveTab('PROMO')}>
-          <div className="shortcut-icon promo">
-            <Gift className="w-5 h-5" />
+          <div className="shortcut-icon promo" style={{ background: 'transparent' }}>
+            <img src={iconGift3D} alt="Gift" style={{ width: 34, height: 34, objectFit: 'contain' }} />
           </div>
           <div className="shortcut-info">
             <span className="shortcut-label">Ưu đãi của tôi</span>
@@ -273,8 +278,8 @@ const CustomerHome3D = ({
         </div>
 
         <div className="shortcut-card" onClick={() => setActiveTab('RATING')}>
-          <div className="shortcut-icon rating">
-            <Flame className="w-5 h-5" />
+          <div className="shortcut-icon rating" style={{ background: 'transparent' }}>
+            <img src={iconStar3D} alt="Rating" style={{ width: 34, height: 34, objectFit: 'contain' }} />
           </div>
           <div className="shortcut-info">
             <span className="shortcut-label">Đánh giá & Góp ý</span>

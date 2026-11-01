@@ -14,6 +14,10 @@ import {
 } from 'lucide-react';
 import SketchyThemeSwitch from './SketchyThemeSwitch.jsx';
 import Loader from './Loader.jsx';
+import iconBike3D from '../assets/icons3d/bike.png';
+import iconStore3D from '../assets/icons3d/store3d.png';
+import iconShield3D from '../assets/icons3d/shield3d.png';
+import iconCrown3D from '../assets/icons3d/crown3d.png';
 
 const LoginForm = ({
   authMode,
@@ -66,7 +70,7 @@ const LoginForm = ({
         {/* Top Controls: Role Brand & Theme Switcher */}
         <div className="top-bar">
           <div className="brand-badge">
-            <Bike className="brand-icon" />
+            <img src={iconBike3D} alt="RideEat" style={{ width: 26, height: 26, objectFit: 'contain' }} />
             <span className="brand-name">RideEat</span>
           </div>
           <div className="theme-toggle-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', height: '36px', overflow: 'visible' }}>
@@ -101,10 +105,10 @@ const LoginForm = ({
                   onClick={() => handleSelectRolePreset(acc.role)}
                   title={`Chọn tài khoản mẫu: ${acc.roleLabel}`}
                 >
-                  {acc.role === 'CUSTOMER' && <User className="w-3.5 h-3.5" />}
-                  {acc.role === 'DRIVER' && <Bike className="w-3.5 h-3.5" />}
-                  {acc.role === 'RESTAURANT' && <Store className="w-3.5 h-3.5" />}
-                  {acc.role === 'ADMIN' && <ShieldCheck className="w-3.5 h-3.5" />}
+                  {acc.role === 'CUSTOMER' && <img src={iconCrown3D} alt="User" style={{ width: 16, height: 16, objectFit: 'contain' }} />}
+                  {acc.role === 'DRIVER' && <img src={iconBike3D} alt="Driver" style={{ width: 16, height: 16, objectFit: 'contain' }} />}
+                  {acc.role === 'RESTAURANT' && <img src={iconStore3D} alt="Store" style={{ width: 16, height: 16, objectFit: 'contain' }} />}
+                  {acc.role === 'ADMIN' && <img src={iconShield3D} alt="Admin" style={{ width: 16, height: 16, objectFit: 'contain' }} />}
                   <span>{acc.role === 'CUSTOMER' ? 'Khách' : acc.role === 'DRIVER' ? 'Tài xế' : acc.role === 'RESTAURANT' ? 'Quán' : 'Admin'}</span>
                 </button>
               );

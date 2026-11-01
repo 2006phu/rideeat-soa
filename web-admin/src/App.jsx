@@ -15,6 +15,29 @@ import iconFood3D from './assets/icons3d/food.png';
 import iconCoin3D from './assets/icons3d/coin.png';
 import iconVoucher3D from './assets/icons3d/voucher.png';
 import iconDineout3D from './assets/icons3d/dineout.png';
+import iconCar3D from './assets/icons3d/car.png';
+import iconExpress3D from './assets/icons3d/express.png';
+import iconRideLater3D from './assets/icons3d/ridelater.png';
+import iconMap3D from './assets/icons3d/map.png';
+import iconStar3D from './assets/icons3d/star3d.png';
+import iconPinPickup3D from './assets/icons3d/pin_pickup3d.png';
+import iconPinDropoff3D from './assets/icons3d/pin_dropoff3d.png';
+import iconCrown3D from './assets/icons3d/crown3d.png';
+import iconWallet3D from './assets/icons3d/wallet3d.png';
+import iconFire3D from './assets/icons3d/fire3d.png';
+import iconRain3D from './assets/icons3d/rain3d.png';
+import iconCart3D from './assets/icons3d/cart3d.png';
+import iconStore3D from './assets/icons3d/store3d.png';
+import iconNoodle3D from './assets/icons3d/noodle3d.png';
+import iconComtam3D from './assets/icons3d/comtam3d.png';
+import iconCoffee3D from './assets/icons3d/coffee3d.png';
+import iconBurger3D from './assets/icons3d/burger3d.png';
+import iconSalad3D from './assets/icons3d/salad3d.png';
+import iconLogout3D from './assets/icons3d/logout3d.png';
+import iconShield3D from './assets/icons3d/shield3d.png';
+import iconClock3D from './assets/icons3d/clock3d.png';
+import iconGift3D from './assets/icons3d/gift3d.png';
+import iconAi3D from './assets/icons3d/ai.png';
 
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
@@ -236,13 +259,13 @@ const DEMO_ACCOUNTS = {
 };
 
 const FOOD_CATEGORIES = [
-  { id: 'ALL', label: 'Tất cả món' },
-  { id: 'NOODLE', label: 'Phở & Món nước' },
-  { id: 'RICE', label: 'Cơm tấm Sài Gòn' },
-  { id: 'CENTRAL', label: 'Đặc sản miền Trung' },
-  { id: 'DRINK', label: 'Trà & Cà phê thủ công' },
-  { id: 'FASTFOOD', label: 'Burger & Gà rán' },
-  { id: 'HEALTHY', label: 'Healthy & Chay' }
+  { id: 'ALL', label: 'Tất cả món', icon3d: iconFood3D },
+  { id: 'NOODLE', label: 'Phở & Món nước', icon3d: iconNoodle3D },
+  { id: 'RICE', label: 'Cơm tấm Sài Gòn', icon3d: iconComtam3D },
+  { id: 'CENTRAL', label: 'Đặc sản miền Trung', icon3d: iconDineout3D },
+  { id: 'DRINK', label: 'Trà & Cà phê thủ công', icon3d: iconCoffee3D },
+  { id: 'FASTFOOD', label: 'Burger & Gà rán', icon3d: iconBurger3D },
+  { id: 'HEALTHY', label: 'Healthy & Chay', icon3d: iconSalad3D }
 ];
 
 const renderDishIcon = (iconCode) => {
@@ -2184,7 +2207,7 @@ Quy tắc giao tiếp:
           style={{ cursor: (currentUser.role === 'CUSTOMER' || currentUser.role === 'ADMIN') ? 'pointer' : 'default' }}
           title="Nhấn để quay về Màn hình chính 3D"
         >
-          <div className="brand-logo"><Compass className="w-5 h-5 text-white" /></div>
+          <div className="brand-logo" style={{ background: "transparent", padding: 0 }}><img src={iconBike3D} alt="RideEat" style={{ width: 32, height: 32, objectFit: "contain" }} /></div>
           <div className="brand-title">
             <h1>
               RideEat
@@ -2199,12 +2222,12 @@ Quy tắc giao tiếp:
         <div className="header-pills">
           
           <div className="wallet-pill">
-            <Wallet className="w-4 h-4 text-emerald-600" />
+            <img src={iconWallet3D} alt="Wallet" style={{ width: 18, height: 18, objectFit: 'contain' }} />
             <span>Số dư:</span>
             <span className="wallet-amount">{walletBalance.toLocaleString('vi-VN')} đ</span>
           </div>
-          <button type="button" className="btn-secondary" onClick={handleLogout}>
-            <LogOut className="w-3.5 h-3.5" />
+          <button type="button" className="btn-secondary" onClick={handleLogout} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <img src={iconLogout3D} alt="Logout" style={{ width: 18, height: 18, objectFit: 'contain' }} />
             <span>Đăng xuất</span>
           </button>
         </div>
@@ -2282,7 +2305,7 @@ Quy tắc giao tiếp:
               { id: 'FOOD', label: 'Đặt đồ ăn', icon3d: iconFood3D },
               { id: 'WALLET', label: 'Ví & Thẻ RidePay', icon3d: iconCoin3D },
               { id: 'PROMO', label: 'Khuyến mãi & Voucher', icon3d: iconVoucher3D },
-              { id: 'RATING', label: 'Đánh giá & Góp ý', icon3d: iconDineout3D },
+              { id: 'RATING', label: 'Đánh giá & Góp ý', icon3d: iconStar3D },
             ]
               .filter((srv) => currentUser.allowedTabs.includes(srv.id))
               .map((srv) => (
@@ -2317,9 +2340,9 @@ Quy tắc giao tiếp:
               className={`nav-tab ${activeTab === t ? 'active' : ''}`}
               onClick={() => setActiveTab(t)}
             >
-              {t === 'PARTNER' && <><Bike className="w-4 h-4" /> Cổng tài xế (HUD)</>}
-              {t === 'MERCHANT' && <><Store className="w-4 h-4" /> Quán ăn & Bếp (Kanban)</>}
-              {t === 'WALLET' && <><Wallet className="w-4 h-4" /> Ví tài xế / Quán</>}
+              {t === 'PARTNER' && <><img src={iconBike3D} alt="Driver" style={{ width: 18, height: 18, objectFit: 'contain' }} /> Cổng tài xế (HUD)</>}
+              {t === 'MERCHANT' && <><img src={iconStore3D} alt="Store" style={{ width: 18, height: 18, objectFit: 'contain' }} /> Quán ăn & Bếp (Kanban)</>}
+              {t === 'WALLET' && <><img src={iconWallet3D} alt="Wallet" style={{ width: 18, height: 18, objectFit: 'contain' }} /> Ví tài xế / Quán</>}
             </button>
           ))}
         </div>
@@ -2335,19 +2358,19 @@ Quy tắc giao tiếp:
                 <div className="card-title" style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {deliveryMode ? (
                     <>
-                      <Package className="w-5 h-5 text-orange-500" />
+                      <img src={iconExpress3D} alt="Express" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                       <span>Giao hàng siêu tốc</span>
                       <span className="badge-soa" style={{ fontSize: '0.72rem', background: 'rgba(249, 115, 22, 0.12)', color: '#f97316' }}>GrabExpress</span>
                     </>
                   ) : scheduledRide ? (
                     <>
-                      <Calendar className="w-5 h-5 text-blue-500" />
+                      <img src={iconRideLater3D} alt="Ride Later" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                       <span>Đặt trước lịch xe</span>
                       <span className="badge-soa" style={{ fontSize: '0.72rem', background: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6' }}>Ride Later</span>
                     </>
                   ) : (
                     <>
-                      <Bike className="w-5 h-5 text-emerald-600" />
+                      <img src={iconBike3D} alt="Bike" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                       <span>Đặt chuyến xe</span>
                       <span className="badge-soa" style={{ fontSize: '0.72rem' }}>Super-App Mobility</span>
                     </>
@@ -2449,8 +2472,8 @@ Quy tắc giao tiếp:
               <div className="location-stop-row">
                 <div className="stop-indicator pickup" />
                 <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#00b14f', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#00b14f', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <img src={iconPinPickup3D} alt="Pickup" style={{ width: 16, height: 16, objectFit: 'contain' }} />
                     <span>ĐIỂM ĐÓN KHÁCH</span>
                   </label>
                   <select
@@ -2484,8 +2507,8 @@ Quy tắc giao tiếp:
               <div className="location-stop-row">
                 <div className="stop-indicator dropoff" />
                 <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Flag className="w-3.5 h-3.5 text-rose-600" />
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <img src={iconPinDropoff3D} alt="Dropoff" style={{ width: 16, height: 16, objectFit: 'contain' }} />
                     <span>ĐIỂM ĐẾN</span>
                   </label>
                   <select
@@ -2510,7 +2533,7 @@ Quy tắc giao tiếp:
                 className={`chip-toggle ${weather === 'RAIN' ? 'active' : ''}`}
                 onClick={() => setWeather(weather === 'RAIN' ? 'CLEAR' : 'RAIN')}
               >
-                <CloudRain className="w-3.5 h-3.5" />
+                <img src={iconRain3D} alt="Rain" style={{ width: 18, height: 18, objectFit: 'contain' }} />
                 <span>Trời mưa (x1.25)</span>
               </button>
               <button
@@ -2518,7 +2541,7 @@ Quy tắc giao tiếp:
                 className={`chip-toggle ${isPeakHour ? 'active' : ''}`}
                 onClick={() => setIsPeakHour(!isPeakHour)}
               >
-                <Flame className="w-3.5 h-3.5 text-amber-500" />
+                <img src={iconFire3D} alt="Fire" style={{ width: 18, height: 18, objectFit: 'contain' }} />
                 <span>Giờ cao điểm (x1.2)</span>
               </button>
             </div>
@@ -2526,8 +2549,8 @@ Quy tắc giao tiếp:
             {/* VOUCHER PICKER */}
             <div className="form-group" style={{ marginBottom: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label" style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <TicketPercent className="w-3.5 h-3.5 text-emerald-600" />
+                <label className="form-label" style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <img src={iconGift3D} alt="Voucher" style={{ width: 16, height: 16, objectFit: 'contain' }} />
                   <span>Ưu đãi & Voucher</span>
                 </label>
                 {selectedVoucherCode && (
@@ -2563,11 +2586,11 @@ Quy tắc giao tiếp:
                     onClick={() => setSelectedVehicleCode(est.vehicleCode)}
                   >
                     <div className="vehicle-pro-left">
-                      <div className="vehicle-pro-icon-box">
-                        {est.vehicleCode === 'BIKE' && <Bike className="w-5 h-5 text-emerald-600" />}
-                        {est.vehicleCode === 'CAR_4' && <Car className="w-5 h-5 text-blue-600" />}
-                        {est.vehicleCode === 'CAR_7' && <Car className="w-5 h-5 text-indigo-600" />}
-                        {est.vehicleCode === 'LUXURY' && <Sparkles className="w-5 h-5 text-amber-500" />}
+                      <div className="vehicle-pro-icon-box" style={{ background: 'transparent' }}>
+                        {est.vehicleCode === 'BIKE' && <img src={iconBike3D} alt="Bike" style={{ width: 32, height: 32, objectFit: 'contain' }} />}
+                        {est.vehicleCode === 'CAR_4' && <img src={iconCar3D} alt="Car 4" style={{ width: 34, height: 34, objectFit: 'contain' }} />}
+                        {est.vehicleCode === 'CAR_7' && <img src={iconCar3D} alt="Car 7" style={{ width: 34, height: 34, objectFit: 'contain' }} />}
+                        {est.vehicleCode === 'LUXURY' && <img src={iconCrown3D} alt="Luxury" style={{ width: 30, height: 30, objectFit: 'contain' }} />}
                       </div>
                       <div className="vehicle-pro-info">
                         <h4>
@@ -2602,7 +2625,7 @@ Quy tắc giao tiếp:
                   onClick={() => setPaymentMethod('WALLET')}
                   style={{ padding: '4px 10px', fontSize: '0.75rem' }}
                 >
-                  <Wallet className="w-3.5 h-3.5" />
+                  <img src={iconWallet3D} alt="Wallet" style={{ width: 16, height: 16, objectFit: 'contain' }} />
                   <span>Ví ({walletBalance.toLocaleString('vi-VN')}đ)</span>
                 </button>
                 <button
@@ -2611,7 +2634,7 @@ Quy tắc giao tiếp:
                   onClick={() => setPaymentMethod('CASH')}
                   style={{ padding: '4px 10px', fontSize: '0.75rem' }}
                 >
-                  <Banknote className="w-3.5 h-3.5" />
+                  <img src={iconCoin3D} alt="Cash" style={{ width: 16, height: 16, objectFit: 'contain' }} />
                   <span>Tiền mặt</span>
                 </button>
               </div>
@@ -2762,7 +2785,7 @@ Quy tắc giao tiếp:
                         <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>{assignedDriverInfo?.name || activeRide?.driver?.name || 'Trần Minh Tài'}</span>
                           <span style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> 4.98 (1.4k+)
+                            <img src={iconStar3D} alt="Rating" style={{ width: 14, height: 14, objectFit: 'contain' }} /> 4.98 (1.4k+)
                           </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
@@ -2878,6 +2901,7 @@ Quy tắc giao tiếp:
                     }
                   }}
                 >
+                  {cat.icon3d && <img src={cat.icon3d} alt={cat.label} style={{ width: 18, height: 18, objectFit: 'contain' }} />}
                   <span>{cat.label}</span>
                 </button>
               ))}
@@ -3063,7 +3087,7 @@ Quy tắc giao tiếp:
           <div className="card" id="customer-cart-section">
             <div className="card-header">
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ShoppingBag className="w-5 h-5 text-emerald-600" />
+                <img src={iconCart3D} alt="Cart" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                 <span>Giỏ hàng của bạn</span>
               </div>
               <span className="oop-tag">{cart.length} món</span>
@@ -3071,7 +3095,7 @@ Quy tắc giao tiếp:
 
             {cart.length === 0 ? (
               <div className="price-sub" style={{ padding: '28px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                <ShoppingBag className="w-10 h-10 text-slate-300" />
+                <img src={iconCart3D} alt="Cart" style={{ width: 44, height: 44, objectFit: 'contain', opacity: 0.7 }} />
                 <span style={{ fontWeight: 600, color: '#64748b' }}>Giỏ hàng đang trống. Hãy chọn món ăn từ thực đơn bên trái.</span>
               </div>
             ) : (
@@ -3240,7 +3264,7 @@ Quy tắc giao tiếp:
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="mobile-cart-badge">
-              <ShoppingBag className="w-4 h-4 text-white" />
+              <img src={iconCart3D} alt="Cart" style={{ width: 18, height: 18, objectFit: 'contain' }} />
               <span className="mobile-cart-count">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
             </div>
             <div>
@@ -4212,7 +4236,7 @@ Quy tắc giao tiếp:
                   <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#00b14f' }}>210 Điểm</div>
                 </div>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Award className="w-7 h-7 text-amber-500" />
+                  <img src={iconCrown3D} alt="VIP" style={{ width: 34, height: 34, objectFit: 'contain' }} />
                 </div>
               </div>
               <div style={{ marginTop: '12px' }}>
@@ -4383,7 +4407,7 @@ Quy tắc giao tiếp:
 
       {/* FLOATING AI CHAT WIDGET */}
       <button className="ai-fab" onClick={() => setAiOpen(!aiOpen)}>
-        <Bot className="w-5 h-5 text-emerald-400" />
+        <img src={iconAi3D} alt="AI" style={{ width: 22, height: 22, objectFit: 'contain' }} />
         <span>{aiOpen ? 'Đóng Trợ lý AI' : 'Trợ lý AI RideEat'}</span>
       </button>
 
