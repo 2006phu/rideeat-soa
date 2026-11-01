@@ -2907,3 +2907,171 @@ code, pre, .mono {
   color: #0f172a;
   border-color: #34d399;
 }
+
+
+/* ==========================================================================
+   SERVICE QUICK TABS 3D (ICON-ONLY, NO TEXT)
+   ========================================================================== */
+.service-quick-tabs-3d {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-mini-3d-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.service-mini-3d-btn:hover {
+  transform: translateY(-2px) scale(1.08);
+  border-color: #00b14f;
+  box-shadow: 0 4px 12px rgba(0, 177, 79, 0.18);
+}
+
+.service-mini-3d-btn.active {
+  background: rgba(0, 177, 79, 0.12);
+  border: 2px solid #00b14f;
+  box-shadow: 0 0 0 1px #00b14f, 0 4px 12px rgba(0, 177, 79, 0.25);
+  transform: translateY(-1px);
+}
+
+.service-mini-3d-btn .mini-3d-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
+  transition: transform 0.2s ease;
+}
+
+.service-mini-3d-btn:hover .mini-3d-img {
+  transform: scale(1.1);
+}
+
+[data-theme="dark"] .service-mini-3d-btn {
+  background: #1a2234;
+  border-color: #334155;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .service-mini-3d-btn:hover {
+  background: #202b42;
+  border-color: #34d399;
+}
+
+[data-theme="dark"] .service-mini-3d-btn.active {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: #34d399;
+  box-shadow: 0 0 0 1px #34d399, 0 4px 14px rgba(52, 211, 153, 0.3);
+}
+
+/* ==========================================================================
+   HIGH-CONTRAST DARK MODE READABILITY OVERRIDES
+   ========================================================================== */
+[data-theme="dark"] {
+  --text-primary: #ffffff !important;
+  --text-secondary: #cbd5e1 !important;
+  --text-color: #ffffff !important;
+  --text-muted: #94a3b8 !important;
+  --border-color: #334155 !important;
+}
+
+[data-theme="dark"] body {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .card-title,
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] h4,
+[data-theme="dark"] .uiv-restaurant-card h4,
+[data-theme="dark"] .uiv-dish-card h5,
+[data-theme="dark"] .dish-title,
+[data-theme="dark"] .cart-item-title,
+[data-theme="dark"] .cart-title,
+[data-theme="dark"] .checkout-label,
+[data-theme="dark"] .order-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .price-sub,
+[data-theme="dark"] .brand-subtitle,
+[data-theme="dark"] .form-label,
+[data-theme="dark"] .price-row span:first-child,
+[data-theme="dark"] .uiv-restaurant-card p,
+[data-theme="dark"] .uiv-dish-card p,
+[data-theme="dark"] .dish-desc,
+[data-theme="dark"] .restaurant-info,
+[data-theme="dark"] .bill-row-label,
+[data-theme="dark"] .price-row,
+[data-theme="dark"] .breadcrumb-current,
+[data-theme="dark"] .dish-meta-text {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .input-field,
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #1a2234 !important;
+  color: #ffffff !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] .input-field::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .info-box,
+[data-theme="dark"] .badge-soa,
+[data-theme="dark"] .oop-tag {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .nav-tab {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .nav-tab:hover {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .nav-tab.active {
+  color: #ffffff;
+  border-bottom-color: #00b14f;
+}
+
+[data-theme="dark"] .category-tab-btn {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .category-tab-btn.active {
+  background: #00b14f;
+  color: #ffffff;
+  border-color: #00b14f;
+}
+
+[data-theme="dark"] .restaurant-pill-btn {
+  background: #151c2c;
+  color: #cbd5e1;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .restaurant-pill-btn.active {
+  background: rgba(0, 177, 79, 0.2);
+  color: #34d399;
+  border-color: #34d399;
+}

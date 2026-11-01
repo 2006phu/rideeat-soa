@@ -10,6 +10,12 @@ import WaveInput from './components/WaveInput.jsx';
 import StarRating from './components/StarRating.jsx';
 import LoginForm from './components/LoginForm.jsx';
 import CustomerHome3D from './components/CustomerHome3D.jsx';
+import iconBike3D from './assets/icons3d/bike.png';
+import iconFood3D from './assets/icons3d/food.png';
+import iconCoin3D from './assets/icons3d/coin.png';
+import iconVoucher3D from './assets/icons3d/voucher.png';
+import iconDineout3D from './assets/icons3d/dineout.png';
+
 import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
@@ -2136,6 +2142,33 @@ Quy tắc giao tiếp:
   return (
     <ClickSpark sparkColor={themeMode === 'dark' ? '#34d399' : '#00b14f'} sparkCount={9} sparkRadius={22}>
       <div className="app-shell">
+      {/* DOCKED CORNER DAY/NIGHT SWITCH (TINH GỌN Ở GÓC MÀN HÌNH) */}
+      <div
+        className="docked-theme-corner"
+        style={{
+          position: 'fixed',
+          top: '12px',
+          right: '16px',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          background: themeMode === 'dark' ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)',
+          padding: '4px 8px',
+          borderRadius: '16px',
+          border: themeMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+          transition: 'all 0.25s ease'
+        }}
+      >
+        <SketchyThemeSwitch
+          checked={themeMode === 'dark'}
+          onChange={toggleTheme}
+          style={{ transform: 'scale(0.4)', transformOrigin: 'center center', margin: '-14px -16px' }}
+          title="Chuyển đổi giao diện Sáng / Tối"
+        />
+      </div>
+
         {/* SCROLL-HIDE HEADER WITH MOTION */}
       <motion.header
         className="top-header"
@@ -2204,50 +2237,80 @@ Quy tắc giao tiếp:
         />
       )}
 
-      {/* 2. THANH ĐIỀU HƯỚNG QUAY LẠI TRANG CHỦ & CHUYỂN NHANH KHI ĐANG Ở TRONG TRANG NGHIỆP VỤ */}
+      {/* 2. THANH ĐIỀU HƯỚNG TINH GỌN: CHỈ HIỆN TRANG CHỦ & NGHIỆP VỤ ĐANG DÙNG + CỤM ICON 3D KHÔNG CHỮ */}
       {activeTab !== 'HOME' && (currentUser.role === 'CUSTOMER' || currentUser.role === 'ADMIN') && ['RIDE', 'FOOD', 'WALLET', 'PROMO', 'RATING'].includes(activeTab) && (
         <div className="service-page-header-bar">
           <div className="service-header-left">
             <button
               type="button"
               className="btn-back-home-3d"
-              onClick={() => setActiveTab('HOME')}
-              title="Quay lại Màn hình chính 3D"
+              onClick={() => {
+                setDeliveryMode(false);
+                setScheduledRide(false);
+                setActiveTab('HOME');
+              }}
+              title="Về Trang chủ"
+              aria-label="Về Trang chủ"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Quay lại Trang chủ 3D</span>
+              <span>Trang chủ</span>
             </button>
             <div className="service-breadcrumb">
-              <span className="breadcrumb-link" onClick={() => setActiveTab('HOME')}>Trang chủ</span>
+              <span
+                className="breadcrumb-link"
+                onClick={() => {
+                  setDeliveryMode(false);
+                  setScheduledRide(false);
+                  setActiveTab('HOME');
+                }}
+              >
+                Trang chủ
+              </span>
               <span className="breadcrumb-sep">/</span>
               <span className="breadcrumb-current">
-                {activeTab === 'RIDE' && '🚗 Đặt xe di chuyển'}
-                {activeTab === 'FOOD' && '🍜 Đặt đồ ăn đối tác'}
-                {activeTab === 'WALLET' && '💳 Ví RidePay & Thẻ'}
-                {activeTab === 'PROMO' && '🎟️ Ưu đãi & Khuyến mãi'}
-                {activeTab === 'RATING' && '⭐ Đánh giá & Góp ý'}
+                {activeTab === 'RIDE' && (
+                  deliveryMode
+                    ? '📦 Giao hàng (GrabExpress)'
+                    : scheduledRide
+                    ? '📅 Đặt trước (Ride Later)'
+                    : selectedVehicleCode === 'BIKE'
+                    ? '🛵 GrabBike'
+                    : '🚗 GrabCar'
+                )}
+                {activeTab === 'FOOD' && '🍜 Đặt đồ ăn'}
+                {activeTab === 'WALLET' && '💳 Ví & Thẻ'}
+                {activeTab === 'PROMO' && '🎟️ Khuyến mãi'}
+                {activeTab === 'RATING' && '⭐ Đánh giá'}
               </span>
             </div>
           </div>
 
-          <div className="service-quick-tabs">
+          {/* CỤM ICON 3D TINH GỌN (KHÔNG CHỮ) ĐỂ CHUYỂN NHANH NGHIỆP VỤ */}
+          <div className="service-quick-tabs-3d">
             {[
-              { id: 'RIDE', label: 'Đặt xe', icon: <Bike className="w-3.5 h-3.5" /> },
-              { id: 'FOOD', label: 'Đặt đồ ăn', icon: <UtensilsCrossed className="w-3.5 h-3.5" /> },
-              { id: 'WALLET', label: 'Ví & Thẻ', icon: <Wallet className="w-3.5 h-3.5" /> },
-              { id: 'PROMO', label: 'Khuyến mãi', icon: <TicketPercent className="w-3.5 h-3.5" /> },
-              { id: 'RATING', label: 'Đánh giá', icon: <Star className="w-3.5 h-3.5" /> },
+              { id: 'RIDE', label: 'Đặt xe', icon3d: iconBike3D },
+              { id: 'FOOD', label: 'Đặt đồ ăn', icon3d: iconFood3D },
+              { id: 'WALLET', label: 'Ví & Thẻ RidePay', icon3d: iconCoin3D },
+              { id: 'PROMO', label: 'Khuyến mãi & Voucher', icon3d: iconVoucher3D },
+              { id: 'RATING', label: 'Đánh giá & Góp ý', icon3d: iconDineout3D },
             ]
               .filter((srv) => currentUser.allowedTabs.includes(srv.id))
               .map((srv) => (
                 <button
                   key={srv.id}
                   type="button"
-                  className={`service-quick-tab-btn ${activeTab === srv.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(srv.id)}
+                  className={`service-mini-3d-btn ${activeTab === srv.id ? 'active' : ''}`}
+                  onClick={() => {
+                    if (srv.id === 'RIDE') {
+                      setDeliveryMode(false);
+                      setScheduledRide(false);
+                    }
+                    setActiveTab(srv.id);
+                  }}
+                  title={srv.label}
+                  aria-label={srv.label}
                 >
-                  {srv.icon}
-                  <span>{srv.label}</span>
+                  <img src={srv.icon3d} alt={srv.label} className="mini-3d-img" />
                 </button>
               ))}
           </div>
@@ -2566,19 +2629,19 @@ Quy tắc giao tiếp:
 
             {/* BOOK BUTTON / RIDE ACTION */}
             {rideStage === 'IDLE' || rideStage === 'COMPLETED' ? (
-              <div style={{ position: 'relative', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0' }}>
+              <div style={{ position: 'relative', height: '54px', margin: '12px 0 8px', borderRadius: '14px', overflow: 'hidden' }}>
                 <FlyingButton
                   theme={themeMode}
-                  size="large"
-                  altitude={140}
-                  hoverTime={2.4}
+                  size="medium"
+                  altitude={25}
+                  hoverTime={1.5}
                   jets={2}
                   thrusters
-                  trigger="hover"
-                  carryCursor
-                  smoke={1}
-                  turbulence={1}
-                  wobble={1}
+                  trigger="click"
+                  carryCursor={false}
+                  smoke={0.25}
+                  turbulence={0.5}
+                  wobble={0.5}
                   ramp={false}
                   thrustColor={deliveryMode ? "#f97316" : scheduledRide ? "#3b82f6" : (themeMode === 'dark' ? "#3ef09a" : "#00b14f")}
                   smokeColor={themeMode === 'dark' ? "#333333" : "#eef1f6"}
@@ -3113,19 +3176,19 @@ Quy tắc giao tiếp:
               </div>
             </div>
 
-            <div style={{ position: 'relative', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0' }}>
+            <div style={{ position: 'relative', height: '54px', margin: '12px 0 8px', borderRadius: '14px', overflow: 'hidden' }}>
               <FlyingButton
                 theme={themeMode}
-                size="large"
-                altitude={140}
-                hoverTime={2.4}
+                size="medium"
+                altitude={25}
+                hoverTime={1.5}
                 jets={2}
                 thrusters
-                trigger="hover"
-                carryCursor
-                smoke={1}
-                turbulence={1}
-                wobble={1}
+                trigger="click"
+                carryCursor={false}
+                smoke={0.25}
+                turbulence={0.5}
+                wobble={0.5}
                 ramp={false}
                 thrustColor="#ff5722"
                 smokeColor={themeMode === 'dark' ? "#333333" : "#fbe9e7"}

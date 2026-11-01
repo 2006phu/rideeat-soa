@@ -357,13 +357,13 @@ const StyledWrapper = styled.div`
     font-size: 1.55rem;
     font-weight: 800;
     margin: 0 0 6px 0;
-    color: var(--text-color, #0f172a);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#ffffff' : '#0f172a')};
     letter-spacing: -0.02em;
   }
 
   .hero-subtext {
     font-size: 0.92rem;
-    color: var(--text-muted, #64748b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#cbd5e1' : '#64748b')};
     margin: 0 0 16px 0;
   }
 
@@ -383,7 +383,7 @@ const StyledWrapper = styled.div`
     border-radius: 99px;
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--text-color, #1e293b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#ffffff' : '#1e293b')};
   }
 
   .wallet-pill-hero {
@@ -396,7 +396,7 @@ const StyledWrapper = styled.div`
     border-radius: 99px;
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--text-color, #1e293b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#ffffff' : '#1e293b')};
     cursor: pointer;
     transition: all 0.2s ease;
   }
@@ -436,7 +436,7 @@ const StyledWrapper = styled.div`
 
   .promo-desc {
     font-size: 0.8rem;
-    color: var(--text-muted, #64748b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#cbd5e1' : '#64748b')};
     line-height: 1.35;
     margin-bottom: 12px;
   }
@@ -522,7 +522,7 @@ const StyledWrapper = styled.div`
   .tracker-route {
     font-size: 0.88rem;
     font-weight: 600;
-    color: var(--text-color, #1e293b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#ffffff' : '#1e293b')};
     display: flex;
     align-items: center;
     gap: 8px;
@@ -558,14 +558,14 @@ const StyledWrapper = styled.div`
   .section-main-title {
     font-size: 1.25rem;
     font-weight: 800;
-    color: var(--text-color, #0f172a);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#ffffff' : '#0f172a')};
     margin: 0 0 4px 0;
     letter-spacing: -0.01em;
   }
 
   .section-sub-title {
     font-size: 0.86rem;
-    color: var(--text-muted, #64748b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#cbd5e1' : '#64748b')};
     margin: 0;
   }
 
@@ -579,7 +579,7 @@ const StyledWrapper = styled.div`
     border-radius: 99px;
     font-size: 0.82rem;
     font-weight: 700;
-    color: var(--text-color, #1e293b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#ffffff' : '#1e293b')};
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -697,7 +697,7 @@ const StyledWrapper = styled.div`
   .grab-3d-title {
     font-size: 1.05rem;
     font-weight: 700;
-    color: var(--text-color, #1e293b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#ffffff' : '#1e293b')};
     margin-top: 2px;
     text-align: center;
     line-height: 1.25;
@@ -705,7 +705,7 @@ const StyledWrapper = styled.div`
 
   .grab-3d-sub {
     font-size: 0.78rem;
-    color: var(--text-muted, #64748b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#cbd5e1' : '#64748b')};
     text-align: center;
     margin-top: 3px;
     line-height: 1.25;
@@ -776,12 +776,12 @@ const StyledWrapper = styled.div`
   .shortcut-label {
     font-size: 0.9rem;
     font-weight: 700;
-    color: var(--text-color, #1e293b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#ffffff' : '#1e293b')};
   }
 
   .shortcut-val {
     font-size: 0.78rem;
-    color: var(--text-muted, #64748b);
+    color: ${({ themeMode }) => (themeMode === 'dark' ? '#cbd5e1' : '#64748b')};
   }
 `;
 

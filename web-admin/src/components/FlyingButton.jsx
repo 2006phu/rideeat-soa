@@ -3279,38 +3279,22 @@ function createEngine({ root, canvas, button, cursor, ramp, props }) {
 
 
   const onClick = e => {
-
+    if (props.current.onClick) {
+      props.current.onClick(e);
+    }
     if (s.suppress) {
-
       s.suppress = false;
-
-      e.stopPropagation();
-
-      e.preventDefault();
-
       return;
-
     }
-
     if (s.phase !== 'rest') return;
-
     if (rampOn()) {
-
       ride();
-
       return;
-
     }
-
     if (launch() && s.pointer.type === 'mouse' && s.pointer.in && s.hover) {
-
       s.attached = Boolean(props.current.carryCursor);
-
     }
-
   };
-
-
 
   root.addEventListener('pointermove', onMove);
 
@@ -4002,7 +3986,7 @@ export default function FlyingButton({
 
   radius,
 
-  altitude = 170,
+  altitude = 25,
 
   hoverTime = 2.4,
 
@@ -4010,15 +3994,15 @@ export default function FlyingButton({
 
   thrusters = true,
 
-  trigger = 'hover',
+  trigger = 'click',
 
-  carryCursor = true,
+  carryCursor = false,
 
   ramp = false,
 
   rampColor,
 
-  smoke = 1,
+  smoke = 0.25,
 
   turbulence = 1,
 
