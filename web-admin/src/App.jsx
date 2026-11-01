@@ -2197,17 +2197,7 @@ Quy tắc giao tiếp:
         </div>
 
         <div className="header-pills">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              {themeMode === 'light' ? 'Sáng' : 'Tối'}
-            </span>
-            <SketchyThemeSwitch
-              checked={themeMode === 'dark'}
-              onChange={toggleTheme}
-              style={{ transform: 'scale(0.52)', transformOrigin: 'right center', margin: '-10px 0' }}
-              title="Chuyển đổi giao diện Sáng / Tối"
-            />
-          </div>
+          
           <div className="wallet-pill">
             <Wallet className="w-4 h-4 text-emerald-600" />
             <span>Số dư:</span>

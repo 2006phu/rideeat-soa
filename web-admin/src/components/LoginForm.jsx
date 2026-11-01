@@ -69,11 +69,11 @@ const LoginForm = ({
             <Bike className="brand-icon" />
             <span className="brand-name">RideEat</span>
           </div>
-          <div className="theme-toggle-box">
+          <div className="theme-toggle-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', height: '36px', overflow: 'visible' }}>
             <SketchyThemeSwitch
               checked={themeMode === "dark"}
               onChange={toggleTheme}
-              style={{ transform: "scale(0.55)", transformOrigin: "right center" }}
+              style={{ transform: "scale(0.38)", transformOrigin: "right center", margin: "-12px 0" }}
               title="Chuyển đổi giao diện Sáng / Tối"
             />
           </div>
