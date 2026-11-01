@@ -3270,15 +3270,17 @@ function createEngine({ root, canvas, button, cursor, ramp, props }) {
 
       else if (props.current.trigger === 'click' && launch()) s.attached = Boolean(props.current.carryCursor);
 
-      if (props.current.onClick) props.current.onClick(e);
-
     }
 
   };
 
 
 
+  let lastClickTime = 0;
   const onClick = e => {
+    const now = Date.now();
+    if (now - lastClickTime < 350) return;
+    lastClickTime = now;
     if (props.current.onClick) {
       props.current.onClick(e);
     }
@@ -4213,8 +4215,6 @@ export default function FlyingButton({
         type="button"
 
         className="flying-button__craft"
-
-        onClick={e => propsRef.current.onClick && propsRef.current.onClick(e)}
 
       >
 

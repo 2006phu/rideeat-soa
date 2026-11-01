@@ -395,6 +395,15 @@ export default function App() {
 
   // Shared User & Wallet State
   const [walletBalance, setWalletBalance] = useState(500000);
+  const isBookingRideRef = useRef(false);
+  const isPlacingFoodOrderRef = useRef(false);
+
+  // Ngăn chặn số dư âm trong mọi trường hợp (Auto-heal negative balance)
+  useEffect(() => {
+    if (walletBalance < 0) {
+      setWalletBalance(500000);
+    }
+  }, [walletBalance]);
   const [paymentMethod, setPaymentMethod] = useState('WALLET');
   const [vouchers, setVouchers] = useState([]);
   const [selectedVoucherCode, setSelectedVoucherCode] = useState('RIDEEAT50');
@@ -1735,34 +1744,41 @@ Quy tắc giao tiếp:
 
   const handleBookRide = async () => {
     if (!currentVehicleEstimate) return;
+    if (isBookingRideRef.current) return;
+
     if (paymentMethod === 'WALLET' && walletBalance < currentVehicleEstimate.finalFare) {
-      alert('Số dư ví không đủ! Vui lòng nạp thêm.');
+      alert(`⚠️ Số dư ví không đủ!\n• Số dư hiện tại: ${Math.max(0, walletBalance).toLocaleString('vi-VN')} đ\n• Cần thanh toán: ${currentVehicleEstimate.finalFare.toLocaleString('vi-VN')} đ\nVui lòng nạp thêm tiền vào ví RidePay hoặc chuyển sang thanh toán bằng Tiền mặt.`);
       return;
     }
 
-    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
-    const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
+    isBookingRideRef.current = true;
+    try {
+      const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
+      const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
 
-    const res = await apiRegistry.ride.bookRide({
-      pickup,
-      dropoff,
-      vehicleCode: currentVehicleEstimate.vehicleCode,
-      fare: currentVehicleEstimate.finalFare,
-      paymentMethod
-    });
+      const res = await apiRegistry.ride.bookRide({
+        pickup,
+        dropoff,
+        vehicleCode: currentVehicleEstimate.vehicleCode,
+        fare: currentVehicleEstimate.finalFare,
+        paymentMethod
+      });
 
-    const payRes = await apiRegistry.payment.processTransaction({
-      userId: currentUser?.id || 'usr-customer-001',
-      amount: currentVehicleEstimate.finalFare,
-      method: paymentMethod,
-      referenceId: res.ride_id,
-      referenceType: 'RIDE',
-      description: `Đặt ${currentVehicleEstimate.vehicleName} (${pickup.name} → ${dropoff.name})`
-    });
+      const payRes = await apiRegistry.payment.processTransaction({
+        userId: currentUser?.id || 'usr-customer-001',
+        amount: currentVehicleEstimate.finalFare,
+        method: paymentMethod,
+        referenceId: res.ride_id,
+        referenceType: 'RIDE',
+        description: `Đặt ${currentVehicleEstimate.vehicleName} (${pickup.name} → ${dropoff.name})`
+      });
 
-    if (paymentMethod === 'WALLET') {
-      setWalletBalance((prev) => prev - currentVehicleEstimate.finalFare);
-    }
+      if (paymentMethod === 'WALLET') {
+        setWalletBalance((prev) => {
+          if (prev < currentVehicleEstimate.finalFare) return prev;
+          return Math.max(0, prev - currentVehicleEstimate.finalFare);
+        });
+      }
 
     setTransactions((prev) => [{ ...payRes, type: 'DEBIT' }, ...prev]);
 
@@ -1816,6 +1832,11 @@ Quy tắc giao tiếp:
       }
     });
     setOtpInput(res.otp_code);
+    } finally {
+      setTimeout(() => {
+        isBookingRideRef.current = false;
+      }, 800);
+    }
   };
 
   // Stage 1: SEARCHING Engine (~4.5s Radar Scan)
@@ -2019,34 +2040,41 @@ Quy tắc giao tiếp:
 
   const handlePlaceFoodOrder = async () => {
     if (cart.length === 0) return;
+    if (isPlacingFoodOrderRef.current) return;
+
     if (!merchantOnline) {
       alert('Quán ăn hiện đang tạm đóng cửa ngưng nhận đơn mới. Vui lòng quay lại sau ít phút!');
       return;
     }
     if (paymentMethod === 'WALLET' && walletBalance < foodFinalTotal) {
-      alert('Số dư ví không đủ!');
+      alert(`⚠️ Số dư ví không đủ!\n• Số dư hiện tại: ${Math.max(0, walletBalance).toLocaleString('vi-VN')} đ\n• Tổng tiền món: ${foodFinalTotal.toLocaleString('vi-VN')} đ\nVui lòng nạp thêm tiền vào ví RidePay hoặc chuyển sang thanh toán bằng Tiền mặt.`);
       return;
     }
 
-    const orderRes = await apiRegistry.food.createOrder({
-      restaurantName: selectedRestaurant?.name || 'Nhà hàng',
-      items: cart,
-      finalTotal: foodFinalTotal,
-      voucherCode: selectedVoucherCode
-    });
+    isPlacingFoodOrderRef.current = true;
+    try {
+      const orderRes = await apiRegistry.food.createOrder({
+        restaurantName: selectedRestaurant?.name || 'Nhà hàng',
+        items: cart,
+        finalTotal: foodFinalTotal,
+        voucherCode: selectedVoucherCode
+      });
 
-    const payRes = await apiRegistry.payment.processTransaction({
-      userId: currentUser?.id || 'usr-customer-001',
-      amount: foodFinalTotal,
-      method: paymentMethod,
-      referenceId: orderRes.order_id,
-      referenceType: 'FOOD',
-      description: `Đặt món tại ${selectedRestaurant?.name}`
-    });
+      const payRes = await apiRegistry.payment.processTransaction({
+        userId: currentUser?.id || 'usr-customer-001',
+        amount: foodFinalTotal,
+        method: paymentMethod,
+        referenceId: orderRes.order_id,
+        referenceType: 'FOOD',
+        description: `Đặt món tại ${selectedRestaurant?.name}`
+      });
 
-    if (paymentMethod === 'WALLET') {
-      setWalletBalance((prev) => prev - foodFinalTotal);
-    }
+      if (paymentMethod === 'WALLET') {
+        setWalletBalance((prev) => {
+          if (prev < foodFinalTotal) return prev;
+          return Math.max(0, prev - foodFinalTotal);
+        });
+      }
 
     setTransactions((prev) => [{ ...payRes, type: 'DEBIT' }, ...prev]);
     setActiveFoodOrder({
@@ -2073,6 +2101,11 @@ Quy tắc giao tiếp:
     setMerchantTodayRevenue((prev) => prev + foodFinalTotal);
     if (merchantSoundEnabled) {
       playSoundChime('MERCHANT');
+    }
+    } finally {
+      setTimeout(() => {
+        isPlacingFoodOrderRef.current = false;
+      }, 800);
     }
   };
 
@@ -2640,6 +2673,14 @@ Quy tắc giao tiếp:
               </div>
             </div>
 
+            {/* CẢNH BÁO SỐ DƯ VÍ KHÔNG ĐỦ */}
+            {paymentMethod === 'WALLET' && walletBalance < (currentVehicleEstimate?.finalFare || 0) && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', padding: '10px 14px', margin: '8px 0', color: '#b91c1c', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <span>Số dư ví không đủ ({Math.max(0, walletBalance).toLocaleString('vi-VN')} đ / {(currentVehicleEstimate?.finalFare || 0).toLocaleString('vi-VN')} đ). Hãy nạp thêm hoặc đổi sang Tiền mặt.</span>
+              </div>
+            )}
+
             {/* BOOK BUTTON / RIDE ACTION */}
             {rideStage === 'IDLE' || rideStage === 'COMPLETED' ? (
               <div style={{ position: 'relative', height: '54px', margin: '12px 0 8px', borderRadius: '14px', overflow: 'hidden' }}>
@@ -3189,6 +3230,13 @@ Quy tắc giao tiếp:
                 <span style={{ color: '#00b14f' }}>{foodFinalTotal.toLocaleString('vi-VN')} đ</span>
               </div>
             </div>
+
+            {paymentMethod === 'WALLET' && walletBalance < foodFinalTotal && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', padding: '10px 14px', margin: '8px 0', color: '#b91c1c', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <span>Số dư ví không đủ ({Math.max(0, walletBalance).toLocaleString('vi-VN')} đ / {foodFinalTotal.toLocaleString('vi-VN')} đ). Hãy nạp thêm hoặc đổi sang Tiền mặt.</span>
+              </div>
+            )}
 
             <div style={{ position: 'relative', height: '54px', margin: '12px 0 8px', borderRadius: '14px', overflow: 'hidden' }}>
               <FlyingButton
@@ -4153,11 +4201,12 @@ Quy tắc giao tiếp:
               </div>
             </div>
 
-            <div className="form-label">Nạp tiền nhanh</div>
+            <div className="form-label">Nạp tiền nhanh & Cân đối ví</div>
             <div className="toggle-row">
               <button className="btn-secondary" onClick={() => handleTopUpWallet(100000)}>+ 100.000 đ</button>
               <button className="btn-secondary" onClick={() => handleTopUpWallet(200000)}>+ 200.000 đ</button>
               <button className="btn-secondary" onClick={() => handleTopUpWallet(500000)}>+ 500.000 đ</button>
+              <button className="btn-secondary" onClick={() => setWalletBalance(500000)} style={{ color: '#00b14f', fontWeight: 700 }} title="Đặt lại số dư ví mẫu ban đầu">🔄 Khôi phục 500k</button>
             </div>
 
             <div className="form-label">Phương thức thanh toán mặc định</div>
