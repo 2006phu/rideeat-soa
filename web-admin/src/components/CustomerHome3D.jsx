@@ -10,22 +10,17 @@ import {
   MapPin,
   Gift,
   Flame,
-  Sparkles
+  Sparkles,
+  Calendar,
+  Package
 } from 'lucide-react';
 
 // Import authentic 3D icons (matching Grab Super-App)
 import iconBike from '../assets/icons3d/bike.png';
 import iconCar from '../assets/icons3d/car.png';
 import iconFood from '../assets/icons3d/food.png';
-import iconMart from '../assets/icons3d/mart.png';
-import iconMall from '../assets/icons3d/mall.png';
-import iconCoin from '../assets/icons3d/coin.png';
 import iconExpress from '../assets/icons3d/express.png';
-import iconDineOut from '../assets/icons3d/dineout.png';
 import iconRideLater from '../assets/icons3d/ridelater.png';
-import iconMap from '../assets/icons3d/map.png';
-import iconVoucher from '../assets/icons3d/voucher.png';
-import iconAi from '../assets/icons3d/ai.png';
 
 const CustomerHome3D = ({
   currentUser,
@@ -33,6 +28,8 @@ const CustomerHome3D = ({
   setActiveTab,
   setSelectedVehicleCode,
   setFoodCategoryFilter,
+  setDeliveryMode,
+  setScheduledRide,
   setShowAiChatModal,
   rideStage,
   pickupLocation,
@@ -42,8 +39,8 @@ const CustomerHome3D = ({
 }) => {
   const isOngoingRide = rideStage && rideStage !== 'IDLE' && rideStage !== 'COMPLETED' && rideStage !== 'CANCELLED';
 
+  // Chốt 5 nghiệp vụ cốt lõi theo đúng yêu cầu: Bike, Car, Food, Giao hàng, Ride later
   const services = [
-    // HÀNG 1 (TOP ROW IN USER IMAGE)
     {
       id: 'bike',
       name: 'Bike',
@@ -52,6 +49,8 @@ const CustomerHome3D = ({
       badgeColor: '#00b14f',
       img: iconBike,
       action: () => {
+        setDeliveryMode?.(false);
+        setScheduledRide?.(false);
         setSelectedVehicleCode?.('BIKE');
         setActiveTab('RIDE');
       }
@@ -64,58 +63,12 @@ const CustomerHome3D = ({
       badgeColor: '#00b14f',
       img: iconCar,
       action: () => {
+        setDeliveryMode?.(false);
+        setScheduledRide?.(false);
         setSelectedVehicleCode?.('CAR');
         setActiveTab('RIDE');
       }
     },
-    {
-      id: 'mart',
-      name: 'Mart',
-      sub: 'Đi chợ siêu thị',
-      badge: 'Tươi sống',
-      badgeColor: '#10b981',
-      img: iconMart,
-      action: () => {
-        setFoodCategoryFilter?.('HEALTHY');
-        setActiveTab('FOOD');
-      }
-    },
-    {
-      id: 'mall',
-      name: 'Mall',
-      sub: 'GrabMall chính hãng',
-      badge: 'Chính hãng',
-      badgeColor: '#ec4899',
-      img: iconMall,
-      action: () => {
-        setFoodCategoryFilter?.('ALL');
-        setActiveTab('FOOD');
-      }
-    },
-    {
-      id: 'coins',
-      name: 'GrabCoins',
-      sub: 'Ví RidePay & Thẻ',
-      badge: 'Ưu đãi',
-      badgeColor: '#f59e0b',
-      img: iconCoin,
-      action: () => {
-        setActiveTab('WALLET');
-      }
-    },
-    {
-      id: 'voucher',
-      name: 'Voucher',
-      sub: 'Mã giảm tới 50%',
-      badge: 'Giảm 50%',
-      badgeColor: '#ef4444',
-      img: iconVoucher,
-      action: () => {
-        setActiveTab('PROMO');
-      }
-    },
-
-    // HÀNG 2 (BOTTOM ROW IN USER IMAGE)
     {
       id: 'food',
       name: 'Food',
@@ -129,25 +82,16 @@ const CustomerHome3D = ({
     },
     {
       id: 'express',
-      name: 'Express',
-      sub: 'Giao hàng siêu tốc',
+      name: 'Giao hàng',
+      sub: 'GrabExpress siêu tốc',
       badge: 'Giao 30p',
       badgeColor: '#f97316',
       img: iconExpress,
       action: () => {
+        setDeliveryMode?.(true);
+        setScheduledRide?.(false);
         setSelectedVehicleCode?.('BIKE');
         setActiveTab('RIDE');
-      }
-    },
-    {
-      id: 'dineout',
-      name: 'Dine Out',
-      sub: 'Ăn tại nhà hàng',
-      badge: 'Đặt bàn',
-      badgeColor: '#f59e0b',
-      img: iconDineOut,
-      action: () => {
-        setActiveTab('FOOD');
       }
     },
     {
@@ -158,29 +102,9 @@ const CustomerHome3D = ({
       badgeColor: '#3b82f6',
       img: iconRideLater,
       action: () => {
+        setDeliveryMode?.(false);
+        setScheduledRide?.(true);
         setActiveTab('RIDE');
-      }
-    },
-    {
-      id: 'map',
-      name: 'Map',
-      sub: 'Bản đồ định tuyến',
-      badge: 'Live GPS',
-      badgeColor: '#ef4444',
-      img: iconMap,
-      action: () => {
-        setActiveTab('RIDE');
-      }
-    },
-    {
-      id: 'ai',
-      name: 'Trợ lý AI',
-      sub: 'Google Gemini 2.5',
-      badge: 'AI 24/7',
-      badgeColor: '#06b6d4',
-      img: iconAi,
-      action: () => {
-        setShowAiChatModal?.(true);
       }
     }
   ];
@@ -197,7 +121,7 @@ const CustomerHome3D = ({
         <div className="hero-left">
           <div className="badge-welcome">
             <span className="dot-pulse" />
-            <span>Super-App Mobility & Food Delivery</span>
+            <span>Super-App Mobility & Delivery</span>
           </div>
           <h2 className="hero-greeting">
             Xin chào, <strong>{currentUser?.name || 'Khách hàng'}</strong> 👋
@@ -223,57 +147,61 @@ const CustomerHome3D = ({
           <div className="promo-highlight-box">
             <div className="promo-badge">Ưu đãi hôm nay</div>
             <div className="promo-code">RIDEEAT50</div>
-            <div className="promo-desc">Giảm 50% chuyến xe & món ăn</div>
+            <div className="promo-desc">Giảm ngay 50% (Tối đa 30.000đ) cho tất cả dịch vụ Bike, Car & Food</div>
             <button
               type="button"
-              className="promo-btn"
+              className="btn-use-promo"
               onClick={() => setActiveTab('PROMO')}
             >
-              Xem tất cả voucher <ArrowRight className="w-3.5 h-3.5" />
+              <Gift className="w-3.5 h-3.5" />
+              <span>Kho ưu đãi</span>
             </button>
           </div>
         </div>
       </motion.div>
 
-      {/* 2. ONGOING TRIP ALERT (IF ANY) */}
+      {/* 2. ONGOING RIDE TRACKER (IF ACTIVE) */}
       {isOngoingRide && (
         <motion.div
-          className="ongoing-ride-banner"
+          className="ongoing-tracker-card"
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={() => setActiveTab('RIDE')}
         >
-          <div className="ongoing-ride-info">
-            <div className="pulse-circle">
-              <Bike className="w-5 h-5 text-white" />
+          <div className="tracker-icon-box">
+            <Bike className="w-5 h-5 text-emerald-600 animate-bounce" />
+          </div>
+          <div className="tracker-details">
+            <div className="tracker-header">
+              <span className="tracker-status-tag">CHUYẾN ĐI ĐANG DIỄN RA</span>
+              <span className="tracker-stage">{rideStage}</span>
             </div>
-            <div>
-              <div className="ongoing-title">Chuyến xe của bạn đang tiến hành!</div>
-              <div className="ongoing-route">
-                <MapPin className="w-3.5 h-3.5 text-emerald-500 inline mr-1" />
-                {pickupLocation?.name} → {dropoffLocation?.name}
-              </div>
+            <div className="tracker-route">
+              <span className="route-pickup">{pickupLocation?.name || 'Điểm đón'}</span>
+              <span className="route-arrow">➔</span>
+              <span className="route-dropoff">{dropoffLocation?.name || 'Điểm đến'}</span>
             </div>
           </div>
-          <button type="button" className="ongoing-view-btn">
-            Mở bản đồ theo dõi <ArrowRight className="w-4 h-4" />
+          <button className="btn-tracker-action" onClick={() => setActiveTab('RIDE')}>
+            <span>Xem trực tiếp</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </motion.div>
       )}
 
       {/* 3. SECTION HEADER */}
-      <div className="section-header">
+      <div className="section-title-bar">
         <div>
-          <h3 className="section-title">Dịch vụ Siêu ứng dụng</h3>
-          <p className="section-subtitle">Chạm vào icon 3D để chuyển đến màn hình nghiệp vụ tương ứng</p>
+          <h3 className="section-main-title">Dịch vụ chính RideEat</h3>
+          <p className="section-sub-title">Chọn dịch vụ di chuyển, ẩm thực hoặc giao hàng nhanh chóng</p>
         </div>
-        <div className="quick-guide-tag">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Interactive 3D Grid</span>
+        <div className="ai-helper-btn" onClick={() => setShowAiChatModal?.(true)}>
+          <Sparkles className="w-4 h-4 text-emerald-500 animate-spin" style={{ animationDuration: '6s' }} />
+          <span>Hỏi Trợ lý AI</span>
         </div>
       </div>
 
-      {/* 4. AUTHENTIC 3D ICONS GRID (MATCHING USER SCREENSHOT) */}
+      {/* 4. AUTHENTIC 3D ICONS GRID (5 CORE SERVICES) */}
       <div className="grab-3d-grid-container">
         <div className="grab-3d-grid">
           {services.map((srv, idx) => (
@@ -282,13 +210,13 @@ const CustomerHome3D = ({
               className="grab-3d-item"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: idx * 0.03 }}
-              whileHover={{ y: -8, scale: 1.08 }}
-              whileTap={{ y: 2, scale: 0.94 }}
+              transition={{ duration: 0.25, delay: idx * 0.04 }}
+              whileHover={{ y: -8, scale: 1.06 }}
+              whileTap={{ y: 2, scale: 0.95 }}
               onClick={srv.action}
               title={`Mở dịch vụ: ${srv.name}`}
             >
-              {/* Badge (e.g. Hot, 3p, Giảm 50%) */}
+              {/* Badge (e.g. Hot 15p, Nhanh 3p, Giao 30p) */}
               {srv.badge && (
                 <span
                   className="grab-3d-badge"
@@ -312,36 +240,47 @@ const CustomerHome3D = ({
                 <div className="grab-3d-shadow" />
               </div>
 
-              {/* Label */}
-              <div className="grab-3d-label">{srv.name}</div>
-              <div className="grab-3d-sub">{srv.sub}</div>
+              {/* Title & Sub */}
+              <span className="grab-3d-title">{srv.name}</span>
+              <span className="grab-3d-sub">{srv.sub}</span>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* 5. BOTTOM PROMO BANNERS */}
-      <div className="bottom-promos-row">
-        <div className="promo-banner-card" onClick={() => setActiveTab('PROMO')}>
-          <div className="banner-icon-box bg-emerald-50 text-emerald-600">
-            <Gift className="w-6 h-6" />
+      {/* 5. FAST SHORTCUTS FOOTER */}
+      <div className="dashboard-shortcuts-row">
+        <div className="shortcut-card" onClick={() => setActiveTab('WALLET')}>
+          <div className="shortcut-icon wallet">
+            <Wallet className="w-5 h-5" />
           </div>
-          <div className="banner-info">
-            <div className="banner-title">Mã giảm 50% chuyến xe đầu tiên</div>
-            <div className="banner-sub">Nhập mã RIDEEAT50 khi thanh toán để giảm ngay tối đa 25.000đ</div>
+          <div className="shortcut-info">
+            <span className="shortcut-label">Ví & Thẻ RidePay</span>
+            <span className="shortcut-val">Nạp rút tức thì • 0đ phí</span>
           </div>
-          <button type="button" className="banner-action-btn">Dùng ngay</button>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
         </div>
 
-        <div className="promo-banner-card" onClick={() => setActiveTab('FOOD')}>
-          <div className="banner-icon-box bg-orange-50 text-orange-600">
-            <Flame className="w-6 h-6" />
+        <div className="shortcut-card" onClick={() => setActiveTab('PROMO')}>
+          <div className="shortcut-icon promo">
+            <Gift className="w-5 h-5" />
           </div>
-          <div className="banner-info">
-            <div className="banner-title">GrabFood Freeship 15.000đ</div>
-            <div className="banner-sub">Áp dụng cho mọi đơn từ 6 quán đối tác với mã FREESHIP15K</div>
+          <div className="shortcut-info">
+            <span className="shortcut-label">Ưu đãi của tôi</span>
+            <span className="shortcut-val">4 voucher sẵn sàng dùng</span>
           </div>
-          <button type="button" className="banner-action-btn">Đặt món</button>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
+        </div>
+
+        <div className="shortcut-card" onClick={() => setActiveTab('RATING')}>
+          <div className="shortcut-icon rating">
+            <Flame className="w-5 h-5" />
+          </div>
+          <div className="shortcut-info">
+            <span className="shortcut-label">Đánh giá & Góp ý</span>
+            <span className="shortcut-val">Chia sẻ trải nghiệm tài xế & món ăn</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
         </div>
       </div>
     </StyledWrapper>
@@ -349,85 +288,102 @@ const CustomerHome3D = ({
 };
 
 const StyledWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 8px 4px 32px;
+  animation: fadeIn 0.3s ease-out;
 
-  /* 1. Hero Welcome Card */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 1. HERO CARD */
   .hero-welcome-card {
-    background: var(--bg-card, #ffffff);
-    border: 1.5px solid var(--border-color, #e2e8f0);
+    background: ${({ themeMode }) =>
+      themeMode === 'dark'
+        ? 'linear-gradient(135deg, #111827 0%, #1e293b 100%)'
+        : 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)'};
+    border: 1px solid ${({ themeMode }) =>
+      themeMode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 177, 79, 0.15)'};
     border-radius: 24px;
     padding: 24px 28px;
-    margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-    position: relative;
-    overflow: hidden;
+    gap: 24px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
   }
 
-  .hero-left {
-    flex: 1;
-    min-width: 280px;
+  @media (max-width: 820px) {
+    .hero-welcome-card {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 20px;
+    }
   }
 
   .badge-welcome {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    background: rgba(0, 177, 79, 0.12);
+    color: #00b14f;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     padding: 4px 12px;
     border-radius: 99px;
-    background: rgba(0, 177, 79, 0.1);
-    color: #00b14f;
-    font-size: 11px;
-    font-weight: 700;
     margin-bottom: 10px;
   }
 
   .dot-pulse {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: #00b14f;
-    box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.25);
+    background-color: #00b14f;
+    box-shadow: 0 0 8px #00b14f;
   }
 
   .hero-greeting {
-    font-size: 1.6rem;
+    font-size: 1.55rem;
     font-weight: 800;
-    color: var(--text-primary, #0f172a);
     margin: 0 0 6px 0;
-    line-height: 1.25;
+    color: var(--text-color, #0f172a);
+    letter-spacing: -0.02em;
   }
 
   .hero-subtext {
-    font-size: 0.9rem;
-    color: var(--text-secondary, #64748b);
+    font-size: 0.92rem;
+    color: var(--text-muted, #64748b);
     margin: 0 0 16px 0;
   }
 
   .hero-chips {
     display: flex;
-    align-items: center;
-    gap: 12px;
     flex-wrap: wrap;
+    gap: 10px;
   }
 
   .loyalty-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    border-radius: 12px;
-    background: rgba(245, 158, 11, 0.12);
-    color: #d97706;
-    font-size: 12px;
-    font-weight: 700;
-    border: 1px solid rgba(245, 158, 11, 0.25);
+    padding: 6px 14px;
+    background: ${({ themeMode }) => (themeMode === 'dark' ? '#1f2937' : '#ffffff')};
+    border: 1px solid ${({ themeMode }) => (themeMode === 'dark' ? '#374151' : '#e2e8f0')};
+    border-radius: 99px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color, #1e293b);
   }
 
   .wallet-pill-hero {
@@ -435,193 +391,233 @@ const StyledWrapper = styled.div`
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    border-radius: 12px;
-    background: var(--bg-hover, #f1f5f9);
-    color: var(--text-primary, #0f172a);
-    font-size: 12px;
+    background: ${({ themeMode }) => (themeMode === 'dark' ? '#1f2937' : '#ffffff')};
+    border: 1px solid ${({ themeMode }) => (themeMode === 'dark' ? '#374151' : '#e2e8f0')};
+    border-radius: 99px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color, #1e293b);
     cursor: pointer;
-    border: 1px solid var(--border-color, #e2e8f0);
     transition: all 0.2s ease;
   }
 
   .wallet-pill-hero:hover {
     border-color: #00b14f;
-    background: rgba(0, 177, 79, 0.08);
-  }
-
-  .hero-right {
-    flex-shrink: 0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 177, 79, 0.15);
   }
 
   .promo-highlight-box {
-    background: linear-gradient(135deg, #00b14f 0%, #059669 100%);
-    color: white;
-    padding: 16px 20px;
+    background: ${({ themeMode }) =>
+      themeMode === 'dark' ? 'rgba(30, 41, 59, 0.7)' : 'rgba(255, 255, 255, 0.85)'};
+    backdrop-filter: blur(8px);
+    border: 1px dashed rgba(0, 177, 79, 0.4);
     border-radius: 18px;
-    box-shadow: 0 8px 20px rgba(0, 177, 79, 0.25);
-    text-align: center;
-    min-width: 220px;
+    padding: 16px 20px;
+    max-width: 320px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
   }
 
   .promo-badge {
-    font-size: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
+    color: #ef4444;
     letter-spacing: 0.5px;
-    font-weight: 800;
-    opacity: 0.9;
   }
 
   .promo-code {
-    font-size: 1.4rem;
-    font-weight: 900;
-    letter-spacing: 1px;
-    margin: 4px 0 2px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #00b14f;
+    letter-spacing: 0.5px;
+    margin: 2px 0 4px 0;
   }
 
   .promo-desc {
-    font-size: 11px;
-    opacity: 0.9;
-    margin-bottom: 10px;
+    font-size: 0.8rem;
+    color: var(--text-muted, #64748b);
+    line-height: 1.35;
+    margin-bottom: 12px;
   }
 
-  .promo-btn {
-    background: white;
-    color: #00b14f;
-    border: none;
-    outline: none;
-    padding: 6px 12px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
+  .btn-use-promo {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    transition: transform 0.15s ease;
-  }
-
-  .promo-btn:hover {
-    transform: scale(1.04);
-  }
-
-  /* 2. Ongoing Ride Banner */
-  .ongoing-ride-banner {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: white;
-    border-radius: 18px;
-    padding: 14px 20px;
-    margin-bottom: 22px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
-    border: 1.5px solid #334155;
-  }
-
-  .ongoing-ride-info {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .pulse-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    gap: 6px;
+    padding: 6px 14px;
     background: #00b14f;
+    color: #ffffff;
+    border: none;
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-use-promo:hover {
+    background: #009643;
+    transform: translateY(-1px);
+  }
+
+  /* 2. ONGOING TRACKER CARD */
+  .ongoing-tracker-card {
+    background: ${({ themeMode }) =>
+      themeMode === 'dark' ? '#064e3b' : '#ecfdf5'};
+    border: 1.5px solid #10b981;
+    border-radius: 20px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+  }
+
+  .ongoing-tracker-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.25);
+  }
+
+  .tracker-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(16, 185, 129, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 0 4px rgba(0, 177, 79, 0.35);
+    flex-shrink: 0;
   }
 
-  .ongoing-title {
-    font-weight: 800;
-    font-size: 0.95rem;
+  .tracker-details {
+    flex: 1;
   }
 
-  .ongoing-route {
-    font-size: 0.8rem;
-    color: #94a3b8;
-  }
-
-  .ongoing-view-btn {
-    background: #00b14f;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 8px 14px;
-    font-size: 12px;
-    font-weight: 700;
+  .tracker-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    cursor: pointer;
+    gap: 10px;
+    margin-bottom: 4px;
   }
 
-  /* 3. Section Title */
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 18px;
-    padding: 0 4px;
-  }
-
-  .section-title {
-    font-size: 1.3rem;
+  .tracker-status-tag {
+    font-size: 0.72rem;
     font-weight: 800;
-    color: var(--text-primary, #0f172a);
-    margin: 0 0 4px 0;
+    letter-spacing: 0.5px;
+    color: #059669;
   }
 
-  .section-subtitle {
-    font-size: 0.85rem;
-    color: var(--text-secondary, #64748b);
-    margin: 0;
+  .tracker-stage {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #10b981;
+    color: #ffffff;
   }
 
-  .quick-guide-tag {
+  .tracker-route {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-color, #1e293b);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .route-arrow {
+    color: #10b981;
+    font-weight: 700;
+  }
+
+  .btn-tracker-action {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 11.5px;
+    padding: 8px 16px;
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 99px;
+    font-size: 0.82rem;
     font-weight: 700;
-    color: #00b14f;
-    background: rgba(0, 177, 79, 0.08);
-    padding: 5px 12px;
-    border-radius: 10px;
+    cursor: pointer;
   }
 
-  /* 4. AUTHENTIC 3D ICONS GRID (MATCHING USER SCREENSHOT) */
+  /* 3. SECTION HEADER */
+  .section-title-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 6px;
+  }
+
+  .section-main-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-color, #0f172a);
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+
+  .section-sub-title {
+    font-size: 0.86rem;
+    color: var(--text-muted, #64748b);
+    margin: 0;
+  }
+
+  .ai-helper-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: ${({ themeMode }) => (themeMode === 'dark' ? '#1e293b' : '#ffffff')};
+    border: 1px solid ${({ themeMode }) => (themeMode === 'dark' ? '#334155' : '#cbd5e1')};
+    border-radius: 99px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-color, #1e293b);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .ai-helper-btn:hover {
+    border-color: #00b14f;
+    box-shadow: 0 3px 10px rgba(0, 177, 79, 0.15);
+  }
+
+  /* 4. AUTHENTIC 3D ICONS GRID (5 CORE SERVICES) */
   .grab-3d-grid-container {
-    background: var(--bg-card, #ffffff);
-    border: 1.5px solid var(--border-color, #e2e8f0);
-    border-radius: 26px;
-    padding: 24px 18px 20px;
-    margin-bottom: 26px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
+    background: ${({ themeMode }) => (themeMode === 'dark' ? '#111827' : '#ffffff')};
+    border: 1px solid ${({ themeMode }) => (themeMode === 'dark' ? '#1f2937' : '#e2e8f0')};
+    border-radius: 28px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
   }
 
   .grab-3d-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 20px 14px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 24px 18px;
     align-items: start;
+    max-width: 960px;
+    margin: 0 auto;
   }
 
-  @media (max-width: 992px) {
+  @media (max-width: 860px) {
     .grab-3d-grid {
-      grid-template-columns: repeat(4, 1fr);
-      gap: 18px 12px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px 14px;
     }
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 520px) {
     .grab-3d-grid {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px 8px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px 10px;
     }
   }
 
@@ -630,109 +626,107 @@ const StyledWrapper = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 10px 6px 12px;
-    border-radius: 20px;
+    padding: 14px 10px 16px;
+    border-radius: 22px;
     cursor: pointer;
     position: relative;
     user-select: none;
-    transition: background 0.18s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
   }
 
   .grab-3d-item:hover {
-    background: var(--bg-hover, #f8fafc);
+    background: ${({ themeMode }) => (themeMode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc')};
   }
 
   /* Badge in top right corner of item */
   .grab-3d-badge {
     position: absolute;
-    top: 2px;
-    right: 6px;
-    color: white;
-    font-size: 9.5px;
+    top: 6px;
+    right: 12px;
+    color: #ffffff;
+    font-size: 0.68rem;
     font-weight: 800;
-    padding: 2px 6px;
+    line-height: 1;
+    padding: 4px 8px;
     border-radius: 99px;
-    letter-spacing: 0.3px;
-    z-index: 2;
+    z-index: 5;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
   }
 
-  /* 3D Stage & Shadow */
+  /* 3D Icon Stage */
   .grab-3d-stage {
-    width: 82px;
-    height: 76px;
+    position: relative;
+    width: 84px;
+    height: 84px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    position: relative;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 
   .grab-3d-img {
-    max-width: 76px;
-    max-height: 68px;
-    width: auto;
-    height: auto;
+    width: 76px;
+    height: 76px;
     object-fit: contain;
-    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.12));
-    transition: filter 0.22s ease, transform 0.22s ease;
-    user-select: none;
-    -webkit-user-drag: none;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.12));
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .grab-3d-item:hover .grab-3d-img {
-    filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.2));
+    transform: scale(1.12) translateY(-4px);
+    filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.18));
   }
 
   .grab-3d-shadow {
-    width: 54px;
-    height: 8px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 70%);
     position: absolute;
-    bottom: -2px;
-    transition: transform 0.22s ease, opacity 0.22s ease;
+    bottom: 2px;
+    width: 54px;
+    height: 10px;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 70%);
+    border-radius: 50%;
+    z-index: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
   }
 
   .grab-3d-item:hover .grab-3d-shadow {
     transform: scale(0.85);
-    opacity: 0.6;
+    opacity: 0.4;
   }
 
-  /* Labels */
-  .grab-3d-label {
-    font-size: 0.95rem;
+  .grab-3d-title {
+    font-size: 1.05rem;
     font-weight: 700;
-    color: var(--text-primary, #0f172a);
+    color: var(--text-color, #1e293b);
+    margin-top: 2px;
     text-align: center;
     line-height: 1.25;
-    margin-top: 4px;
   }
 
   .grab-3d-sub {
-    font-size: 0.72rem;
-    color: var(--text-secondary, #64748b);
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
     text-align: center;
-    line-height: 1.2;
-    margin-top: 2px;
+    margin-top: 3px;
+    line-height: 1.25;
   }
 
-  /* 5. Bottom Promos Row */
-  .bottom-promos-row {
+  /* 5. DASHBOARD SHORTCUTS */
+  .dashboard-shortcuts-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
   }
 
-  @media (max-width: 768px) {
-    .bottom-promos-row {
+  @media (max-width: 860px) {
+    .dashboard-shortcuts-row {
       grid-template-columns: 1fr;
     }
   }
 
-  .promo-banner-card {
-    background: var(--bg-card, #ffffff);
-    border: 1.5px solid var(--border-color, #e2e8f0);
+  .shortcut-card {
+    background: ${({ themeMode }) => (themeMode === 'dark' ? '#111827' : '#ffffff')};
+    border: 1px solid ${({ themeMode }) => (themeMode === 'dark' ? '#1f2937' : '#e2e8f0')};
     border-radius: 18px;
     padding: 14px 18px;
     display: flex;
@@ -742,55 +736,52 @@ const StyledWrapper = styled.div`
     transition: all 0.2s ease;
   }
 
-  .promo-banner-card:hover {
-    border-color: #00b14f;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  .shortcut-card:hover {
     transform: translateY(-2px);
+    border-color: #00b14f;
+    box-shadow: 0 4px 16px rgba(0, 177, 79, 0.1);
   }
 
-  .banner-icon-box {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
+  .shortcut-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
 
-  .banner-info {
+  .shortcut-icon.wallet {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+  }
+
+  .shortcut-icon.promo {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+  }
+
+  .shortcut-icon.rating {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+  }
+
+  .shortcut-info {
     flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 
-  .banner-title {
-    font-size: 0.88rem;
+  .shortcut-label {
+    font-size: 0.9rem;
     font-weight: 700;
-    color: var(--text-primary, #0f172a);
-    margin-bottom: 2px;
+    color: var(--text-color, #1e293b);
   }
 
-  .banner-sub {
-    font-size: 0.75rem;
-    color: var(--text-secondary, #64748b);
-    line-height: 1.35;
-  }
-
-  .banner-action-btn {
-    background: transparent;
-    color: #00b14f;
-    border: 1px solid #00b14f;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.15s ease;
-  }
-
-  .banner-action-btn:hover {
-    background: #00b14f;
-    color: white;
+  .shortcut-val {
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
   }
 `;
 

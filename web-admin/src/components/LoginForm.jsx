@@ -12,7 +12,7 @@ import {
   Mail,
   Info
 } from 'lucide-react';
-import MotionSwitch from './MotionSwitch.jsx';
+import SketchyThemeSwitch from './SketchyThemeSwitch.jsx';
 import Loader from './Loader.jsx';
 
 const LoginForm = ({
@@ -70,14 +70,10 @@ const LoginForm = ({
             <span className="brand-name">RideEat</span>
           </div>
           <div className="theme-toggle-box">
-            <MotionSwitch
-              isOn={themeMode === 'dark'}
-              onToggle={toggleTheme}
-              activeColor="#3b82f6"
-              inactiveColor="#cbd5e1"
-              leftIcon={<Sun className="w-3.5 h-3.5 text-amber-500" />}
-              rightIcon={<Moon className="w-3.5 h-3.5 text-slate-800" />}
-              size="sm"
+            <SketchyThemeSwitch
+              checked={themeMode === "dark"}
+              onChange={toggleTheme}
+              style={{ transform: "scale(0.55)", transformOrigin: "right center" }}
               title="Chuyển đổi giao diện Sáng / Tối"
             />
           </div>

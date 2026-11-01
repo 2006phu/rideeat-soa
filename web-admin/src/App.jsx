@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useMotionValueEvent } from 'motion/react';
 import ClickSpark from './components/ClickSpark.jsx';
 import MotionSwitch from './components/MotionSwitch.jsx';
+import FlyingButton from './components/FlyingButton.jsx';
+import WebGLRadar from './components/Radar.jsx';
+import SketchyThemeSwitch from './components/SketchyThemeSwitch.jsx';
 import Loader from './components/Loader.jsx';
 import WaveInput from './components/WaveInput.jsx';
 import StarRating from './components/StarRating.jsx';
@@ -11,6 +14,8 @@ import { apiRegistry, soaEventBus } from './services/ApiClient.js';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
   ArrowLeft,
+  Package,
+  Calendar,
   Bike,
   Car,
   Compass,
@@ -509,6 +514,17 @@ export default function App() {
   // Merchant Specific Fields
   const [merchantStoreName, setMerchantStoreName] = useState('Cơm Tấm Ba Ghiền - Sài Gòn');
   const [merchantPhone, setMerchantPhone] = useState('0909123456');
+  const [deliveryMode, setDeliveryMode] = useState(false);
+  const [scheduledRide, setScheduledRide] = useState(false);
+  const [deliveryRecipientName, setDeliveryRecipientName] = useState('Trần Thị Bích');
+  const [deliveryRecipientPhone, setDeliveryRecipientPhone] = useState('0912 345 678');
+  const [deliveryPackageType, setDeliveryPackageType] = useState('Tài liệu / Hóa đơn');
+  const [deliveryWeight, setDeliveryWeight] = useState('< 3kg');
+  const [deliveryHandDelivery, setDeliveryHandDelivery] = useState(true);
+  const [deliveryNotes, setDeliveryNotes] = useState('Giao tận tay, gọi trước khi tới');
+  const [scheduleDate, setScheduleDate] = useState('Hôm nay');
+  const [scheduleTime, setScheduleTime] = useState('08:30');
+  const [scheduleNotes, setScheduleNotes] = useState('Đón tại sảnh chính');
     const [merchantAddress, setMerchantAddress] = useState('84 Đặng Văn Ngữ, Phú Nhuận, TP.HCM');
   const [merchantCuisine, setMerchantCuisine] = useState('RICE');
   const [merchantBankName, setMerchantBankName] = useState('Vietcombank');
@@ -2152,14 +2168,10 @@ Quy tắc giao tiếp:
             <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
               {themeMode === 'light' ? 'Sáng' : 'Tối'}
             </span>
-            <MotionSwitch
-              isOn={themeMode === 'dark'}
-              onToggle={toggleTheme}
-              activeColor="#3b82f6"
-              inactiveColor="#cbd5e1"
-              leftIcon={<Sun className="w-3.5 h-3.5 text-amber-500" />}
-              rightIcon={<Moon className="w-3.5 h-3.5 text-slate-800" />}
-              size="sm"
+            <SketchyThemeSwitch
+              checked={themeMode === 'dark'}
+              onChange={toggleTheme}
+              style={{ transform: 'scale(0.52)', transformOrigin: 'right center', margin: '-10px 0' }}
               title="Chuyển đổi giao diện Sáng / Tối"
             />
           </div>
@@ -2268,17 +2280,112 @@ Quy tắc giao tiếp:
             <div className="card-header" style={{ marginBottom: '16px' }}>
               <div>
                 <div className="card-title" style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Bike className="w-5 h-5 text-emerald-600" />
-                  <span>Đặt chuyến xe</span>
-                  <span className="badge-soa" style={{ fontSize: '0.72rem' }}>Super-App Mobility</span>
+                  {deliveryMode ? (
+                    <>
+                      <Package className="w-5 h-5 text-orange-500" />
+                      <span>Giao hàng siêu tốc</span>
+                      <span className="badge-soa" style={{ fontSize: '0.72rem', background: 'rgba(249, 115, 22, 0.12)', color: '#f97316' }}>GrabExpress</span>
+                    </>
+                  ) : scheduledRide ? (
+                    <>
+                      <Calendar className="w-5 h-5 text-blue-500" />
+                      <span>Đặt trước lịch xe</span>
+                      <span className="badge-soa" style={{ fontSize: '0.72rem', background: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6' }}>Ride Later</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bike className="w-5 h-5 text-emerald-600" />
+                      <span>Đặt chuyến xe</span>
+                      <span className="badge-soa" style={{ fontSize: '0.72rem' }}>Super-App Mobility</span>
+                    </>
+                  )}
                 </div>
                 <p className="brand-subtitle" style={{ marginTop: '2px' }}>
-                  Định tuyến thực tế & Ghép tài xế thông minh
+                  {deliveryMode
+                    ? 'Giao bưu kiện, tài liệu, hàng hóa nhanh chóng trong nội thành'
+                    : scheduledRide
+                    ? 'Lên lịch đón đúng giờ, tài xế sẵn sàng, cam kết không tăng giá'
+                    : 'Định tuyến thực tế & Ghép tài xế thông minh'}
                 </p>
               </div>
               <span className="oop-tag" style={{ fontWeight: 700 }}>
                 {routeInfo.distance_km} km • ~{routeInfo.duration_minutes} phút
               </span>
+            </div>
+
+                        {/* 3 CORE MODES TABS */}
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', background: 'var(--bg-tag, #f1f5f9)', padding: '4px', borderRadius: '12px' }}>
+              <button
+                type="button"
+                onClick={() => { setDeliveryMode(false); setScheduledRide(false); }}
+                style={{
+                  flex: 1,
+                  padding: '7px 10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  borderRadius: '9px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  background: !deliveryMode && !scheduledRide ? '#00b14f' : 'transparent',
+                  color: !deliveryMode && !scheduledRide ? '#ffffff' : 'var(--text-muted)'
+                }}
+              >
+                <Bike className="w-3.5 h-3.5" />
+                <span>Di chuyển</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setDeliveryMode(true); setScheduledRide(false); }}
+                style={{
+                  flex: 1,
+                  padding: '7px 10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  borderRadius: '9px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  background: deliveryMode ? '#f97316' : 'transparent',
+                  color: deliveryMode ? '#ffffff' : 'var(--text-muted)'
+                }}
+              >
+                <Package className="w-3.5 h-3.5" />
+                <span>Giao hàng</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setDeliveryMode(false); setScheduledRide(true); }}
+                style={{
+                  flex: 1,
+                  padding: '7px 10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  borderRadius: '9px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  background: scheduledRide ? '#3b82f6' : 'transparent',
+                  color: scheduledRide ? '#ffffff' : 'var(--text-muted)'
+                }}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Ride Later</span>
+              </button>
             </div>
 
             {/* LOCATION CONNECTED STOPS */}
@@ -2459,16 +2566,27 @@ Quy tắc giao tiếp:
 
             {/* BOOK BUTTON / RIDE ACTION */}
             {rideStage === 'IDLE' || rideStage === 'COMPLETED' ? (
-              <button
-                className="btn-primary"
-                style={{ padding: '13px 18px', fontSize: '1rem' }}
-                onClick={handleBookRide}
-              >
-                <Send className="w-4 h-4" />
-                <span>Đặt xe ngay</span>
-                <span>•</span>
-                <span>{currentVehicleEstimate?.finalFare?.toLocaleString('vi-VN') || 0} đ</span>
-              </button>
+              <div style={{ position: 'relative', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0' }}>
+                <FlyingButton
+                  theme={themeMode}
+                  size="large"
+                  altitude={140}
+                  hoverTime={2.4}
+                  jets={2}
+                  thrusters
+                  trigger="hover"
+                  carryCursor
+                  smoke={1}
+                  turbulence={1}
+                  wobble={1}
+                  ramp={false}
+                  thrustColor={deliveryMode ? "#f97316" : scheduledRide ? "#3b82f6" : (themeMode === 'dark' ? "#3ef09a" : "#00b14f")}
+                  smokeColor={themeMode === 'dark' ? "#333333" : "#eef1f6"}
+                  onClick={handleBookRide}
+                >
+                  {deliveryMode ? '🚀 Đặt giao hàng ngay' : scheduledRide ? '📅 Xác nhận đặt lịch' : '🚀 Đặt xe ngay'} • {currentVehicleEstimate?.finalFare?.toLocaleString('vi-VN') || 0} đ
+                </FlyingButton>
+              </div>
             ) : (
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
@@ -2995,10 +3113,27 @@ Quy tắc giao tiếp:
               </div>
             </div>
 
-            <button className="btn-primary" onClick={handlePlaceFoodOrder}>
-              <Send className="w-4 h-4" />
-              <span>Đặt món ngay • {foodFinalTotal.toLocaleString('vi-VN')} đ</span>
-            </button>
+            <div style={{ position: 'relative', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0' }}>
+              <FlyingButton
+                theme={themeMode}
+                size="large"
+                altitude={140}
+                hoverTime={2.4}
+                jets={2}
+                thrusters
+                trigger="hover"
+                carryCursor
+                smoke={1}
+                turbulence={1}
+                wobble={1}
+                ramp={false}
+                thrustColor="#ff5722"
+                smokeColor={themeMode === 'dark' ? "#333333" : "#fbe9e7"}
+                onClick={handlePlaceFoodOrder}
+              >
+                🔥 Đặt món nóng ngay • {foodFinalTotal.toLocaleString('vi-VN')} đ
+              </FlyingButton>
+            </div>
 
             {activeFoodOrder && (
               <div className="info-box" style={{ marginTop: '14px' }}>
