@@ -11,10 +11,69 @@
 const DEFAULT_GATEWAY_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 /**
- * Observer Pattern: Client-side Event Bus for real-time SOA & Kafka telemetry
+ * Observer Pattern: Client-side Real-Time Cross-Tab / Cross-Role Event Bus
+ * Synchronizes events across browser tabs/windows (Customer <-> Driver <-> Merchant)
+ * using BroadcastChannel API and localStorage event streaming, simulating real Apache Kafka.
  */
 export class ClientEventBus {
   #listeners = new Map();
+  #channel = null;
+  #tabId = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      // 1. BroadcastChannel API for zero-delay cross-tab communication
+      if ('BroadcastChannel' in window) {
+        try {
+          this.#channel = new BroadcastChannel('rideeat_soa_live_bus');
+          this.#channel.onmessage = (msg) => {
+            if (msg && msg.data && msg.data.originTabId !== this.#tabId) {
+              this.#dispatchLocal(msg.data.eventType, msg.data.event);
+            }
+          };
+        } catch (err) {
+          console.warn('[ClientEventBus] BroadcastChannel error:', err);
+        }
+      }
+
+      // 2. Storage event listener fallback
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'RIDEEAT_LIVE_BUS_MSG' && e.newValue) {
+          try {
+            const data = JSON.parse(e.newValue);
+            if (data && data.originTabId !== this.#tabId) {
+              this.#dispatchLocal(data.eventType, data.event);
+            }
+          } catch (_) {}
+        }
+      });
+    }
+  }
+
+  get tabId() {
+    return this.#tabId;
+  }
+
+  #dispatchLocal(eventType, event) {
+    if (this.#listeners.has(eventType)) {
+      this.#listeners.get(eventType).forEach((cb) => {
+        try {
+          cb(event);
+        } catch (err) {
+          console.error(`[ClientEventBus Error in listener for ${eventType}]`, err);
+        }
+      });
+    }
+    if (this.#listeners.has('*')) {
+      this.#listeners.get('*').forEach((cb) => {
+        try {
+          cb(event);
+        } catch (err) {
+          console.error('[ClientEventBus Error in wildcard listener]', err);
+        }
+      });
+    }
+  }
 
   subscribe(eventType, callback) {
     if (!this.#listeners.has(eventType)) {
@@ -24,19 +83,41 @@ export class ClientEventBus {
     return () => this.#listeners.get(eventType)?.delete(callback);
   }
 
-  publish(eventType, payload) {
+  publish(eventType, payload = {}, options = { broadcast: true }) {
     const event = {
       id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       timestamp: new Date().toISOString(),
       type: eventType,
+      originTabId: this.#tabId,
       ...payload
     };
-    if (this.#listeners.has(eventType)) {
-      this.#listeners.get(eventType).forEach((cb) => cb(event));
+
+    // 1. Dispatch locally in current window
+    this.#dispatchLocal(eventType, event);
+
+    // 2. Broadcast across tabs and windows
+    if (options.broadcast !== false) {
+      if (this.#channel) {
+        try {
+          this.#channel.postMessage({
+            originTabId: this.#tabId,
+            eventType,
+            event
+          });
+        } catch (err) {
+          console.warn('[ClientEventBus] Broadcast send error:', err);
+        }
+      }
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          localStorage.setItem(
+            'RIDEEAT_LIVE_BUS_MSG',
+            JSON.stringify({ originTabId: this.#tabId, eventType, event, _ts: Date.now() })
+          );
+        } catch (_) {}
+      }
     }
-    if (this.#listeners.has('*')) {
-      this.#listeners.get('*').forEach((cb) => cb(event));
-    }
+
     return event;
   }
 }

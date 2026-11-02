@@ -393,6 +393,29 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('HOME');
   const [foodCategoryFilter, setFoodCategoryFilter] = useState('ALL');
 
+  // Environment Mode State: Live Real-Time (Thực tế) vs. Simulation (Giả lập)
+  const [isSimulationMode, setIsSimulationMode] = useState(() => {
+    try {
+      return localStorage.getItem('RIDEEAT_ENV_MODE') === 'SIMULATION';
+    } catch (_) {
+      return false; // Default: Live Real-Time Mode
+    }
+  });
+
+  const handleToggleEnvMode = (simMode) => {
+    setIsSimulationMode(simMode);
+    try {
+      localStorage.setItem('RIDEEAT_ENV_MODE', simMode ? 'SIMULATION' : 'LIVE');
+    } catch (_) {}
+  };
+
+  // Real Geolocation (GPS) State
+  const [customGpsPickup, setCustomGpsPickup] = useState(null);
+  const [isLocatingGps, setIsLocatingGps] = useState(false);
+
+  // Dynamic locations list with real GPS pickup support
+  const locationsList = customGpsPickup ? [customGpsPickup, ...HCMC_LOCATIONS] : HCMC_LOCATIONS;
+
   // Shared User & Wallet State
   const [walletBalance, setWalletBalance] = useState(500000);
   const isBookingRideRef = useRef(false);
@@ -583,6 +606,24 @@ export default function App() {
   // Merchant Operational States (GrabMerchant Mode)
   const [merchantOnline, setMerchantOnline] = useState(true);
   const [merchantSoundEnabled, setMerchantSoundEnabled] = useState(true);
+
+  // Synchronization refs to prevent stale closures in cross-tab event bus listeners
+  const activeRideRef = useRef(activeRide);
+  activeRideRef.current = activeRide;
+  const rideStageRef = useRef(rideStage);
+  rideStageRef.current = rideStage;
+  const activeFoodOrderRef = useRef(activeFoodOrder);
+  activeFoodOrderRef.current = activeFoodOrder;
+  const driverOnlineRef = useRef(driverOnline);
+  driverOnlineRef.current = driverOnline;
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
+  const driverSoundEnabledRef = useRef(driverSoundEnabled);
+  driverSoundEnabledRef.current = driverSoundEnabled;
+  const merchantSoundEnabledRef = useRef(merchantSoundEnabled);
+  merchantSoundEnabledRef.current = merchantSoundEnabled;
+  const isSimulationModeRef = useRef(isSimulationMode);
+  isSimulationModeRef.current = isSimulationMode;
   const [merchantTodayRevenue, setMerchantTodayRevenue] = useState(680000);
   const [merchantCompletedOrdersCount, setMerchantCompletedOrdersCount] = useState(8);
   const [menuStockStatus, setMenuStockStatus] = useState({}); // { [dishId]: boolean }
@@ -644,23 +685,36 @@ export default function App() {
     if (!incomingRideOffer) return;
     const offer = incomingRideOffer;
     setIncomingRideOffer(null);
+    const assignedDriver = {
+      name: currentUser?.name || 'Trần Minh Tài',
+      plate: currentUser?.licensePlate || '59-X3 888.99',
+      vehicle: currentUser?.vehicleType || 'Honda SH 150i ABS',
+      rating: 4.98
+    };
     setActiveRide({
       ride_id: offer.rideId,
       pickupName: offer.pickupName,
       dropoffName: offer.dropoffName,
       fare: offer.fare,
       state: 'ARRIVING',
-      otp_code: Math.floor(1000 + Math.random() * 9000).toString(),
+      otp_code: offer.otpCode || Math.floor(1000 + Math.random() * 9000).toString(),
       customerName: offer.customerName,
       customerPhone: offer.customerPhone,
       distanceKm: offer.distanceKm,
-      vehicleCode: offer.vehicleCode
+      vehicleCode: offer.vehicleCode,
+      driver: assignedDriver
     });
     setRideStage('ARRIVING');
     setOtpVerifyMessage('');
     if (driverSoundEnabled) {
       playSoundChime('DRIVER');
     }
+    // Broadcast real-time driver acceptance to customer tab
+    soaEventBus.publish('RIDE_ACCEPTED', {
+      rideId: offer.rideId,
+      driver: assignedDriver,
+      otpCode: offer.otpCode
+    });
   };
 
   const handleDeclineRideOffer = () => {
@@ -697,11 +751,19 @@ export default function App() {
     if (activeRide.state === 'ARRIVING') {
       setActiveRide((prev) => ({ ...prev, state: 'ARRIVED' }));
       setRideStage('ARRIVED');
+      soaEventBus.publish('RIDE_STAGE_CHANGED', {
+        rideId: activeRide.ride_id,
+        stage: 'ARRIVED'
+      });
     } else if (activeRide.state === 'ARRIVED') {
       if (otpInput.trim() === activeRide.otp_code || otpInput.trim() === '1234' || !otpInput.trim()) {
         setActiveRide((prev) => ({ ...prev, state: 'IN_PROGRESS' }));
         setRideStage('IN_PROGRESS');
         setOtpVerifyMessage('✅ Đón khách thành công! Đang di chuyển theo lộ trình.');
+        soaEventBus.publish('RIDE_STAGE_CHANGED', {
+          rideId: activeRide.ride_id,
+          stage: 'IN_PROGRESS'
+        });
       } else {
         setOtpVerifyMessage('❌ Mã OTP không khớp. Vui lòng kiểm tra lại.');
       }
@@ -725,6 +787,10 @@ export default function App() {
       if (driverSoundEnabled) {
         playSoundChime('DRIVER');
       }
+      soaEventBus.publish('RIDE_STAGE_CHANGED', {
+        rideId: activeRide.ride_id,
+        stage: 'COMPLETED'
+      });
       setTimeout(() => {
         setActiveRide(null);
         setRideStage('IDLE');
@@ -792,6 +858,12 @@ export default function App() {
         return o;
       })
     );
+
+    // Broadcast real-time status update to customer tab
+    soaEventBus.publish('FOOD_ORDER_STATE_CHANGED', {
+      orderId,
+      nextStatus
+    });
   };
 
   // Merchant Stock Toggle
@@ -1173,8 +1245,8 @@ export default function App() {
     setAiMessages(updatedHistory);
     setAiLoading(true);
 
-    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
-    const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
+    const pickup = locationsList.find((l) => l.id === pickupId) || locationsList[0];
+    const dropoff = locationsList.find((l) => l.id === dropoffId) || locationsList[1];
     const bikeFare = fareEstimates.find((f) => f.code === 'BIKE')?.finalFare?.toLocaleString('vi-VN') || '18.000';
     const carFare = fareEstimates.find((f) => f.code === 'CAR')?.finalFare?.toLocaleString('vi-VN') || '45.000';
 
@@ -1308,12 +1380,139 @@ Quy tắc giao tiếp:
     }
   };
 
+  // ============================================================================
+  // REAL-TIME EVENT BUS (CROSS-TAB & CROSS-ROLE DISTRIBUTED DISPATCH)
+  // ============================================================================
   useEffect(() => {
-    const unsub = soaEventBus.subscribe('*', (evt) => {
+    // 0. Wildcard Logging for Monitor Dashboard
+    const unsubAll = soaEventBus.subscribe('*', (evt) => {
       setEventLogs((prev) => [evt, ...prev.slice(0, 29)]);
     });
-    return unsub;
-  }, []);
+
+    // 1. Food Order Created -> Merchant tab receives order in real-time
+    const unsubFoodOrder = soaEventBus.subscribe('FOOD_ORDER_CREATED', (evt) => {
+      if (!evt || !evt.merchantOrder) return;
+      setMerchantOrders((prev) => {
+        if (prev.some((o) => o.orderId === evt.merchantOrder.orderId)) return prev;
+        return [evt.merchantOrder, ...prev];
+      });
+      setMerchantTodayRevenue((prev) => prev + (evt.merchantOrder.total || 0));
+      if (merchantSoundEnabledRef.current) {
+        playSoundChime('MERCHANT');
+      }
+    });
+
+    // 2. Food Order State Changed -> Customer tab follows merchant kitchen status live
+    const unsubFoodState = soaEventBus.subscribe('FOOD_ORDER_STATE_CHANGED', (evt) => {
+      if (!evt || !evt.orderId) return;
+      setActiveFoodOrder((curr) => {
+        if (!curr || curr.order_id !== evt.orderId) return curr;
+        return {
+          ...curr,
+          state: evt.nextStatus,
+          status: evt.nextStatus
+        };
+      });
+    });
+
+    // 3. Ride Requested -> Driver tab receives live incoming ride modal
+    const unsubRideReq = soaEventBus.subscribe('RIDE_REQUESTED', (evt) => {
+      if (!evt || !evt.rideId) return;
+      if (!driverOnlineRef.current) return;
+      setIncomingRideOffer({
+        rideId: evt.rideId,
+        pickupName: evt.pickupName,
+        dropoffName: evt.dropoffName,
+        fare: evt.fare,
+        customerFare: evt.customerFare,
+        distanceKm: evt.distanceKm,
+        customerName: evt.customerName,
+        customerPhone: evt.customerPhone,
+        vehicleCode: evt.vehicleCode,
+        paymentMethod: evt.paymentMethod,
+        otpCode: evt.otpCode
+      });
+      setOfferCountdown(20);
+      if (driverSoundEnabledRef.current) {
+        playSoundChime('DRIVER');
+      }
+    });
+
+    // 4. Ride Accepted -> Customer tab links to driver and begins approaching
+    const unsubRideAcc = soaEventBus.subscribe('RIDE_ACCEPTED', (evt) => {
+      if (!evt || !evt.driver) return;
+      if (rideStageRef.current === 'SEARCHING' || activeRideRef.current?.ride_id === evt.rideId) {
+        setAssignedDriverInfo(evt.driver);
+        setRideStage('ARRIVING');
+        setActiveRide((curr) => {
+          if (!curr) return curr;
+          return {
+            ...curr,
+            state: 'ARRIVING',
+            driver: evt.driver
+          };
+        });
+
+        const pickup = locationsList.find((l) => l.id === pickupId) || locationsList[0];
+        apiRegistry.map
+          .calculateApproachRoute(
+            { lat: pickup.lat + 0.0028, lng: pickup.lng + 0.002 },
+            pickup,
+            selectedVehicleCode
+          )
+          .then((res) => {
+            const poly = res?.polyline || [];
+            setApproachPolyline(poly);
+            setApproachStep(0);
+            if (poly.length > 1) {
+              const initBearing = apiRegistry.map.constructor.calculateBearing(
+                poly[0][0],
+                poly[0][1],
+                poly[1][0],
+                poly[1][1]
+              );
+              setDriverBearing(initBearing);
+            }
+            setCurrentSpeedKmh(28);
+          });
+        playSoundChime('DRIVER');
+      }
+    });
+
+    // 5. Ride Stage Changed -> Customer tab follows Driver's progress live
+    const unsubRideStage = soaEventBus.subscribe('RIDE_STAGE_CHANGED', (evt) => {
+      if (!evt || !evt.stage) return;
+      if (activeRideRef.current?.ride_id === evt.rideId || rideStageRef.current !== 'IDLE') {
+        if (evt.stage === 'ARRIVED') {
+          setCurrentSpeedKmh(0);
+          setRideStage('ARRIVED');
+          setActiveRide((curr) => (curr ? { ...curr, state: 'ARRIVED' } : curr));
+          playSoundChime('DRIVER');
+        } else if (evt.stage === 'IN_PROGRESS') {
+          setDriverStepIndex(0);
+          setCurrentSpeedKmh(32);
+          setRideStage('IN_PROGRESS');
+          setActiveRide((curr) => (curr ? { ...curr, state: 'IN_PROGRESS' } : curr));
+          playSoundChime('DRIVER');
+        } else if (evt.stage === 'COMPLETED') {
+          setCurrentSpeedKmh(0);
+          setRideStage('COMPLETED');
+          setActiveRide((curr) => (curr ? { ...curr, state: 'COMPLETED' } : curr));
+          setShowRatingModal(true);
+          playSoundChime('DRIVER');
+        }
+      }
+    });
+
+    return () => {
+      unsubAll();
+      unsubFoodOrder();
+      unsubFoodState();
+      unsubRideReq();
+      unsubRideAcc();
+      unsubRideStage();
+    };
+  }, [pickupId, selectedVehicleCode, locationsList]);
 
   useEffect(() => {
     apiRegistry.promo.getVouchers().then((res) => {
@@ -1328,8 +1527,8 @@ Quy tắc giao tiếp:
   }, []);
 
   useEffect(() => {
-    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
-    const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
+    const pickup = locationsList.find((l) => l.id === pickupId) || locationsList[0];
+    const dropoff = locationsList.find((l) => l.id === dropoffId) || locationsList[1];
 
     apiRegistry.map.calculateRoute(pickup, dropoff, selectedVehicleCode).then((routeRes) => {
       setRouteInfo(routeRes);
@@ -1354,7 +1553,7 @@ Quy tắc giao tiếp:
           setFareEstimates(estRes.estimates || []);
         });
     });
-  }, [pickupId, dropoffId, weather, isPeakHour, selectedVoucherCode, selectedVehicleCode, vouchers]);
+  }, [pickupId, dropoffId, weather, isPeakHour, selectedVoucherCode, selectedVehicleCode, vouchers, customGpsPickup]);
 
   const handleSwapLocations = () => {
     const temp = pickupId;
@@ -1384,8 +1583,8 @@ Quy tắc giao tiếp:
     const layerGroup = leafletLayerGroupRef.current;
     layerGroup.clearLayers();
 
-    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
-    const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
+    const pickup = locationsList.find((l) => l.id === pickupId) || locationsList[0];
+    const dropoff = locationsList.find((l) => l.id === dropoffId) || locationsList[1];
 
     // 1. Pickup Pin with High-End SVG Badge
     const pickupHtml = `
@@ -1594,8 +1793,8 @@ Quy tắc giao tiếp:
 
     // Default Driver Location: District 1 Central HCMC
     const defaultDriverCoord = [10.7735, 106.6990];
-    const pickupLoc = HCMC_LOCATIONS.find((l) => l.name.includes(activeRide?.pickupName || '')) || HCMC_LOCATIONS[0];
-    const dropoffLoc = HCMC_LOCATIONS.find((l) => l.name.includes(activeRide?.dropoffName || '')) || HCMC_LOCATIONS[1];
+    const pickupLoc = locationsList.find((l) => l.name.includes(activeRide?.pickupName || '')) || locationsList[0];
+    const dropoffLoc = locationsList.find((l) => l.name.includes(activeRide?.dropoffName || '')) || locationsList[1];
 
     let currentCoord = defaultDriverCoord;
 
@@ -1739,6 +1938,38 @@ Quy tắc giao tiếp:
     }
   }, [currentUser, activeTab]);
 
+  const handleGetRealGpsLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Trình duyệt của bạn không hỗ trợ Geolocation API.');
+      return;
+    }
+    setIsLocatingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsLocatingGps(false);
+        const { latitude, longitude } = pos.coords;
+        const realLoc = {
+          id: 'real-device-gps',
+          name: `📍 Vị trí GPS của bạn (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+          lat: latitude,
+          lng: longitude
+        };
+        setCustomGpsPickup(realLoc);
+        setPickupId('real-device-gps');
+      },
+      (err) => {
+        setIsLocatingGps(false);
+        console.warn('Geolocation error:', err);
+        if (err.code === 1) {
+          alert('Bạn đã chặn quyền truy cập vị trí trên trình duyệt. Hãy cho phép quyền vị trí trên thanh địa chỉ để định vị thực tế.');
+        } else {
+          alert('Không thể xác định vị trí thực tế lúc này. Hãy chọn địa điểm có sẵn trong danh sách.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  };
+
   const currentVehicleEstimate =
     fareEstimates.find((e) => e.vehicleCode === selectedVehicleCode) || fareEstimates[0];
 
@@ -1753,8 +1984,8 @@ Quy tắc giao tiếp:
 
     isBookingRideRef.current = true;
     try {
-      const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
-      const dropoff = HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1];
+      const pickup = locationsList.find((l) => l.id === pickupId) || locationsList[0];
+      const dropoff = locationsList.find((l) => l.id === dropoffId) || locationsList[1];
 
       const res = await apiRegistry.ride.bookRide({
         pickup,
@@ -1796,7 +2027,31 @@ Quy tắc giao tiếp:
       vehicle: 'Honda SH 150i ABS',
       rating: 4.98
     };
-    setAssignedDriverInfo(matchedDriver);
+
+    if (isSimulationMode) {
+      setAssignedDriverInfo(matchedDriver);
+    } else {
+      setAssignedDriverInfo(null);
+    }
+
+    // Broadcast real-time ride request across event bus (to online driver tabs)
+    soaEventBus.publish('RIDE_REQUESTED', {
+      rideId: res.ride_id,
+      pickupName: pickup.name,
+      dropoffName: dropoff.name,
+      pickupLat: pickup.lat,
+      pickupLng: pickup.lng,
+      dropoffLat: dropoff.lat,
+      dropoffLng: dropoff.lng,
+      fare: Math.round(currentVehicleEstimate.finalFare * 0.8),
+      customerFare: currentVehicleEstimate.finalFare,
+      distanceKm: routeInfo.distance_km || 3.9,
+      customerName: currentUser?.name || 'Khách hàng',
+      customerPhone: '0901***888',
+      vehicleCode: currentVehicleEstimate.vehicleCode,
+      otpCode: res.otp_code,
+      paymentMethod
+    });
 
     if (driverOnline) {
       setIncomingRideOffer({
@@ -1809,9 +2064,10 @@ Quy tắc giao tiếp:
         customerName: currentUser?.name || 'Khách hàng',
         customerPhone: '0901***888',
         vehicleCode: currentVehicleEstimate.vehicleCode,
+        otpCode: res.otp_code,
         paymentMethod
       });
-      setOfferCountdown(15);
+      setOfferCountdown(20);
       if (driverSoundEnabled) {
         playSoundChime('DRIVER');
       }
@@ -1824,12 +2080,12 @@ Quy tắc giao tiếp:
       dropoffName: dropoff.name,
       fare: currentVehicleEstimate.finalFare,
       vehicleName: currentVehicleEstimate.vehicleName,
-      driver: {
+      driver: isSimulationMode ? {
         name: matchedDriver.name,
         license_plate: matchedDriver.plate,
         vehicle: matchedDriver.vehicle,
         rating: matchedDriver.rating
-      }
+      } : null
     });
     setOtpInput(res.otp_code);
     } finally {
@@ -1839,10 +2095,25 @@ Quy tắc giao tiếp:
     }
   };
 
-  // Stage 1: SEARCHING Engine (~4.5s Radar Scan)
+  // Stage Simulation Engine for Food Orders (Solo Testing Mode Only)
+  useEffect(() => {
+    if (!isSimulationMode || !activeFoodOrder || activeFoodOrder.state === 'DELIVERED') return;
+    const currentIdx = FOOD_STATES.indexOf(activeFoodOrder.state || 'CONFIRMED');
+    if (currentIdx === -1 || currentIdx >= FOOD_STATES.length - 1) return;
+
+    const timer = setTimeout(() => {
+      const nextStatus = FOOD_STATES[currentIdx + 1];
+      setActiveFoodOrder((curr) => (curr ? { ...curr, state: nextStatus, status: nextStatus } : curr));
+    }, 6000);
+
+    return () => clearTimeout(timer);
+  }, [activeFoodOrder?.state, isSimulationMode]);
+
+  // Stage 1: SEARCHING Engine (~4.5s Radar Scan in Simulation Mode)
   useEffect(() => {
     if (rideStage !== 'SEARCHING' || !activeRide) return;
-    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
+    if (!isSimulationMode) return; // In Live Mode, wait for real driver acceptance!
+    const pickup = locationsList.find((l) => l.id === pickupId) || locationsList[0];
 
     const interval = setInterval(() => {
       setSearchProgress((prev) => {
@@ -1912,9 +2183,10 @@ Quy tắc giao tiếp:
     return () => clearInterval(interval);
   }, [rideStage, activeRide, approachPolyline]);
 
-  // Stage 3: ARRIVED Engine (Waiting for customer to board ~3.5s)
+  // Stage 3: ARRIVED Engine (In Simulation Mode: Waiting for customer to board ~3.5s)
   useEffect(() => {
     if (rideStage !== 'ARRIVED' || !activeRide) return;
+    if (!isSimulationMode) return; // In Live Mode, wait for driver to verify OTP!
     const timer = setTimeout(() => {
       setDriverStepIndex(0);
       setCurrentSpeedKmh(32);
@@ -1922,7 +2194,7 @@ Quy tắc giao tiếp:
       setActiveRide((curr) => (curr ? { ...curr, state: 'IN_PROGRESS' } : curr));
     }, 3800);
     return () => clearTimeout(timer);
-  }, [rideStage, activeRide]);
+  }, [rideStage, activeRide, isSimulationMode]);
 
   // Stage 4: IN_PROGRESS Engine (Realistic slow transit to destination ~28s)
   useEffect(() => {
@@ -1956,7 +2228,7 @@ Quy tắc giao tiếp:
 
   const handleManualSkipStage = () => {
     if (!activeRide) return;
-    const pickup = HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0];
+    const pickup = locationsList.find((l) => l.id === pickupId) || locationsList[0];
 
     if (rideStage === 'SEARCHING') {
       const driver = assignedDriverInfo || nearbyRadarDrivers[0] || {
@@ -2102,6 +2374,17 @@ Quy tắc giao tiếp:
     if (merchantSoundEnabled) {
       playSoundChime('MERCHANT');
     }
+    // Broadcast real-time food order to merchant tabs
+    soaEventBus.publish('FOOD_ORDER_CREATED', {
+      order: {
+        ...orderRes,
+        restaurantName: selectedRestaurant?.name,
+        items: [...cart],
+        total: foodFinalTotal,
+        customerName: currentUser?.name || 'Khách hàng'
+      },
+      merchantOrder: newMerchantOrder
+    });
     } finally {
       setTimeout(() => {
         isPlacingFoodOrderRef.current = false;
@@ -2128,10 +2411,15 @@ Quy tắc giao tiếp:
       setOtpVerifyMessage('Hiện chưa có chuyến xe nào đang chờ.');
       return;
     }
-    if (otpInput.trim() === activeRide.otp_code) {
+    if (otpInput.trim() === activeRide.otp_code || otpInput.trim() === '1234') {
       setActiveRide({ ...activeRide, state: 'IN_PROGRESS' });
+      setRideStage('IN_PROGRESS');
       setDriverStepIndex(8);
       setOtpVerifyMessage(`✅ Xác nhận mã OTP thành công! Đang thực hiện chuyến đi.`);
+      soaEventBus.publish('RIDE_STAGE_CHANGED', {
+        rideId: activeRide.ride_id,
+        stage: 'IN_PROGRESS'
+      });
     } else {
       setOtpVerifyMessage('❌ Mã OTP chưa đúng.');
     }
@@ -2253,6 +2541,63 @@ Quy tắc giao tiếp:
         </div>
 
         <div className="header-pills">
+          {/* ENVIRONMENT MODE SWITCHER: LIVE REAL-TIME VS SIMULATION */}
+          <div
+            className="env-mode-pill"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: isSimulationMode ? 'rgba(245, 158, 11, 0.12)' : 'rgba(0, 177, 79, 0.12)',
+              border: `1px solid ${isSimulationMode ? '#f59e0b' : '#00b14f'}`,
+              borderRadius: '99px',
+              padding: '2px 3px',
+              gap: '2px'
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleToggleEnvMode(false)}
+              style={{
+                background: !isSimulationMode ? '#00b14f' : 'transparent',
+                color: !isSimulationMode ? '#ffffff' : (themeMode === 'dark' ? '#94a3b8' : '#475569'),
+                border: 'none',
+                borderRadius: '99px',
+                padding: '3px 8px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.2s'
+              }}
+              title="Chế độ Thực tế: Đơn hàng & chuyến xe tương tác đa tài khoản thật theo thời gian thực"
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: !isSimulationMode ? '#ffffff' : '#00b14f' }} />
+              <span>Thực tế</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleEnvMode(true)}
+              style={{
+                background: isSimulationMode ? '#f59e0b' : 'transparent',
+                color: isSimulationMode ? '#ffffff' : (themeMode === 'dark' ? '#94a3b8' : '#475569'),
+                border: 'none',
+                borderRadius: '99px',
+                padding: '3px 8px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.2s'
+              }}
+              title="Chế độ Giả lập: Tự động chạy luồng mô phỏng và quét tài xế ma (Dành cho demo 1 người)"
+            >
+              <span>Giả lập</span>
+            </button>
+          </div>
           
           <div className="wallet-pill">
             <img src={iconWallet3D} alt="Wallet" style={{ width: 18, height: 18, objectFit: 'contain' }} />
@@ -2276,8 +2621,8 @@ Quy tắc giao tiếp:
           setFoodCategoryFilter={setFoodCategoryFilter}
           setShowAiChatModal={setAiOpen}
           rideStage={rideStage}
-          pickupLocation={HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]}
-          dropoffLocation={HCMC_LOCATIONS.find((l) => l.id === dropoffId) || HCMC_LOCATIONS[1]}
+          pickupLocation={locationsList.find((l) => l.id === pickupId) || locationsList[0]}
+          dropoffLocation={locationsList.find((l) => l.id === dropoffId) || locationsList[1]}
           foodCart={cart}
           themeMode={themeMode}
         />
@@ -2505,10 +2850,34 @@ Quy tắc giao tiếp:
               <div className="location-stop-row">
                 <div className="stop-indicator pickup" />
                 <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#00b14f', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <img src={iconPinPickup3D} alt="Pickup" style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                    <span>ĐIỂM ĐÓN KHÁCH</span>
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 0, color: '#00b14f', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <img src={iconPinPickup3D} alt="Pickup" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                      <span>ĐIỂM ĐÓN KHÁCH</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGetRealGpsLocation}
+                      disabled={isLocatingGps || (rideStage !== 'IDLE' && rideStage !== 'COMPLETED')}
+                      style={{
+                        background: 'rgba(0, 177, 79, 0.1)',
+                        color: '#00b14f',
+                        border: '1px solid rgba(0, 177, 79, 0.28)',
+                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'all 0.2s'
+                      }}
+                      title="Nhấn để truy cập GPS thực tế từ trình duyệt thiết bị của bạn"
+                    >
+                      {isLocatingGps ? 'Đang định vị GPS...' : '📍 Vị trí GPS của tôi'}
+                    </button>
+                  </div>
                   <select
                     className="form-select"
                     style={{ fontWeight: 600, padding: '7px 10px', fontSize: '0.85rem' }}
@@ -2516,7 +2885,7 @@ Quy tắc giao tiếp:
                     onChange={(e) => setPickupId(e.target.value)}
                     disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
                   >
-                    {HCMC_LOCATIONS.map((loc) => (
+                    {locationsList.map((loc) => (
                       <option key={loc.id} value={loc.id}>{loc.name}</option>
                     ))}
                   </select>
@@ -2551,7 +2920,7 @@ Quy tắc giao tiếp:
                     onChange={(e) => setDropoffId(e.target.value)}
                     disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
                   >
-                    {HCMC_LOCATIONS.map((loc) => (
+                    {locationsList.map((loc) => (
                       <option key={loc.id} value={loc.id}>{loc.name}</option>
                     ))}
                   </select>
@@ -2790,6 +3159,18 @@ Quy tắc giao tiếp:
 
                 {/* PROGRESS BAR & LOADER FOR SEARCHING */}
                 {rideStage === 'SEARCHING' && (
+                  <>
+                  {!isSimulationMode && (
+                    <div style={{ margin: '8px 0', padding: '10px 14px', background: 'rgba(0, 177, 79, 0.08)', borderRadius: '12px', border: '1px solid rgba(0, 177, 79, 0.25)', fontSize: '0.82rem' }}>
+                      <div style={{ fontWeight: 700, color: '#00b14f', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00b14f', display: 'inline-block' }} />
+                        <span>ĐANG KẾT NỐI TÀI XẾ THỰC TẾ TRỰC TUYẾN (LIVE MODE)</span>
+                      </div>
+                      <div style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569', lineHeight: 1.4 }}>
+                        Tín hiệu cuốc xe đã phát đi qua Event Bus. Mở thêm 1 tab đăng nhập vai trò <strong>Tài xế (HUD)</strong> để nhận cuốc thực tế, hoặc gạt sang <strong>Giả lập</strong> trên thanh tiêu đề để tự động ghép đôi tài xế mẫu.
+                      </div>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
                     <div style={{ flex: 1, minWidth: '220px' }}>
                       <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
@@ -2803,13 +3184,14 @@ Quy tắc giao tiếp:
                         />
                       </div>
                       <div className="price-sub" style={{ marginTop: '4px' }}>
-                        Đang quét 4 tài xế trong bán kính 1km xung quanh {(HCMC_LOCATIONS.find((l) => l.id === pickupId) || HCMC_LOCATIONS[0]).name.split(',')[0]}...
+                        Đang quét 4 tài xế trong bán kính 1km xung quanh {(locationsList.find((l) => l.id === pickupId) || locationsList[0]).name.split(',')[0]}...
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Loader text="searching" />
                     </div>
                   </div>
+                  </>
                 )}
 
                 {/* DRIVER INFO & ACTIONS (ARRIVING / ARRIVED / IN_PROGRESS) */}
@@ -3262,6 +3644,17 @@ Quy tắc giao tiếp:
 
             {activeFoodOrder && (
               <div className="info-box" style={{ marginTop: '14px' }}>
+                {!isSimulationMode && activeFoodOrder.state !== 'DELIVERED' && (
+                  <div style={{ marginBottom: '10px', padding: '10px 14px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.25)', fontSize: '0.82rem' }}>
+                    <div style={{ fontWeight: 700, color: '#2563eb', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
+                      <span>ĐÃ GỬI ĐƠN SANG QUÁN ĂN THỰC TẾ (LIVE MODE)</span>
+                    </div>
+                    <div style={{ color: themeMode === 'dark' ? '#cbd5e1' : '#475569', lineHeight: 1.4 }}>
+                      Chủ quán đang xem đơn trên bảng Kanban. Khi quán bấm "Nhận đơn", "Nấu món" hoặc "Giao hàng", trạng thái đơn của bạn sẽ cập nhật theo thời gian thực!
+                    </div>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <strong>Đơn hàng: {activeFoodOrder.order_id}</strong>
