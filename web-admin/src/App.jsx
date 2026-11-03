@@ -39,7 +39,8 @@ import iconClock3D from './assets/icons3d/clock3d.png';
 import iconGift3D from './assets/icons3d/gift3d.png';
 import iconAi3D from './assets/icons3d/ai.png';
 
-import { apiRegistry, soaEventBus } from './services/ApiClient.js';
+import { apiRegistry, soaEventBus, HCMC_GAZETTEER } from './services/ApiClient.js';
+import AddressSearchInput from './components/AddressSearchInput.jsx';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
   ArrowLeft,
@@ -409,12 +410,40 @@ export default function App() {
     } catch (_) {}
   };
 
-  // Real Geolocation (GPS) State
-  const [customGpsPickup, setCustomGpsPickup] = useState(null);
+  // Dynamic Custom Locations (from GPS, Address Search Autocomplete, and Map Click)
+  const [customLocations, setCustomLocations] = useState([]);
   const [isLocatingGps, setIsLocatingGps] = useState(false);
+  const [mapPickingTarget, setMapPickingTarget] = useState(null); // null | 'PICKUP' | 'DROPOFF'
+  const mapPickingTargetRef = useRef(null);
+  mapPickingTargetRef.current = mapPickingTarget;
 
-  // Dynamic locations list with real GPS pickup support
-  const locationsList = customGpsPickup ? [customGpsPickup, ...HCMC_LOCATIONS] : HCMC_LOCATIONS;
+  // Dynamic locations list combining Custom Searched Locations + Default HCMC Landmarks
+  const locationsList = [
+    ...customLocations,
+    ...HCMC_LOCATIONS.filter((hl) => !customLocations.some((cl) => cl.id === hl.id))
+  ];
+
+  const handleSelectSearchedLocation = (target, locationObj) => {
+    if (!locationObj) return;
+    const formattedLoc = {
+      id: locationObj.id || `loc-${Date.now()}`,
+      name: locationObj.name,
+      address: locationObj.address || locationObj.name,
+      lat: locationObj.lat,
+      lng: locationObj.lng
+    };
+    setCustomLocations((prev) => {
+      const filtered = prev.filter((l) => l.id !== formattedLoc.id && l.name !== formattedLoc.name);
+      return [formattedLoc, ...filtered];
+    });
+
+    if (target === 'PICKUP') {
+      setPickupId(formattedLoc.id);
+    } else {
+      setDropoffId(formattedLoc.id);
+    }
+    setMapPickingTarget(null);
+  };
 
   // Shared User & Wallet State
   const [walletBalance, setWalletBalance] = useState(500000);
@@ -1575,6 +1604,24 @@ Quy tắc giao tiếp:
         maxZoom: 19
       }).addTo(map);
 
+      // Click on map to pick location (Reverse Geocoding)
+      map.on('click', async (e) => {
+        const { lat, lng } = e.latlng;
+        const target = mapPickingTargetRef.current || 'DROPOFF';
+        let rev = { name: `Vị trí (${lat.toFixed(4)}, ${lng.toFixed(4)})`, address: '' };
+        try {
+          rev = await apiRegistry.map.reverseGeocode(lat, lng);
+        } catch (_) {}
+        const clickedLoc = {
+          id: `map-click-${Date.now()}`,
+          name: `📍 ${rev.name}`,
+          address: rev.address,
+          lat: +lat.toFixed(6),
+          lng: +lng.toFixed(6)
+        };
+        handleSelectSearchedLocation(target, clickedLoc);
+      });
+
       leafletMapRef.current = map;
       leafletLayerGroupRef.current = window.L.layerGroup().addTo(map);
     }
@@ -1945,17 +1992,21 @@ Quy tắc giao tiếp:
     }
     setIsLocatingGps(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         setIsLocatingGps(false);
         const { latitude, longitude } = pos.coords;
+        let rev = { name: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`, address: '' };
+        try {
+          rev = await apiRegistry.map.reverseGeocode(latitude, longitude);
+        } catch (_) {}
         const realLoc = {
           id: 'real-device-gps',
-          name: `📍 Vị trí GPS của bạn (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+          name: `📍 Vị trí GPS của bạn (${rev.name})`,
+          address: rev.address,
           lat: latitude,
           lng: longitude
         };
-        setCustomGpsPickup(realLoc);
-        setPickupId('real-device-gps');
+        handleSelectSearchedLocation('PICKUP', realLoc);
       },
       (err) => {
         setIsLocatingGps(false);
@@ -2842,53 +2893,52 @@ Quy tắc giao tiếp:
               </button>
             </div>
 
-            {/* LOCATION CONNECTED STOPS */}
+            {/* LOCATION CONNECTED STOPS (SMART ADDRESS AUTOCOMPLETE & GEOCODING) */}
             <div className="location-connect-card">
               <div className="stop-connector-line" />
 
-              {/* Pickup Stop */}
+              {/* Pickup Stop with Autocomplete */}
               <div className="location-stop-row">
                 <div className="stop-indicator pickup" />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 0, color: '#00b14f', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <img src={iconPinPickup3D} alt="Pickup" style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                      <span>ĐIỂM ĐÓN KHÁCH</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleGetRealGpsLocation}
-                      disabled={isLocatingGps || (rideStage !== 'IDLE' && rideStage !== 'COMPLETED')}
-                      style={{
-                        background: 'rgba(0, 177, 79, 0.1)',
-                        color: '#00b14f',
-                        border: '1px solid rgba(0, 177, 79, 0.28)',
-                        borderRadius: '6px',
-                        padding: '2px 8px',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        transition: 'all 0.2s'
-                      }}
-                      title="Nhấn để truy cập GPS thực tế từ trình duyệt thiết bị của bạn"
-                    >
-                      {isLocatingGps ? 'Đang định vị GPS...' : '📍 Vị trí GPS của tôi'}
-                    </button>
-                  </div>
-                  <select
-                    className="form-select"
-                    style={{ fontWeight: 600, padding: '7px 10px', fontSize: '0.85rem' }}
-                    value={pickupId}
-                    onChange={(e) => setPickupId(e.target.value)}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <AddressSearchInput
+                    label="ĐIỂM ĐÓN KHÁCH"
+                    icon3D={iconPinPickup3D}
+                    currentLocation={locationsList.find((l) => l.id === pickupId) || locationsList[0]}
+                    onSelectLocation={(loc) => handleSelectSearchedLocation('PICKUP', loc)}
+                    placeholder="Nhập địa chỉ đón, tên đường, trường học, bệnh viện..."
                     disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
-                  >
-                    {locationsList.map((loc) => (
-                      <option key={loc.id} value={loc.id}>{loc.name}</option>
-                    ))}
-                  </select>
+                    accentColor="#00b14f"
+                    themeMode={themeMode}
+                    extraActionBtn={
+                      <button
+                        type="button"
+                        onClick={handleGetRealGpsLocation}
+                        disabled={isLocatingGps || (rideStage !== 'IDLE' && rideStage !== 'COMPLETED')}
+                        style={{
+                          background: 'rgba(0, 177, 79, 0.1)',
+                          color: '#00b14f',
+                          border: '1px solid rgba(0, 177, 79, 0.28)',
+                          borderRadius: '6px',
+                          padding: '2px 8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.2s'
+                        }}
+                        title="Nhấn để truy cập GPS thực tế từ trình duyệt thiết bị của bạn"
+                      >
+                        {isLocatingGps ? 'Đang định vị GPS...' : '📍 Vị trí GPS của tôi'}
+                      </button>
+                    }
+                    onStartMapPick={() => {
+                      setMapPickingTarget(mapPickingTarget === 'PICKUP' ? null : 'PICKUP');
+                    }}
+                    isMapPickingActive={mapPickingTarget === 'PICKUP'}
+                  />
                 </div>
               </div>
 
@@ -2905,25 +2955,60 @@ Quy tắc giao tiếp:
                 </button>
               </div>
 
-              {/* Dropoff Stop */}
+              {/* Dropoff Stop with Autocomplete */}
               <div className="location-stop-row">
                 <div className="stop-indicator dropoff" />
-                <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '2px', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <img src={iconPinDropoff3D} alt="Dropoff" style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                    <span>ĐIỂM ĐẾN</span>
-                  </label>
-                  <select
-                    className="form-select"
-                    style={{ fontWeight: 600, padding: '7px 10px', fontSize: '0.85rem' }}
-                    value={dropoffId}
-                    onChange={(e) => setDropoffId(e.target.value)}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <AddressSearchInput
+                    label="ĐIỂM ĐẾN"
+                    icon3D={iconPinDropoff3D}
+                    currentLocation={locationsList.find((l) => l.id === dropoffId) || locationsList[1]}
+                    onSelectLocation={(loc) => handleSelectSearchedLocation('DROPOFF', loc)}
+                    placeholder="Nhập địa chỉ đến, số nhà, tên đường hoặc địa danh..."
                     disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
-                  >
-                    {locationsList.map((loc) => (
-                      <option key={loc.id} value={loc.id}>{loc.name}</option>
-                    ))}
-                  </select>
+                    accentColor="#e11d48"
+                    themeMode={themeMode}
+                    onStartMapPick={() => {
+                      setMapPickingTarget(mapPickingTarget === 'DROPOFF' ? null : 'DROPOFF');
+                    }}
+                    isMapPickingActive={mapPickingTarget === 'DROPOFF'}
+                  />
+                </div>
+              </div>
+
+              {/* Quick Destination Chips */}
+              <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed var(--border-color, #e2e8f0)' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted, #64748b)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>⚡ Gợi ý điểm đến nhanh:</span>
+                </div>
+                <div className="quick-destination-chips">
+                  {[
+                    { name: 'Chợ Bến Thành', id: 'ben-thanh' },
+                    { name: 'Landmark 81', id: 'landmark-81' },
+                    { name: 'Sân bay Tân Sơn Nhất', id: 'tan-son-nhat' },
+                    { name: 'ĐH KHTN (Q.5)', id: 'dh-khtn' },
+                    { name: 'Phố đi bộ Nguyễn Huệ', id: 'nguyen-hue' },
+                    { name: 'KĐT Sala (Thủ Đức)', id: 'sala-thu-thiem' },
+                    { name: 'Bitexco Tower', id: 'bitexco' },
+                    { name: 'Chợ Bà Chiểu', id: 'cho-ba-chieu' },
+                    { name: 'Vạn Hạnh Mall', id: 'van-hanh-mall' },
+                    { name: 'BV Chợ Rẫy', id: 'bv-cho-ray' }
+                  ].map((q) => (
+                    <button
+                      key={q.id}
+                      type="button"
+                      className="quick-destination-chip"
+                      onClick={() => {
+                        const targetLoc = locationsList.find((l) => l.id === q.id) || HCMC_GAZETTEER.find((g) => g.id === q.id);
+                        if (targetLoc) {
+                          handleSelectSearchedLocation('DROPOFF', targetLoc);
+                        }
+                      }}
+                      disabled={rideStage !== 'IDLE' && rideStage !== 'COMPLETED'}
+                    >
+                      <span>📍 {q.name}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -3101,8 +3186,35 @@ Quy tắc giao tiếp:
           {/* CỘT PHẢI: BẢN ĐỒ TOÀN CẢNH & KHUNG THÔNG BÁO TÁCH RIÊNG (100% KHÔNG BỊ CHE BẢN ĐỒ) */}
           <div className="ride-right-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* 1. BẢN ĐỒ TOÀN CẢNH (HOÀN TOÀN TRỐNG TRẢI, RÕ RÀNG 100%) */}
-            <div className="ride-map-wrapper">
+            <div className="ride-map-wrapper" style={{ position: 'relative' }}>
               <div ref={mapContainerRef} className="leaflet-map-hero" />
+              {mapPickingTarget && (
+                <div className="map-picker-floating-banner">
+                  <Compass className="w-4 h-4 animate-spin text-emerald-400" />
+                  <span>
+                    Chấm trên bản đồ để chọn{' '}
+                    <strong style={{ color: mapPickingTarget === 'PICKUP' ? '#34d399' : '#f87171' }}>
+                      {mapPickingTarget === 'PICKUP' ? 'ĐIỂM ĐÓN KHÁCH' : 'ĐIỂM ĐẾN'}
+                    </strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMapPickingTarget(null)}
+                    style={{
+                      background: 'rgba(255,255,255,0.2)',
+                      border: 'none',
+                      borderRadius: '99px',
+                      padding: '2px 8px',
+                      color: '#ffffff',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 2. KHUNG THÔNG BÁO TIẾN TRÌNH CHUYẾN ĐI (TÁCH BIỆT HOÀN TOÀN BÊN DƯỚI) */}

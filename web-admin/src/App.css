@@ -3075,3 +3075,238 @@ code, pre, .mono {
   color: #34d399;
   border-color: #34d399;
 }
+
+/* ==========================================================================
+   SMART ADDRESS AUTOCOMPLETE & MAP PICKER STYLES
+   ========================================================================== */
+.address-autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.address-search-box {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.address-search-input {
+  width: 100%;
+  padding: 8px 32px 8px 30px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #0f172a);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.address-search-input:focus {
+  border-color: #00b14f;
+  box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.15);
+}
+
+.address-search-icon-left {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-muted, #64748b);
+}
+
+.address-search-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.address-search-clear-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.address-dropdown-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 1050;
+  padding: 4px;
+}
+
+.address-dropdown-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+}
+
+.address-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.address-dropdown-item:hover,
+.address-dropdown-item.selected {
+  background: rgba(0, 177, 79, 0.08);
+}
+
+.address-item-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.address-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.address-item-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.address-item-sub {
+  font-size: 0.73rem;
+  color: var(--text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.address-item-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 177, 79, 0.1);
+  color: #00b14f;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.address-item-tag.osm {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.quick-destination-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 2px 0;
+  margin-top: 8px;
+  scrollbar-width: none;
+}
+
+.quick-destination-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.quick-destination-chip {
+  flex-shrink: 0;
+  background: var(--bg-tag, #f1f5f9);
+  color: var(--text-main, #334155);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 99px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quick-destination-chip:hover {
+  background: rgba(0, 177, 79, 0.12);
+  color: #00b14f;
+  border-color: rgba(0, 177, 79, 0.35);
+}
+
+.map-picker-floating-banner {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 99px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .address-search-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .address-dropdown-popover {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .address-dropdown-item {
+  border-bottom-color: rgba(51, 65, 85, 0.5);
+}
+
+[data-theme="dark"] .address-dropdown-item:hover {
+  background: rgba(0, 177, 79, 0.18);
+}
+
+[data-theme="dark"] .address-item-name {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .address-item-sub {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .quick-destination-chip {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .quick-destination-chip:hover {
+  background: rgba(0, 177, 79, 0.2);
+  color: #34d399;
+  border-color: #00b14f;
+}

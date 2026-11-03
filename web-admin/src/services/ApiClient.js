@@ -411,6 +411,76 @@ export class AuthApiService extends BaseApiClient {
 }
 
 /**
+ * Local Smart Gazetteer: 50+ Major Landmarks, Universities, Hospitals & Hubs in HCMC
+ * Guarantees zero-delay autocomplete & resilient offline fallback
+ */
+export const HCMC_GAZETTEER = [
+  // Quận 1 & Trung tâm Sài Gòn
+  { id: 'ben-thanh', name: 'Chợ Bến Thành', address: 'Đường Lê Lợi, Phường Bến Thành, Quận 1', lat: 10.7726, lng: 106.6980, category: 'Chợ truyền thống' },
+  { id: 'nguyen-hue', name: 'Phố Đi Bộ Nguyễn Huệ', address: 'Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1', lat: 10.7744, lng: 106.7035, category: 'Điểm tham quan' },
+  { id: 'nha-tho-duc-ba', name: 'Nhà Thờ Đức Bà Sài Gòn', address: '01 Công Xã Paris, Phường Bến Nghé, Quận 1', lat: 10.7798, lng: 106.6990, category: 'Di tích văn hoá' },
+  { id: 'dinh-doc-lap', name: 'Dinh Độc Lập (Hội Trường Thống Nhất)', address: '135 Nam Kỳ Khởi Nghĩa, Phường Bến Thành, Quận 1', lat: 10.7770, lng: 106.6954, category: 'Di tích lịch sử' },
+  { id: 'bitexco', name: 'Bitexco Financial Tower', address: '02 Hải Triều, Phường Bến Nghé, Quận 1', lat: 10.7716, lng: 106.7044, category: 'Toà nhà văn phòng' },
+  { id: 'vincom-dong-khoi', name: 'Vincom Center Đồng Khởi', address: '72 Lê Thánh Tôn, Phường Bến Nghé, Quận 1', lat: 10.7780, lng: 106.7018, category: 'Trung tâm thương mại' },
+  { id: 'buu-dien-tp', name: 'Bưu Điện Trung Tâm Sài Gòn', address: '02 Công Xã Paris, Phường Bến Nghé, Quận 1', lat: 10.7799, lng: 106.7000, category: 'Di tích văn hoá' },
+  { id: 'nha-hat-tp', name: 'Nhà Hát Thành Phố (Saigon Opera House)', address: '07 Công Trường Lam Sơn, Bến Nghé, Quận 1', lat: 10.7766, lng: 106.7032, category: 'Văn hoá nghệ thuật' },
+  { id: 'cho-thai-binh', name: 'Chợ Thái Bình', address: 'Đường Cống Quỳnh, Phường Phạm Ngũ Lão, Quận 1', lat: 10.7681, lng: 106.6889, category: 'Chợ dân sinh' },
+  { id: 'ben-bach-dang', name: 'Bến Bạch Đằng & Ga Tàu Thuỷ Saigon Waterbus', address: 'Đường Tôn Đức Thắng, Bến Nghé, Quận 1', lat: 10.7725, lng: 106.7067, category: 'Bến tàu thuỷ' },
+  { id: 'saigon-centre', name: 'Saigon Centre & Takashimaya', address: '65 Lê Lợi, Phường Bến Nghé, Quận 1', lat: 10.7735, lng: 106.7010, category: 'Trung tâm thương mại' },
+
+  // Bình Thạnh
+  { id: 'landmark-81', name: 'Vinhomes Landmark 81', address: '720A Điện Biên Phủ, Phường 22, Bình Thạnh', lat: 10.7950, lng: 106.7218, category: 'Toà nhà chọc trời' },
+  { id: 'cho-ba-chieu', name: 'Chợ Bà Chiểu', address: 'Đường Bạch Đằng, Phường 1, Bình Thạnh', lat: 10.8012, lng: 106.6978, category: 'Chợ truyền thống' },
+  { id: 'nga-tu-hang-xanh', name: 'Ngã Tư Hàng Xanh', address: 'Giao lộ Điện Biên Phủ & Xô Viết Nghệ Tĩnh, Bình Thạnh', lat: 10.8015, lng: 106.7115, category: 'Nút giao thông' },
+  { id: 'ben-xe-mien-dong-cu', name: 'Bến Xe Miền Đông (Cũ)', address: '292 Đinh Bộ Lĩnh, Phường 26, Bình Thạnh', lat: 10.8142, lng: 106.7118, category: 'Bến xe khách' },
+  { id: 'dh-hutech', name: 'Đại Học Công Nghệ TP.HCM (HUTECH)', address: '475A Điện Biên Phủ, Phường 25, Bình Thạnh', lat: 10.8019, lng: 106.7145, category: 'Trường đại học' },
+  { id: 'dh-ngoai-thuong-cs2', name: 'Đại Học Ngoại Thương (Cơ Sở 2)', address: '15 Đường D5, Phường 25, Bình Thạnh', lat: 10.8062, lng: 106.7153, category: 'Trường đại học' },
+  { id: 'dh-giao-thong-van-tai', name: 'Đại Học Giao Thông Vận Tải TP.HCM', address: 'Số 2 Võ Oanh, Phường 25, Bình Thạnh', lat: 10.8035, lng: 106.7150, category: 'Trường đại học' },
+
+  // Tân Bình & Phú Nhuận
+  { id: 'tan-son-nhat', name: 'Sân Bay Quốc Tế Tân Sơn Nhất', address: 'Đường Trường Sơn, Phường 2, Tân Bình', lat: 10.8185, lng: 106.6588, category: 'Sân bay quốc tế' },
+  { id: 'cong-vien-hoang-van-thu', name: 'Công Viên Hoàng Văn Thụ', address: 'Đường Hoàng Văn Thụ, Phường 2, Tân Bình', lat: 10.8005, lng: 106.6625, category: 'Công viên' },
+  { id: 'cho-tan-binh', name: 'Chợ Tân Bình', address: 'Đường Lý Thường Kiệt, Phường 8, Tân Bình', lat: 10.7905, lng: 106.6540, category: 'Chợ đầu mối' },
+  { id: 'nga-tu-bay-hien', name: 'Ngã Tư Bảy Hiền', address: 'Giao lộ CMT8 & Hoàng Văn Thụ, Tân Bình', lat: 10.7925, lng: 106.6538, category: 'Nút giao thông' },
+  { id: 'cong-vien-gia-dinh', name: 'Công Viên Gia Định', address: 'Đường Hoàng Minh Giám, Phường 3, Gò Vấp / Phú Nhuận', lat: 10.8145, lng: 106.6740, category: 'Công viên' },
+  { id: 'nga-tu-phu-nhuan', name: 'Ngã Tư Phú Nhuận', address: 'Giao lộ Phan Đăng Lưu & Phan Đình Phùng, Phú Nhuận', lat: 10.7990, lng: 106.6820, category: 'Nút giao thông' },
+
+  // Quận 5 & Quận 6 & Chợ Lớn
+  { id: 'dh-khtn', name: 'Đại Học Khoa Học Tự Nhiên (ĐHQG TP.HCM)', address: '227 Nguyễn Văn Cừ, Phường 4, Quận 5', lat: 10.7629, lng: 106.6822, category: 'Trường đại học' },
+  { id: 'dh-su-pham', name: 'Đại Học Sư Phạm TP.HCM', address: '280 An Dương Vương, Phường 4, Quận 5', lat: 10.7601, lng: 106.6828, category: 'Trường đại học' },
+  { id: 'dh-sai-gon', name: 'Đại Học Sài Gòn (Cơ sở chính)', address: '105 An Dương Vương, Phường 3, Quận 5', lat: 10.7592, lng: 106.6806, category: 'Trường đại học' },
+  { id: 'dh-y-duoc', name: 'Đại Học Y Dược TP.HCM', address: '217 Hồng Bàng, Phường 11, Quận 5', lat: 10.7554, lng: 106.6601, category: 'Trường đại học' },
+  { id: 'bv-cho-ray', name: 'Bệnh Viện Chợ Rẫy', address: '201B Nguyễn Chí Thanh, Phường 12, Quận 5', lat: 10.7578, lng: 106.6595, category: 'Bệnh viện trung ương' },
+  { id: 'cho-an-dong', name: 'Chợ An Đông', address: 'Công Trường An Đông, Phường 9, Quận 5', lat: 10.7562, lng: 106.6710, category: 'Trung tâm mua sắm' },
+  { id: 'cho-binh-tay', name: 'Chợ Bình Tây (Chợ Lớn Mới)', address: '57A Tháp Mười, Phường 2, Quận 6', lat: 10.7501, lng: 106.6515, category: 'Chợ đầu mối' },
+  { id: 'bv-hung-vuong', name: 'Bệnh Viện Hùng Vương', address: '128 Hồng Bàng, Phường 12, Quận 5', lat: 10.7565, lng: 106.6612, category: 'Bệnh viện' },
+  { id: 'bv-tu-du', name: 'Bệnh Viện Từ Dũ', address: '284 Cống Quỳnh, Phường Phạm Ngũ Lão, Quận 1', lat: 10.7675, lng: 106.6872, category: 'Bệnh viện' },
+
+  // TP. Thủ Đức (Quận 2, Quận 9, Thủ Đức)
+  { id: 'sala-thu-thiem', name: 'Khu Đô Thị Sala Đại Quang Minh', address: 'Số 10 Mai Chí Thọ, An Lợi Đông, TP. Thủ Đức', lat: 10.7719, lng: 106.7224, category: 'Khu đô thị mới' },
+  { id: 'thao-dien', name: 'Khu Thảo Điền (Quận 2)', address: 'Đường Xuân Thủy, Phường Thảo Điền, TP. Thủ Đức', lat: 10.8030, lng: 106.7320, category: 'Khu dân cư quốc tế' },
+  { id: 'cau-ba-son', name: 'Cầu Ba Son (Cầu Thủ Thiêm 2)', address: 'Nối Tôn Đức Thắng (Q.1) và Đô Thị Thủ Thiêm', lat: 10.7768, lng: 106.7110, category: 'Cầu vượt sông' },
+  { id: 'dh-bach-khoa-cs2', name: 'Đại Học Bách Khoa (Cơ Sở 2 - KTX ĐHQG)', address: 'Khu Đô Thị ĐHQG, Phường Linh Trung, TP. Thủ Đức', lat: 10.8805, lng: 106.8055, category: 'Khu đại học' },
+  { id: 'dh-su-pham-ky-thuat', name: 'Đại Học Sư Phạm Kỹ Thuật TP.HCM (HCMUTE)', address: '01 Võ Văn Ngân, Linh Chiểu, TP. Thủ Đức', lat: 10.8510, lng: 106.7720, category: 'Trường đại học' },
+  { id: 'suoi-tien', name: 'Khu Du Lịch Văn Hóa Suối Tiên', address: '120 Xa Lộ Hà Nội, Tân Phú, TP. Thủ Đức', lat: 10.8660, lng: 106.8028, category: 'Khu du lịch' },
+  { id: 'ben-xe-mien-dong-moi', name: 'Bến Xe Miền Đông Mới', address: '501 Hoàng Hữu Nam, Long Bình, TP. Thủ Đức', lat: 10.8758, lng: 106.8242, category: 'Bến xe khách' },
+
+  // Quận 3 & Quận 10
+  { id: 'dh-kinh-te-ueh', name: 'Đại Học Kinh Tế TP.HCM (UEH)', address: '59C Nguyễn Đình Chiểu, Phường Võ Thị Sáu, Quận 3', lat: 10.7828, lng: 106.6958, category: 'Trường đại học' },
+  { id: 'ho-con-rua', name: 'Hồ Con Rùa (Công Trường Quốc Tế)', address: 'Vòng xoay Phạm Ngọc Thạch & Trần Cao Vân, Quận 3', lat: 10.7826, lng: 106.6961, category: 'Địa danh' },
+  { id: 'ga-sai-gon', name: 'Ga Sài Gòn (Đường Sắt)', address: '01 Nguyễn Thông, Phường 9, Quận 3', lat: 10.7818, lng: 106.6788, category: 'Ga xe lửa' },
+  { id: 'van-hanh-mall', name: 'Vạn Hạnh Mall', address: '11 Sư Vạn Hạnh, Phường 12, Quận 10', lat: 10.7702, lng: 106.6685, category: 'Trung tâm thương mại' },
+  { id: 'dh-bach-khoa-cs1', name: 'Đại Học Bách Khoa TP.HCM (Cơ Sở 1)', address: '268 Lý Thường Kiệt, Phường 14, Quận 10', lat: 10.7725, lng: 106.6575, category: 'Trường đại học' },
+  { id: 'bv-115', name: 'Bệnh Viện Nhân Dân 115', address: '527 Sư Vạn Hạnh, Phường 12, Quận 10', lat: 10.7740, lng: 106.6642, category: 'Bệnh viện' },
+
+  // Quận 7 & Khu Đô Thị Nam Sài Gòn
+  { id: 'crescent-mall', name: 'Crescent Mall & Cầu Ánh Sao', address: '101 Tôn Dật Tiên, Tân Phú, Quận 7', lat: 10.7188, lng: 106.7215, category: 'Trung tâm thương mại' },
+  { id: 'sc-vivo-city', name: 'SC VivoCity', address: '1058 Nguyễn Văn Linh, Tân Phong, Quận 7', lat: 10.7305, lng: 106.7028, category: 'Trung tâm thương mại' },
+  { id: 'dh-rmit', name: 'Đại Học RMIT Việt Nam (Nam Sài Gòn)', address: '702 Nguyễn Văn Linh, Tân Hưng, Quận 7', lat: 10.7296, lng: 106.6938, category: 'Trường đại học quốc tế' },
+  { id: 'dh-ton-duc-thang', name: 'Đại Học Tôn Đức Thắng (TDTU)', address: '19 Nguyễn Hữu Thọ, Tân Phong, Quận 7', lat: 10.7325, lng: 106.6995, category: 'Trường đại học' }
+];
+
+/**
  * 2. MapApiService (:8005) - Geo-Spatial Haversine, Routing & Nearby Drivers
  */
 export class MapApiService extends BaseApiClient {
@@ -748,6 +818,149 @@ export class MapApiService extends BaseApiClient {
       ]);
     }
     return poly;
+  }
+
+  /**
+   * Hybrid Geocoding: Search address by query
+   * Queries Local Gazetteer (Instant 0ms) + OpenStreetMap Nominatim API (Vietnamese street-level)
+   */
+  async searchLocations(query) {
+    if (!query || typeof query !== 'string' || !query.trim()) {
+      return [];
+    }
+    const cleanQuery = query.trim().toLowerCase();
+    const removeAccents = (str) =>
+      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normQuery = removeAccents(cleanQuery);
+
+    // 1. Search in Local Gazetteer first (Instant ~0ms response)
+    const localMatches = HCMC_GAZETTEER.filter((item) => {
+      const normName = removeAccents(item.name);
+      const normAddr = removeAccents(item.address);
+      return (
+        normName.includes(normQuery) ||
+        normAddr.includes(normQuery) ||
+        item.name.toLowerCase().includes(cleanQuery) ||
+        item.address.toLowerCase().includes(cleanQuery)
+      );
+    }).map((item) => ({
+      id: item.id,
+      name: item.name,
+      address: item.address,
+      lat: item.lat,
+      lng: item.lng,
+      source: 'LOCAL',
+      category: item.category
+    }));
+
+    // 2. Query OpenStreetMap Nominatim Geocoding API for arbitrary street addresses
+    let remoteMatches = [];
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2800);
+      
+      const queryParam = cleanQuery.includes('tp.hcm') || cleanQuery.includes('ho chi minh') || cleanQuery.includes('hồ chí minh')
+        ? cleanQuery
+        : `${cleanQuery}, TP. Hồ Chí Minh`;
+
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryParam)}&format=json&addressdetails=1&limit=6&countrycodes=vn`;
+
+      const resp = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Accept-Language': 'vi,en;q=0.9',
+          'User-Agent': 'RideEat-SOA-SuperApp/2.0'
+        }
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        remoteMatches = (data || []).map((d, idx) => {
+          const rawName = d.name || d.display_name.split(',')[0];
+          return {
+            id: `osm-${d.place_id || idx}-${Date.now()}`,
+            name: rawName,
+            address: d.display_name,
+            lat: parseFloat(d.lat),
+            lng: parseFloat(d.lon),
+            source: 'OSM',
+            category: d.type || 'Địa chỉ bản đồ'
+          };
+        });
+      }
+    } catch (_) {
+      // In case of network timeout or offline -> safely fall back to localMatches
+    }
+
+    // 3. Deduplicate and merge (Local matches ranked higher)
+    const combined = [...localMatches];
+    remoteMatches.forEach((rm) => {
+      const isDuplicate = combined.some(
+        (cm) =>
+          MapApiService.haversineKm(cm.lat, cm.lng, rm.lat, rm.lng) < 0.25 ||
+          removeAccents(cm.name).includes(removeAccents(rm.name))
+      );
+      if (!isDuplicate) {
+        combined.push(rm);
+      }
+    });
+
+    return combined.slice(0, 8);
+  }
+
+  /**
+   * Reverse Geocoding: Translate GPS coordinates (lat, lng) into readable street address
+   */
+  async reverseGeocode(lat, lng) {
+    // Check if close to known gazetteer entry
+    const nearest = HCMC_GAZETTEER.find(
+      (item) => MapApiService.haversineKm(lat, lng, item.lat, item.lng) < 0.2
+    );
+    if (nearest) {
+      return {
+        id: nearest.id,
+        name: nearest.name,
+        address: nearest.address,
+        lat,
+        lng
+      };
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+      const resp = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Accept-Language': 'vi,en;q=0.9',
+          'User-Agent': 'RideEat-SOA-SuperApp/2.0'
+        }
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const displayName = data.display_name || `Vị trí (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        const shortName = data.name || displayName.split(',').slice(0, 2).join(', ');
+        return {
+          id: `rev-${Date.now()}`,
+          name: shortName,
+          address: displayName,
+          lat,
+          lng
+        };
+      }
+    } catch (_) {}
+
+    return {
+      id: `rev-${Date.now()}`,
+      name: `Vị trí GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+      address: `Tọa độ: ${lat.toFixed(5)}, ${lng.toFixed(5)} (TP.HCM)`,
+      lat,
+      lng
+    };
   }
 }
 
