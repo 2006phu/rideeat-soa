@@ -41,6 +41,7 @@ import iconAi3D from './assets/icons3d/ai.png';
 
 import { apiRegistry, soaEventBus, HCMC_GAZETTEER } from './services/ApiClient.js';
 import AddressSearchInput from './components/AddressSearchInput.jsx';
+import DynamicThemeBackground from './components/DynamicThemeBackground.jsx';
 import { signInWithGooglePopup } from './services/firebaseClient.js';
 import {
   ArrowLeft,
@@ -2484,6 +2485,7 @@ Quy tắc giao tiếp:
   if (!currentUser) {
     return (
       <ClickSpark sparkColor={themeMode === 'dark' ? '#34d399' : '#00b14f'} sparkCount={9} sparkRadius={22}>
+        <DynamicThemeBackground themeMode={themeMode} />
         <LoginForm
           authMode={authMode}
           setAuthMode={setAuthMode}
@@ -2536,15 +2538,16 @@ Quy tắc giao tiếp:
   // ============================================================================
   return (
     <ClickSpark sparkColor={themeMode === 'dark' ? '#34d399' : '#00b14f'} sparkCount={9} sparkRadius={22}>
-      <div className="app-shell">
-      {/* DOCKED CORNER DAY/NIGHT SWITCH (TINH GỌN Ở GÓC MÀN HÌNH) */}
+      <DynamicThemeBackground themeMode={themeMode} />
+      <div className="app-shell" style={{ position: 'relative' }}>
+      {/* CORNER DAY/NIGHT SWITCH (CỐ ĐỊNH TRÊN GỐC ĐẦU TRANG, KHÔNG ĐI THEO KHI CUỘN) */}
       <div
         className="docked-theme-corner"
         style={{
-          position: 'fixed',
+          position: 'absolute',
           top: '12px',
           right: '16px',
-          zIndex: 9999,
+          zIndex: 995,
           display: 'flex',
           alignItems: 'center',
           background: themeMode === 'dark' ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)',
