@@ -1583,7 +1583,7 @@ Quy tắc giao tiếp:
           setFareEstimates(estRes.estimates || []);
         });
     });
-  }, [pickupId, dropoffId, weather, isPeakHour, selectedVoucherCode, selectedVehicleCode, vouchers, customGpsPickup]);
+  }, [pickupId, dropoffId, weather, isPeakHour, selectedVoucherCode, selectedVehicleCode, vouchers, customLocations]);
 
   const handleSwapLocations = () => {
     const temp = pickupId;
