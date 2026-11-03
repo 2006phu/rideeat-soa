@@ -2539,33 +2539,39 @@ Quy tắc giao tiếp:
   return (
     <ClickSpark sparkColor={themeMode === 'dark' ? '#34d399' : '#00b14f'} sparkCount={9} sparkRadius={22}>
       <DynamicThemeBackground themeMode={themeMode} />
-      <div className="app-shell" style={{ position: 'relative' }}>
-      {/* CORNER DAY/NIGHT SWITCH (CỐ ĐỊNH TRÊN GỐC ĐẦU TRANG, KHÔNG ĐI THEO KHI CUỘN) */}
+      {/* DOCKED CORNER DAY/NIGHT SWITCH (CỐ ĐỊNH Ở GÓC TRÊN MÀN HÌNH - NHỎ GỌN, KHÔNG CHE NÚT ĐĂNG XUẤT) */}
       <div
         className="docked-theme-corner"
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: '12px',
           right: '16px',
-          zIndex: 995,
+          zIndex: 10000,
           display: 'flex',
           alignItems: 'center',
-          background: themeMode === 'dark' ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+          justifyContent: 'center',
+          background: themeMode === 'dark' ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(10px)',
-          padding: '4px 8px',
-          borderRadius: '16px',
-          border: themeMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.1)',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
-          transition: 'all 0.25s ease'
+          WebkitBackdropFilter: 'blur(10px)',
+          padding: '2px 4px',
+          borderRadius: '12px',
+          border: themeMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.12)',
+          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)',
+          transition: 'all 0.25s ease',
+          width: '60px',
+          height: '30px',
+          overflow: 'hidden'
         }}
       >
         <SketchyThemeSwitch
           checked={themeMode === 'dark'}
           onChange={toggleTheme}
-          style={{ transform: 'scale(0.4)', transformOrigin: 'center center', margin: '-14px -16px' }}
+          style={{ transform: 'scale(0.3)', transformOrigin: 'center center' }}
           title="Chuyển đổi giao diện Sáng / Tối"
         />
       </div>
+
+      <div className="app-shell">
 
         {/* SCROLL-HIDE HEADER WITH MOTION */}
       <motion.header

@@ -3450,3 +3450,10 @@ code, pre, .mono {
   position: relative;
   z-index: 1;
 }
+
+/* Prevent overlap with fixed corner day/night theme switch */
+@media (max-width: 1400px) {
+  .top-header {
+    padding-right: 86px;
+  }
+}

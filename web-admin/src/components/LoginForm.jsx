@@ -77,7 +77,7 @@ const LoginForm = ({
             <SketchyThemeSwitch
               checked={themeMode === "dark"}
               onChange={toggleTheme}
-              style={{ transform: "scale(0.38)", transformOrigin: "right center", margin: "-12px 0" }}
+              style={{ transform: "scale(0.3)", transformOrigin: "right center", margin: "-14px 0" }}
               title="Chuyển đổi giao diện Sáng / Tối"
             />
           </div>
